@@ -20,13 +20,13 @@ import type { CommandContext } from '../cli.ts';
 
 const ACTORS = '# Actors\n\nWho sends events, and the modes each may take under a scenario.\n\n```yaml\nactors:\n  - id: chain\n    name: the chain\n    kind: chain\n    modes: [honest, offline]\n  - id: public\n    name: the public\n    kind: public\n    modes: [honest, malicious, offline]\n```\n';
 const SCENARIOS = '# Scenarios\n\nA mode for every actor; all-honest always exists.\n\n```yaml\nscenarios:\n  - id: all-honest\n    modes: {}\n```\n';
-const README = '# Dossiers\n\nOne dossier per component and per system: prose the owners settle, and the charts, models, answers and ledgers the tool writes. Start a component with `dossier decide <id> begin`, and a system with `dossier decide <id> begin system`. For where everything stands, run `dossier render` and read `index.md`. Git ignores the index, since render rebuilds it from the dossiers.\n';
+const README = '# Dossiers\n\nOne dossier per part and per composition: prose the owners settle, and the charts, models, answers and ledgers the tool writes. Start a part with `dossier decide <id> begin`, and a composition with `dossier decide <id> begin composition`. For where everything stands, run `dossier render` and read `index.md`. Git ignores the index, since render rebuilds it from the dossiers.\n';
 // The chart's libraries, which draw and chart trials load at run time.
 const PACKAGE = JSON.stringify({ name: 'dossiers', private: true, type: 'module', dependencies: { xstate: '^5.33.3', '@xstate/graph': '^3.0.4' } }, null, 2) + '\n';
 // Kept out of git: index.md, which dossier render rebuilds and which, as a view of every dossier,
 // would otherwise change, and conflict, whenever any dossier did; the local workspace; the libraries;
 // and each trial's bundle, which stays on the machine that ran it while its answer goes to evidence/.
-const GITIGNORE = '# Written by dossier setup. dossier render rebuilds index.md from the dossiers,\n# _scratch/ is a local workspace, node_modules/ holds the chart\'s libraries, and trials/\n# and .running/ hold each trial\'s bundle on the machine that ran it.\n/index.md\n/_scratch/\n/node_modules/\n/components/*/trials/\n/systems/*/trials/\n/components/*/.running/\n/systems/*/.running/\n';
+const GITIGNORE = '# Written by dossier setup. dossier render rebuilds index.md from the dossiers,\n# _scratch/ is a local workspace, node_modules/ holds the chart\'s libraries, and trials/\n# and .running/ hold each trial\'s bundle on the machine that ran it.\n/index.md\n/_scratch/\n/node_modules/\n/parts/*/trials/\n/compositions/*/trials/\n/parts/*/.running/\n/compositions/*/.running/\n';
 
 // Read only after acquiring the root lock, which a new dossier's begin or import also takes.
 // Keep all fields not updated by setup. A marker naming another storage does not read (readMarker
@@ -45,10 +45,10 @@ export function rewriteSetupMarker(dossiers: string, version: string, today: str
       if (parsed.error) throw new UsageError(`${parsed.error} (${path}); correct it before running setup`);
       previous = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
     }
-    if (!previous && ['components', 'systems'].some(kind => dossierPathExists(join(dossiers, kind)))) {
+    if (!previous && ['parts', 'compositions'].some(kind => dossierPathExists(join(dossiers, kind)))) {
       throw new UsageError('existing dossier directories have no root marker; restore dossier.json from version control before setup');
     }
-    const holdsDossiers = ['components', 'systems'].some(kind => dossierPathExists(join(dossiers, kind)) && readdirSync(join(dossiers, kind)).some(entry => !entry.startsWith('.')));
+    const holdsDossiers = ['parts', 'compositions'].some(kind => dossierPathExists(join(dossiers, kind)) && readdirSync(join(dossiers, kind)).some(entry => !entry.startsWith('.')));
     if (previous && previous.storage === undefined && holdsDossiers) {
       throw new UsageError(`dossier.json names no storage while dossiers exist under it; this plugin keeps ${STORAGE} roots only, and setup does not convert another format`);
     }
@@ -97,7 +97,7 @@ export async function main(command: string, args: string[], { root: pluginRoot, 
   mkdirSync(join(dossiers, 'actors'), { recursive: true });
   keep(join(dossiers, 'actors', 'actors.md'), ACTORS, say, `${name}/actors/actors.md`);
   keep(join(dossiers, 'actors', 'scenarios.md'), SCENARIOS, say, `${name}/actors/scenarios.md`);
-  for (const d of ['components', 'systems']) { mkdirSync(join(dossiers, d), { recursive: true }); }
+  for (const d of ['parts', 'compositions']) { mkdirSync(join(dossiers, d), { recursive: true }); }
   if (knowledge) {
     const k = resolve(dossiers, knowledge);
     if (existsSync(join(k, 'modules'))) say('knowledge', k); else console.log(`knowledge: ${k} has no modules/ folder; references will not resolve`);
@@ -119,7 +119,7 @@ export async function main(command: string, args: string[], { root: pluginRoot, 
   let smoke = 0;
   try {
     const r = verifyAll({ root: join(pluginRoot, 'qualification', 'fixture', 'dossiers'), version, write: false });
-    const all = [...r.components, ...r.systems];
+    const all = [...r.parts, ...r.compositions];
     console.log(verifyLine(all, version));
     for (const a of all) console.log(briefLines(a)[0]);
     smoke = all.some(a => a.tripwires.length) ? 1 : 0;

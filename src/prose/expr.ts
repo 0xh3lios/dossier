@@ -28,7 +28,7 @@ type Clause = { assign?: Assignment; effect?: Effect };
 
 export const NUMBER_WORDS: Record<string, number> = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
 const KEYWORDS = new Set(['and', 'or', 'not', 'div', 'mod', 'true', 'false']);
-// A member reference whose component id has hyphens, such as price-feed.price: the hyphens
+// A member reference whose part id has hyphens, such as price-feed.price: the hyphens
 // belong to the id, so it reads as one name and not as a subtraction.
 const HYPHENED_REF = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+\.[A-Za-z_][\w.]*/;
 

@@ -35,25 +35,25 @@ test('on Harbor, every dossier owes a second read: the flag, the next step once 
   cpSync(fixture, work, { recursive: true });
   const root = join(work, 'dossiers');
   let v = verifyAll({ root, version: '0.1.0' });
-  const all = [...v.components, ...v.systems];
+  const all = [...v.parts, ...v.compositions];
   for (const a of all) {
     const now = proseHash(a.hashes);
     assert.deepEqual(a.flags.filter(f => f.name === 'review owed'), [{ name: 'review owed', where: `no review at prose@${now}` }], a.ref);
     assert.ok(summaryLine(a).endsWith(` · prose@${now}`), 'the verify line ends with the prose hash a review names');
   }
-  // Harbor's systems and two of its components owe nothing else, so the review is their next step.
-  assert.deepEqual(all.filter(a => a.route.pass === 'Review').map(a => a.ref).sort(), ['components/adapter', 'components/breaker', 'systems/control', 'systems/supply', 'systems/upkeep']);
+  // Harbor's compositions and two of its parts owe nothing else, so the review is their next step.
+  assert.deepEqual(all.filter(a => a.route.pass === 'Review').map(a => a.ref).sort(), ['compositions/control', 'compositions/supply', 'compositions/upkeep', 'parts/adapter', 'parts/breaker']);
   assert.ok(all.every(a => a.route.pass !== 'Report'), 'no dossier reports before its second read');
   assert.equal(v.route.pass, 'Encode', 'the root routes to Review only once nothing else is owed');
 
-  // A review whose first line names the current prose clears the flag, and the system reports.
-  const control = v.systems.find(a => a.ref === 'systems/control')!;
+  // A review whose first line names the current prose clears the flag, and the composition reports.
+  const control = v.compositions.find(a => a.ref === 'compositions/control')!;
   const now = proseHash(control.hashes);
-  const dir = join(root, 'systems', 'control');
+  const dir = join(root, 'compositions', 'control');
   mkdirSync(join(dir, 'reviews'), { recursive: true });
   writeFileSync(join(dir, 'reviews', '2026-11-07-review.md'), `prose@${now}\n\n${summaryLine(control)}\n\nNo findings.\n`);
   v = verifyAll({ root, version: '0.1.0' });
-  let again = v.systems.find(a => a.ref === 'systems/control')!;
+  let again = v.compositions.find(a => a.ref === 'compositions/control')!;
   assert.deepEqual(again.flags.filter(f => f.name === 'review owed'), []);
   assert.deepEqual(again.route, { pass: 'Report', why: ['nothing owed'], read: 'spec/evidence.md' });
 
@@ -61,13 +61,13 @@ test('on Harbor, every dossier owes a second read: the flag, the next step once 
   // verify line, names none, and the read is still owed.
   writeFileSync(join(dir, 'reviews', '2026-11-07-review.md'), `# Review\n\n${summaryLine(control)}\n\nNo findings.\n`);
   v = verifyAll({ root, version: '0.1.0' });
-  again = v.systems.find(a => a.ref === 'systems/control')!;
+  again = v.compositions.find(a => a.ref === 'compositions/control')!;
   assert.deepEqual(again.flags.filter(f => f.name === 'review owed'), [{ name: 'review owed', where: `reviews/2026-11-07-review.md read prose@none named; now prose@${now}` }], 'a hash quoted below the first line names nothing');
 
   // A review of an earlier wording says which prose it read, and the read is owed again.
   writeFileSync(join(dir, 'reviews', '2026-11-07-review.md'), 'prose@000000\n\nNo findings.\n');
   v = verifyAll({ root, version: '0.1.0' });
-  again = v.systems.find(a => a.ref === 'systems/control')!;
+  again = v.compositions.find(a => a.ref === 'compositions/control')!;
   const why = `reviews/2026-11-07-review.md read prose@000000; now prose@${now}`;
   assert.deepEqual(again.flags.filter(f => f.name === 'review owed'), [{ name: 'review owed', where: why }]);
   assert.deepEqual(again.route, { pass: 'Review', why: [why], read: 'spec/review.md' });
@@ -75,11 +75,11 @@ test('on Harbor, every dossier owes a second read: the flag, the next step once 
 });
 
 test('the root routes to Review after everything else, and to Report once every second read is in', () => {
-  const stub = (ref: string, pass: string, why: string[]) => ({ kind: ref.startsWith('systems/') ? 'system' : 'component', ref, title: ref, tripwires: [], composition: { members: ['x'] }, route: { pass, why, read: '' } }) as unknown as Analysis;
-  const owed = stub('components/vault', 'Review', ['no review at prose@abc123']);
-  const done = stub('systems/control', 'Report', ['nothing owed']);
-  assert.deepEqual(routeRoot([owed], [done]), { pass: 'Review', why: ['components/vault: no review at prose@abc123'], read: 'spec/review.md', target: 'components/vault' });
-  const encode = stub('components/token', 'Encode', ['calls pending: a']);
+  const stub = (ref: string, pass: string, why: string[]) => ({ kind: ref.startsWith('compositions/') ? 'composition' : 'part', ref, title: ref, tripwires: [], wiring: { members: ['x'] }, route: { pass, why, read: '' } }) as unknown as Analysis;
+  const owed = stub('parts/vault', 'Review', ['no review at prose@abc123']);
+  const done = stub('compositions/control', 'Report', ['nothing owed']);
+  assert.deepEqual(routeRoot([owed], [done]), { pass: 'Review', why: ['parts/vault: no review at prose@abc123'], read: 'spec/review.md', target: 'parts/vault' });
+  const encode = stub('parts/token', 'Encode', ['calls pending: a']);
   assert.equal(routeRoot([owed, encode], [done]).pass, 'Encode', 'a loop still owed comes first');
-  assert.deepEqual(routeRoot([stub('components/vault', 'Report', ['nothing owed'])], [done]), { pass: 'Report', why: ['nothing owed'], read: 'spec/evidence.md', target: null });
+  assert.deepEqual(routeRoot([stub('parts/vault', 'Report', ['nothing owed'])], [done]), { pass: 'Report', why: ['nothing owed'], read: 'spec/evidence.md', target: null });
 });

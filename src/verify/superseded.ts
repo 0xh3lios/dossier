@@ -10,19 +10,19 @@ import { byEstablished, completed, holdsCounterexample, passageOf } from '../tri
 import { coversOf } from './covers.ts';
 import type { Ir } from '../prose/ir.ts';
 import type { AnswerRead } from '../trials/answers.ts';
-import type { ComponentAnalysis, SystemAnalysis } from './analyze.ts';
+import type { PartAnalysis, CompositionAnalysis } from './analyze.ts';
 import type { Note } from './tripwires.ts';
 
-// What an answer answered for. A component's completed answer: each passage it touched, as covers
-// reads it, and a blunder's targets apart; a chart's exploration besides. A system's: its cell or
+// What an answer answered for. A part's completed answer: each passage it touched, as covers
+// reads it, and a blunder's targets apart; a chart's exploration besides. A composition's: its cell or
 // its walk under its scenario, and a blunder's property. An aborted answer answered nothing, so its
 // ground is what its question asked about.
-export function groundOf(a: AnswerRead, kind: 'component' | 'system', ir: Ir | null, hashes: Record<string, string>): string[] {
+export function groundOf(a: AnswerRead, kind: 'part' | 'composition', ir: Ir | null, hashes: Record<string, string>): string[] {
   if (!a.entry) return [];
   const q = a.entry.question;
   const ground = new Set<string>();
   const blunder = q.kind === 'blunder';
-  if (kind === 'system') {
+  if (kind === 'composition') {
     if (blunder) { if (q.property) ground.add(`blunder:${q.property}`); }
     else {
       if (q.property) ground.add(`cell:${q.property}|${q.scenario ?? ''}`);
@@ -50,11 +50,11 @@ export function groundOf(a: AnswerRead, kind: 'component' | 'system', ir: Ir | n
 const own = (flag: Note) => Boolean(flag.entry);
 
 // What verify concludes from a dossier, as one string: the marks, the backing, the chart's gaps and
-// the changed model files of a component; the cells, the walks and the blunders' standing of a
-// system; and the tripwires, the flags and the next step of either.
-export function conclusionsOf(a: ComponentAnalysis | SystemAnalysis): string {
+// the changed model files of a part; the cells, the walks and the blunders' standing of a
+// composition; and the tripwires, the flags and the next step of either.
+export function conclusionsOf(a: PartAnalysis | CompositionAnalysis): string {
   const flags = a.flags.filter(f => !own(f));
-  return canonical(a.kind === 'component'
+  return canonical(a.kind === 'part'
     ? { marks: a.marks, backing: a.backing, gaps: a.chart.gaps, changed: a.changedModelFiles, tripwires: a.tripwires, flags, route: a.route }
     : { cells: a.cells, walks: a.walks, held: a.propertyHeld, tripwires: a.tripwires, flags, route: a.route });
 }

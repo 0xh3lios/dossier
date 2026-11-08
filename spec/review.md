@@ -12,7 +12,7 @@ Write the review to one file, `reviews/<date>-review.md` under the dossier. Its 
 
 ## Properties against passages
 
-4. Read every A, O and N definition in the model beside its passage, clause by clause. A property that says less than its passage, or something else, is a finding whether or not its answer held. In a system, read the generated module's translation of each property.
+4. Read every A, O and N definition in the model beside its passage, clause by clause. A property that says less than its passage, or something else, is a finding whether or not its answer held. In a composition, read the generated module's translation of each property.
 5. For every A, O and N, read its blunder: what was changed, and would a property that says nothing have caught it too? A blunder any property catches proves nothing about this one. A property with no blunder is held; say whether the obvious blunder would catch it.
 6. Every Given cites an actor or says why not. Does it restrain that actor in a way the owners can be held to, or does it assume the conclusion? Is `prompt` warranted? Is `on` scoped to the right event? Is an `only when` condition what the owners can be held to?
 
@@ -22,10 +22,10 @@ Write the review to one file, `reviews/<date>-review.md` under the dossier. Its 
 8. For every K passage marked assumed, say which marks rest on it and what would change if it were false.
 9. Pins: do the pinned records describe the instance the prose abstracts, at a checkpoint that is still the deployed one?
 
-## Compositions and scenarios
+## Wiring and scenarios
 
-10. Closure: for each asset the system's properties speak of, read the knowledge base's edges yourself and confirm every owner of a relevant edge is a member. A closure rule that lists too few edge kinds is a finding.
-11. Wiring: does every effect wired to an event carry the fields the event needs, and is every internal event wired from exactly the effect the prose names? A step that happens in the composition and could not happen in a transaction is a finding. Read the `free:` list in `composition.md` and the `left free` flags `dossier verify` prints: is each free send a defensible abstraction for the concern?
+10. Closure: for each asset the composition's properties speak of, read the knowledge base's edges yourself and confirm every owner of a relevant edge is a member. A closure rule that lists too few edge kinds is a finding.
+11. Wiring: does every effect wired to an event carry the fields the event needs, and is every internal event wired from exactly the effect the prose names? A step that happens in the composition and could not happen in a transaction is a finding. Read the `free:` list in `wiring.md` and the `left free` flags `dossier verify` prints: is each free send a defensible abstraction for the concern?
 12. Scenarios: for every column, does the mode assignment mean what the property's reader will take it to mean? A scenario called `governance-captured` that leaves a second governance actor honest is a finding if the real capture would take both. Ask the same of every window and every start. A window counts ticks from 0 and ends before `until`, so a scenario called `lanes-down-two` whose window is `until: 1` is a finding. A start that leaves a datum at its boundary value where the situation it names would not, such as `oracle.state: Stale` with `stale` still 0, is a finding.
 
 ## Traces and readings
@@ -47,7 +47,7 @@ Write the review to one file, `reviews/<date>-review.md` under the dossier. Its 
 
 ## Findings and status
 
-**REVIEW-STATUS.** A status describes the support for the finding's statement. It does not describe whether the system or property passes. Write the statement explicitly, cite the artifacts, and use one of these statuses:
+**REVIEW-STATUS.** A status describes the support for the finding's statement. It does not describe whether the composition or property passes. Write the statement explicitly, cite the artifacts, and use one of these statuses:
 
 | Status | Meaning |
 | --- | --- |

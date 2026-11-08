@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "evidence": {
+    "chart-64fcc7": "b08522df8e8186663c30d2e6a671b61ee4edbb707eb4db5bcb47c64fdfbc556f",
+    "tlc-A1-09afe0": "b7e1699db002e8b1b50227bcc7b49be5b4860265e0e165cc128b6c1cd3a7ca63",
+    "blunder-A1-2c362d": "ca03b2ccbcff6fa7fa513c8ae95918eacc515210481e303f6a5c929cea28b76c",
+    "external-W1-08c91c": "b1375a2ecda92c12a6d74a362c101eab08020ddd0ab0f44b349373e99d15b397"
+  },
+  "decisionHead": {
+    "algorithm": "sha256-prefix",
+    "bytes": 168,
+    "digest": "4704cb9fc6d5cbb34676a6f233f0447646eef02b6eac3ba3404fac5fa548e173"
+  }
+}

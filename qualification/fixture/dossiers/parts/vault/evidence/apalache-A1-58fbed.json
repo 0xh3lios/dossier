@@ -1,0 +1,152 @@
+{
+  "schema": 1,
+  "dossier": "parts/vault",
+  "question": {
+    "kind": "apalache",
+    "checker": "apalache",
+    "executes": [
+      "model/Vault.tla"
+    ],
+    "expects": [
+      "Inv_A1"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: apalache\nmode: inductive\ninv: Inv_A1\ncinit: ConstInit\nexecutes:\n  - model/Vault.tla\nreach: unbounded; TypeOK and A1 inductive\nexpect:\n  Inv_A1: holds\nbecause: |\n  Every action adds or removes the same amount on both sides of the equation.\n",
+    "reach": "unbounded; TypeOK and A1 inductive",
+    "expect": {
+      "Inv_A1": {
+        "expect": "holds"
+      }
+    },
+    "because": "Every action adds or removes the same amount on both sides of the equation."
+  },
+  "answer": {
+    "enabled": [
+      "Inv_A1"
+    ],
+    "outcomes": {
+      "Inv_A1": "holds"
+    },
+    "mode": "inductive",
+    "length": null,
+    "runs": [
+      {
+        "label": "step",
+        "outcome": "NoError",
+        "length": 1,
+        "exitcode": 0,
+        "violatedInvariant": null,
+        "errors": []
+      },
+      {
+        "label": "base",
+        "outcome": "NoError",
+        "length": 0,
+        "exitcode": 0,
+        "violatedInvariant": null,
+        "errors": []
+      }
+    ],
+    "trace": null,
+    "properties": {
+      "Inv_A1": "ed811e21"
+    },
+    "reach": {
+      "text": "unbounded; TypeOK and A1 inductive",
+      "values": {
+        "inductive": 1
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "932f7987",
+        "E1": "277c6691",
+        "E2": "f6402f38",
+        "E3": "ef202696",
+        "E4": "f5a96bcd",
+        "E5": "bc5fa558",
+        "M1": "5cafd080",
+        "M2": "d7217020",
+        "M3": "4c33377c",
+        "M4": "005fc9ee",
+        "M5": "fdad2723",
+        "M6": "cf40bb4b",
+        "R1": "4176a82c",
+        "R2": "d5c670e4",
+        "R3": "6350aeba",
+        "R4": "03c6ef18",
+        "A1": "a7ce3014",
+        "A2": "a6767eb7",
+        "W1": "b9cc8dfb",
+        "W2": "e511df2b",
+        "W3": "456db00a",
+        "X1": "b13f3498",
+        "X2": "75de9c3e",
+        "K1": "a72322bf",
+        "K2": "f9f2026c",
+        "K3": "2c53e665",
+        "K4": "d9ce0e5b",
+        "T1": "cf2e6345",
+        "T2": "d4da3500"
+      },
+      "records": {
+        "vault#observation:checkpoint-2026-11-01": "f53d903a45677849"
+      },
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "48fb01304d30b4b7",
+          "path": "modules/vault/source-cache/github/commit-1a2b-9f8e/certora/Vault.spec"
+        },
+        "K2": {
+          "status": "backed",
+          "hash": "e8e54bc755943a68",
+          "path": "modules/vault/source-cache/github/commit-1a2b-9f8e/certora/Vault.spec"
+        },
+        "K3": {
+          "status": "backed",
+          "hash": "bb4712dfb9f4915d",
+          "path": "modules/vault/source-cache/github/commit-1a2b-9f8e/certora/Vault.spec"
+        },
+        "K4": {
+          "status": "assumed"
+        }
+      },
+      "ir": "9bbd9b9e69103ab8"
+    },
+    "executed": {
+      "model/Vault.tla": "4ee0c1c2aad920b34c03d500450054518ff9ded215dae317700601b62799d2b0"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/Vault.tla": "4ee0c1c2aad920b34c03d500450054518ff9ded215dae317700601b62799d2b0"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2336-apalache-22eec8",
+    "at": "2026-11-08T23:36:55.301Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "apalache": "0.62.4"
+    },
+    "bundle": "0145347b7b5e4ccfe49be745e93fd01477916bbd8ee5a844d4624a3cbd1bf305"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

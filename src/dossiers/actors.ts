@@ -7,11 +7,11 @@ import { senderId } from '../prose/prose.ts';
 
 export type Mode = 'honest' | 'malicious' | 'offline';
 // pins: records in the knowledge base that fix who the actor is, such as a signer set; their
-// hashes enter every system snapshot, so a rotation lapses the cells that rest on the actor.
+// hashes enter every composition snapshot, so a rotation lapses the cells that rest on the actor.
 export interface Actor { id: string; name?: string; kind: string; modes: string[]; pins: string[]; notes: string | null }
 // A mode for each actor that differs from honest; strongerThan lists the scenarios a proof here implies.
 // windows: for an actor whose mode holds only from one tick until another, honest outside it.
-// start: values a cell begins from, keyed <component>.<datum> or <component>.state.
+// start: values a cell begins from, keyed <part>.<datum> or <part>.state.
 export interface ScenarioWindow { from: number; until: number | null }
 export interface Scenario { id: string; modes: Record<string, string>; windows: Record<string, ScenarioWindow>; start: Record<string, string | number | boolean>; strongerThan: string[]; notes: string | null }
 export interface ActorsModel {
@@ -31,7 +31,7 @@ interface RawScenario { id?: string; modes?: Record<string, RawMode>; start?: un
 
 export const MODES: string[] = ['honest', 'malicious', 'offline'];
 // An actor is a part of the surroundings that sends events and fails as a unit. A contract with
-// a dossier is a component, never an actor; external is a contract or protocol with no dossier here.
+// a dossier is a part, never an actor; external is a contract or protocol with no dossier here.
 export const ACTOR_KINDS: string[] = ['governance', 'multisig', 'keeper', 'user', 'public', 'chain', 'market', 'external'];
 
 export const actorId = senderId;
@@ -111,9 +111,9 @@ export function readActors(root: string): ActorsModel {
     }
     s.modes = Object.fromEntries(modes);
     s.windows = Object.fromEntries(windows);
-    // The start as read: numbers and booleans as they are, anything else as text; the system checks it against its members.
+    // The start as read: numbers and booleans as they are, anything else as text; the composition checks it against its members.
     if (isMap(r.start)) s.start = Object.fromEntries(Object.entries(r.start).map(([k, v]) => [k, typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string' ? v : JSON.stringify(v)]));
-    else if (r.start !== undefined && r.start !== null) errors.push(`scenarios.md: ${s.id} has start "${r.start}", not a map of <component>.<datum> to values`);
+    else if (r.start !== undefined && r.start !== null) errors.push(`scenarios.md: ${s.id} has start "${r.start}", not a map of <part>.<datum> to values`);
     for (const x of s.strongerThan) if (!scenarios.some(o => o.id === x)) errors.push(`scenarios.md: ${s.id} is stronger than "${x}", which is not a scenario`);
   }
   // The modes fix the order: malicious allows more behaviours than honest and than offline, which

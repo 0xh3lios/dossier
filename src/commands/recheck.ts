@@ -9,7 +9,7 @@
 import { join } from 'node:path';
 import { findRoot, locate, stripRootArgs, UsageError } from '../dossiers/root.ts';
 import { requireCurrent } from '../dossiers/integrity.ts';
-import { knowledgeOf, loadComponent, loadSystem } from '../dossiers/load.ts';
+import { knowledgeOf, loadPart, loadComposition } from '../dossiers/load.ts';
 import { parseCall } from '../trials/calls.ts';
 import { readable, sameAnswer } from '../trials/answers.ts';
 import { basisMoved } from '../verify/lapse.ts';
@@ -31,17 +31,17 @@ export async function main(_command: string, args: string[], { root: pluginRoot,
   if (!root) throw new UsageError('no dossiers root here. Run dossier setup.');
   requireCurrent(root);
   const wanted = stripRootArgs(args).filter((a, i, all) => !a.startsWith('--') && !OPTIONS.includes(all[i - 1]));
-  for (const name of wanted) if (!locate(root, name)) throw new UsageError(`no component or system named ${name} under ${root}`);
+  for (const name of wanted) if (!locate(root, name)) throw new UsageError(`no part or composition named ${name} under ${root}`);
   const verified = verifyAll({ root, version, wanted, write: false });
   const knowledge = knowledgeOf(root);
   let same = 0, different = 0, unrun = 0;
   for (const a of verified.selected) {
     const where = locate(root, a.ref)!;
-    const loaded: Loaded = where.kind === 'component' ? loadComponent(root, where.id) : loadSystem(root, where.id);
+    const loaded: Loaded = where.kind === 'part' ? loadPart(root, where.id) : loadComposition(root, where.id);
     const answers = a.answers.filter(readable);
     // A dossier whose records, or whose members' records, do not verify runs no trial, so none is
     // rechecked. Every entry with a problem trips there, so each entry asked below reads clean.
-    const relevant = [where.dir, ...(loaded.composition?.members || []).map(m => join(root, 'components', m.component))];
+    const relevant = [where.dir, ...(loaded.wiring?.members || []).map(m => join(root, 'parts', m.part))];
     try { for (const dir of relevant) integrityPreflight(dir); }
     catch (error) { unrun += answers.length; console.log(`not run: ${a.ref} · its records do not verify: ${(error as Error).message}`); continue; }
     const context = answerContext(where, loaded, where.dir);

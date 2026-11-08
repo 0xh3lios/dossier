@@ -1,6 +1,6 @@
 {
   "name": "dossier",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "The Dossier toolkit: the dossier command, the skills that use it, and their tests.",

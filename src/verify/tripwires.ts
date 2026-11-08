@@ -2,12 +2,12 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { isRetired } from '../dossiers/decisions.ts';
-import { listSystems } from '../dossiers/root.ts';
+import { listCompositions } from '../dossiers/root.ts';
 import { CLASSIFICATIONS, completed, evidenceNotes, narrowerReach, readingClassification } from '../trials/answers.ts';
 import { propertyId } from './covers.ts';
 import type { AnswerRead, Readable } from '../trials/answers.ts';
 import type { ActorsModel } from '../dossiers/actors.ts';
-import type { ComponentAnalysis, SystemAnalysis } from './analyze.ts';
+import type { PartAnalysis, CompositionAnalysis } from './analyze.ts';
 
 // A tripwire or a flag: its name, and where it was found. `entry` names the evidence entry a flag
 // belongs to, when the flag is that entry's own and goes with it: its abort, its own narrowed reach,
@@ -15,14 +15,14 @@ import type { ComponentAnalysis, SystemAnalysis } from './analyze.ts';
 export interface Note { name: string; where: string; entry?: string }
 type Report = (name: string, where: string, entry?: string) => unknown;
 
-const COMPONENT_FILES = new Set(['prose.md', 'ledger.md', 'decisions.log', 'doubts.md', 'margin.md', 'README.md', 'integrity.json']);
+const PART_FILES = new Set(['prose.md', 'ledger.md', 'decisions.log', 'doubts.md', 'margin.md', 'README.md', 'integrity.json']);
 // trials/ holds local bundles, which verify never reads; evidence/ holds the answers.
-const COMPONENT_DIRS = new Set(['chart', 'model', 'evidence', 'trials', 'calls', 'reviews', 'node_modules']);
-const SYSTEM_FILES = new Set(['prose.md', 'composition.md', 'ledger.md', 'decisions.log', 'doubts.md', 'margin.md', 'README.md', 'integrity.json']);
-const SYSTEM_DIRS = new Set(['model', 'evidence', 'trials', 'calls', 'reviews']);
+const PART_DIRS = new Set(['chart', 'model', 'evidence', 'trials', 'calls', 'reviews', 'node_modules']);
+const COMPOSITION_FILES = new Set(['prose.md', 'wiring.md', 'ledger.md', 'decisions.log', 'doubts.md', 'margin.md', 'README.md', 'integrity.json']);
+const COMPOSITION_DIRS = new Set(['model', 'evidence', 'trials', 'calls', 'reviews']);
 const MODEL_CHECKERS = ['tlc', 'apalache', 'alloy'];
 
-function shared(f: ComponentAnalysis | SystemAnalysis, trip: Report, flag: Report): void {
+function shared(f: PartAnalysis | CompositionAnalysis, trip: Report, flag: Report): void {
   for (const problem of f.integrity?.problems || []) trip(problem.name, problem.where);
   if (f.broken) trip('decisions chain broken', `decisions.log line ${f.broken.line}: ${f.broken.reason}`);
   for (const d of f.doubts) for (const m of d.malformed) trip('malformed doubt', `${d.id}: ${m}`);
@@ -70,13 +70,13 @@ function actorsFiles(actors: Pick<ActorsModel, 'errors' | 'unsound'>, trip: Repo
   }
   for (const e of actors.unsound || []) trip('stronger_than unsound', e);
 }
-// The actors files belong to the root, so one dossier reports them, once: the first open system
-// as verify lists them, or the first open component while there is no system.
+// The actors files belong to the root, so one dossier reports them, once: the first open composition
+// as verify lists them, or the first open part while there is no composition.
 const reportsActorsFiles = {
-  component: (f: ComponentAnalysis): boolean => f.reportActors && f.components[0] === f.id,
-  system: (f: SystemAnalysis): boolean => {
+  part: (f: PartAnalysis): boolean => f.reportActors && f.parts[0] === f.id,
+  composition: (f: CompositionAnalysis): boolean => {
     const root = dirname(dirname(f.dir));
-    return listSystems(root).find(id => !isRetired(join(root, 'systems', id))) === f.id;
+    return listCompositions(root).find(id => !isRetired(join(root, 'compositions', id))) === f.id;
   },
 };
 
@@ -96,7 +96,7 @@ function strays(dir: string, files: Set<string>, dirs: Set<string>, trip: Report
   }
 }
 
-export function componentTripwires(f: ComponentAnalysis): { tripwires: Note[]; flags: Note[] } {
+export function partTripwires(f: PartAnalysis): { tripwires: Note[]; flags: Note[] } {
   const tripwires: Note[] = [], flags: Note[] = [];
   const trip = (name: string, where: string) => tripwires.push({ name, where });
   const flag = (name: string, where: string, entry?: string) => flags.push({ name, where, ...(entry ? { entry } : {}) });
@@ -107,7 +107,7 @@ export function componentTripwires(f: ComponentAnalysis): { tripwires: Note[]; f
     if (misnamed.has(e)) trip('misnamed', e);
     else trip('malformed passage', e);
   }
-  if (f.actors && reportsActorsFiles.component(f)) actorsFiles(f.actors, trip);
+  if (f.actors && reportsActorsFiles.part(f)) actorsFiles(f.actors, trip);
   if (prose.unsaid.length) flag('unsaid', prose.unsaid.join(', '));
   if (prose.saidTwice.length) flag('said twice', prose.saidTwice.join('; '));
   if (ir.ok) {
@@ -118,11 +118,11 @@ export function componentTripwires(f: ComponentAnalysis): { tripwires: Note[]; f
     const actorsRead = Boolean(f.actors) && f.actors!.errors.length === 0;
     for (const g of ir.givens) {
       if (!g.actor) continue;
-      // A component first: a Given that names one trips even where an actor has the same id.
-      if (f.componentOf(g.actor)) trip('Given names a component', `${g.id} names "${g.actor}", which is a component; a rely on a component is a Guarantee or a wiring`);
-      else if (actorsRead && !f.actorOf(g.actor)) trip('sender is not declared', `${g.id} names "${g.actor}", which is ${f.retiredOf(g.actor) ? 'a retired component' : 'neither an actor in actors.md nor a component'}`);
+      // A part first: a Given that names one trips even where an actor has the same id.
+      if (f.partOf(g.actor)) trip('Given names a part', `${g.id} names "${g.actor}", which is a part; a rely on a part is a Guarantee or a wiring`);
+      else if (actorsRead && !f.actorOf(g.actor)) trip('sender is not declared', `${g.id} names "${g.actor}", which is ${f.retiredOf(g.actor) ? 'a retired part' : 'neither an actor in actors.md nor a part'}`);
     }
-    for (const ev of ir.events) if (actorsRead && f.actors!.actors.length && !f.actorOf(ev.sender) && !f.componentOf(ev.sender)) trip('sender is not declared', `${ev.id}: "${ev.sender}" is ${f.retiredOf(ev.sender) ? 'a retired component' : 'neither an actor in actors.md nor a component'}`);
+    for (const ev of ir.events) if (actorsRead && f.actors!.actors.length && !f.actorOf(ev.sender) && !f.partOf(ev.sender)) trip('sender is not declared', `${ev.id}: "${ev.sender}" is ${f.retiredOf(ev.sender) ? 'a retired part' : 'neither an actor in actors.md nor a part'}`);
     for (const k of ir.guarantees) if (f.backing[k.id] && f.backing[k.id].status === 'unresolved') flag('backing unresolved', `${k.id}: ${f.backing[k.id].reason || 'not found'}`);
     for (const g of f.chart.gaps || []) flag('unsaid under condition', g);
   }
@@ -157,32 +157,32 @@ export function componentTripwires(f: ComponentAnalysis): { tripwires: Note[]; f
     if (narrowed) flag('narrowed', `${name}: ${narrowed}`);
   }
   for (const id of Object.keys(f.marks)) if (f.marks[id].mark === 'held') flag('blunder owed', id);
-  strays(f.dir, COMPONENT_FILES, COMPONENT_DIRS, trip);
+  strays(f.dir, PART_FILES, PART_DIRS, trip);
   if (f.marker && f.pluginVersion && f.marker.plugin !== f.pluginVersion) flag('plugin updated', `${f.marker.plugin ? `set up with dossier ${f.marker.plugin}` : 'dossier.json names no plugin version'}, this is ${f.pluginVersion}: run dossier setup`);
-  if (f.actors && f.actors.byId[f.id]) flag('actor shadows component', `actor ${f.id} is shadowed by component ${f.id}; remove it from actors.md`);
+  if (f.actors && f.actors.byId[f.id]) flag('actor shadows part', `actor ${f.id} is shadowed by part ${f.id}; remove it from actors.md`);
   return { tripwires, flags };
 }
 
-export function systemTripwires(f: SystemAnalysis): { tripwires: Note[]; flags: Note[] } {
+export function compositionTripwires(f: CompositionAnalysis): { tripwires: Note[]; flags: Note[] } {
   const tripwires: Note[] = [], flags: Note[] = [];
   const trip = (name: string, where: string) => tripwires.push({ name, where });
   const flag = (name: string, where: string, entry?: string) => flags.push({ name, where, ...(entry ? { entry } : {}) });
   for (const e of f.prose.errors) trip('malformed passage', e);
   for (const e of f.prose.misnamed) trip('misnamed', e);
-  for (const e of f.composition.errors) trip('malformed composition', e);
-  if (reportsActorsFiles.system(f)) actorsFiles(f.actors, trip);
-  // The composer names each problem by the tripwire it trips; a composition that threw has its message alone.
-  const composerProblems = 'problems' in f.composed && f.composed.problems ? f.composed.problems : (f.composed.errors || []).map(message => ({ name: 'composition does not compose', message }));
+  for (const e of f.wiring.errors) trip('malformed wiring', e);
+  if (reportsActorsFiles.composition(f)) actorsFiles(f.actors, trip);
+  // The composer names each problem by the tripwire it trips; a wiring that threw has its message alone.
+  const composerProblems = 'problems' in f.composed && f.composed.problems ? f.composed.problems : (f.composed.errors || []).map(message => ({ name: 'wiring does not compose', message }));
   for (const { name, message } of composerProblems) {
-    if (name === 'composition cites unknown component') trip('composition cites unknown component', message);
+    if (name === 'wiring names unknown part') trip('wiring names unknown part', message);
     else if (name === 'wiring names unknown effect or event') trip('wiring names unknown effect or event', message);
     else if (name === 'sender is not declared') trip('sender is not declared', message);
-    else if (name === 'Given names a component') trip('Given names a component', message);
+    else if (name === 'Given names a part') trip('Given names a part', message);
     else if (name === 'misnamed') trip('misnamed', message);
     else if (name === 'property claims unknown scenario') trip('property claims unknown scenario', message);
-    else if (name === 'malformed composition') trip('malformed composition', message);
+    else if (name === 'malformed wiring') trip('malformed wiring', message);
     else if (name === 'malformed actors') trip('malformed actors', message);
-    else trip('composition does not compose', message);
+    else trip('wiring does not compose', message);
   }
   const leftFree = new Map<string, string[]>();
   for (const x of f.composed.free || []) if (!x.declared) (leftFree.get(x.from) || leftFree.set(x.from, []).get(x.from)!).push(x.event);
@@ -190,7 +190,7 @@ export function systemTripwires(f: SystemAnalysis): { tripwires: Note[]; flags: 
   for (const m of f.closureMissing) flag('closure open', m);
   unresolvedPins(f.pins, flag);
   for (const [id, held] of Object.entries(f.propertyHeld)) if (held === 'held') flag('blunder owed', id); else if (held === 'hollow') flag('hollow', id);
-  // Narrowed, among the ordinary answers of each cell, as among a component's.
+  // Narrowed, among the ordinary answers of each cell, as among a part's.
   const byCell: Record<string, Readable[]> = {};
   for (const a of f.completed) { const q = a.entry.question; if (q.property && q.kind !== 'blunder' && MODEL_CHECKERS.includes(q.checker)) (byCell[`${q.property}×${q.scenario}`] ||= []).push(a); }
   for (const [cell, list] of Object.entries(byCell)) {
@@ -198,6 +198,6 @@ export function systemTripwires(f: SystemAnalysis): { tripwires: Note[]; flags: 
     if (narrowed) flag('narrowed', `${cell}: ${narrowed}`);
   }
   shared(f, trip, flag);
-  strays(f.dir, SYSTEM_FILES, SYSTEM_DIRS, trip);
+  strays(f.dir, COMPOSITION_FILES, COMPOSITION_DIRS, trip);
   return { tripwires, flags };
 }

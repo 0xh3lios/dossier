@@ -10,15 +10,15 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from 'node:path';
 import { findRoot, locate, stripRootArgs } from '../dossiers/root.ts';
 import { isRetired } from '../dossiers/decisions.ts';
-import { loadComponent, loadSystem, systemModuleText } from '../dossiers/load.ts';
+import { loadPart, loadComposition, compositionModuleText } from '../dossiers/load.ts';
 import { parseCfg, parseTla } from '../models/tla.ts';
 import { parseAls } from '../models/alloy.ts';
 import { constInitOf } from '../models/compose.ts';
 import { KINDS, parseOutcome } from '../trials/calls.ts';
-import { componentModule } from './scaffold.ts';
+import { partModule } from './scaffold.ts';
 import type { Located } from '../dossiers/root.ts';
-import type { ComponentLoad, SystemLoad } from '../dossiers/load.ts';
-import type { ComposedSystem, WalkCfg } from '../models/compose.ts';
+import type { PartLoad, CompositionLoad } from '../dossiers/load.ts';
+import type { Composed, WalkCfg } from '../models/compose.ts';
 
 // What the agent asks for: the call's name, kind and target, and the lines it supplies.
 export interface CallRequest {
@@ -43,7 +43,7 @@ export interface CallRequest {
   force?: boolean;
 }
 // What composing a call gives: its text and the lines still empty, or the problems that refuse it.
-export interface Composed { text: string; empty: string[]; problems: string[] }
+export interface ComposedCall { text: string; empty: string[]; problems: string[] }
 
 // The options the command reads, each with a value, and the flags.
 const VALUED = ['--scenario', '--mode', '--inv', '--init', '--base', '--length', '--reach', '--expect', '--because', '--blunder', '--trace-data', '--runner'];
@@ -81,7 +81,7 @@ export async function main(command: string, args: string[]): Promise<number> {
   const repeated = Object.entries(values).filter(([k, v]) => k !== '--expect' && v.length > 1).map(([k]) => k);
   if (repeated.length) { console.error(`dossier call: ${repeated.join(', ')} given more than once`); return 2; }
   const where = locate(root, name);
-  if (!where) { console.error(`dossier call: no component or system named ${name} under ${root}`); return 2; }
+  if (!where) { console.error(`dossier call: no part or composition named ${name} under ${root}`); return 2; }
   const request: CallRequest = {
     name: callName, kind, target: target ?? null,
     scenario: one('--scenario'), mode: one('--mode'), inv: one('--inv'), init: one('--init'), base: one('--base'), length: one('--length'),
@@ -93,7 +93,7 @@ export async function main(command: string, args: string[]): Promise<number> {
 
 // Compose the call and write it to calls/<name>.md, or say why not. Returns the exit code.
 export function writeCall(root: string, where: Located, request: CallRequest, command = 'call'): number {
-  const ref = `${where.kind === 'component' ? 'components' : 'systems'}/${where.id}`;
+  const ref = `${where.kind === 'part' ? 'parts' : 'compositions'}/${where.id}`;
   if (isRetired(where.dir)) { console.error(`dossier ${command}: ${ref} is retired; dossier decide ${ref} begin reopens it`); return 2; }
   const callName = request.name.replace(/\.md$/, '');
   if (!NAME.test(callName)) { console.error(`dossier ${command}: refused\n  a call's name is letters, digits, dots, hyphens and underscores, not "${request.name}"`); return 2; }
@@ -109,36 +109,36 @@ export function writeCall(root: string, where: Located, request: CallRequest, co
 }
 
 // The text of a call, from what the tool knows of the dossier and what the request supplies.
-export function composeCall(root: string, where: Located, request: CallRequest): Composed {
+export function composeCall(root: string, where: Located, request: CallRequest): ComposedCall {
   const problems: string[] = [];
-  const refuse = (...p: string[]): Composed => ({ text: '', empty: [], problems: p });
+  const refuse = (...p: string[]): ComposedCall => ({ text: '', empty: [], problems: p });
   const { kind, target } = request;
   if (!KINDS.includes(kind)) return refuse(`kind is one of ${KINDS.join(', ')}, not "${kind}"`);
   const supplied: Record<string, string | null | undefined> = { reach: request.reach, blunder: request.blunder, runner: request.runner, 'trace-data': request.traceData, scenario: request.scenario, mode: request.mode, inv: request.inv, init: request.init, base: request.base, length: request.length };
   for (const key of SINGLE) if (supplied[key] != null && /[\r\n]/.test(supplied[key]!)) problems.push(`--${key} is one line`);
   if (problems.length) return refuse(...problems);
 
-  const isSystem = where.kind === 'system';
-  let component: ComponentLoad | null = null, system: SystemLoad | null = null;
+  const isComposition = where.kind === 'composition';
+  let part: PartLoad | null = null, composition: CompositionLoad | null = null;
   // The module the trial runs, as the dossier names it, and its text as the runner will read it.
   let moduleName: string, moduleRel: string, moduleText: () => string;
-  if (isSystem) {
-    system = loadSystem(root, where.id);
-    const unread = [...system.prose.errors, ...system.prose.misnamed, ...system.composed.errors];
-    if (unread.length) return refuse(`systems/${where.id} does not compose:`, ...unread.map(e => `  ${e}`));
-    moduleName = system.composed.module!;
+  if (isComposition) {
+    composition = loadComposition(root, where.id);
+    const unread = [...composition.prose.errors, ...composition.prose.misnamed, ...composition.composed.errors];
+    if (unread.length) return refuse(`compositions/${where.id} does not compose:`, ...unread.map(e => `  ${e}`));
+    moduleName = composition.composed.module!;
     moduleRel = `model/generated/${moduleName}.tla`;
-    const text = systemModuleText(system);
+    const text = compositionModuleText(composition);
     moduleText = () => text;
   } else {
-    component = loadComponent(root, where.id);
-    if (!component.ir.ok) return refuse(`components/${where.id} does not compile; run dossier draw ${where.id}`);
-    moduleName = componentModule(component.ir);
+    part = loadPart(root, where.id);
+    if (!part.ir.ok) return refuse(`parts/${where.id} does not compile; run dossier draw ${where.id}`);
+    moduleName = partModule(where.id);
     moduleRel = `model/${moduleName}.tla`;
     moduleText = () => readFileSync(join(where.dir, moduleRel), 'utf8');
   }
-  const home = isSystem ? 'model/generated/' : 'model/';
-  const hasModule = () => isSystem || existsSync(join(where.dir, moduleRel));
+  const home = isComposition ? 'model/generated/' : 'model/';
+  const hasModule = () => isComposition || existsSync(join(where.dir, moduleRel));
   const noModule = `${moduleRel} does not exist; run dossier scaffold ${where.id}`;
 
   // The call's lines in the order the runner's examples write them.
@@ -149,43 +149,43 @@ export function composeCall(root: string, where: Located, request: CallRequest):
   const known: Record<string, string> = {};
   let traceData = false;
 
-  // A system's cell or witness: the property or the walk, and the scenario it runs under.
+  // A composition's cell or witness: the property or the walk, and the scenario it runs under.
   const cellOf = (property: string, scenario: string | null | undefined) => {
-    if (!scenario) { problems.push(`a system trial names its scenario: --scenario <id>`); return null; }
-    if (!system!.actors.scenarios.some(s => s.id === scenario)) { problems.push(`scenario ${scenario} is not declared in actors/scenarios.md`); return null; }
-    if (!system!.prose.properties.some(p => p.id === property)) { problems.push(`property ${property} is not a passage of systems/${where.id}`); return null; }
-    const cell = system!.composed.cells.find(c => c.property === property && c.scenario === scenario);
-    if (!cell) problems.push(`${property} × ${scenario} is not a cell of systems/${where.id}: ${property} does not claim ${scenario}`);
+    if (!scenario) { problems.push(`a composition trial names its scenario: --scenario <id>`); return null; }
+    if (!composition!.actors.scenarios.some(s => s.id === scenario)) { problems.push(`scenario ${scenario} is not declared in actors/scenarios.md`); return null; }
+    if (!composition!.prose.properties.some(p => p.id === property)) { problems.push(`property ${property} is not a passage of compositions/${where.id}`); return null; }
+    const cell = composition!.composed.cells.find(c => c.property === property && c.scenario === scenario);
+    if (!cell) problems.push(`${property} × ${scenario} is not a cell of compositions/${where.id}: ${property} does not claim ${scenario}`);
     return cell ?? null;
   };
 
   if (kind === 'chart') {
-    if (isSystem) return refuse('a chart trial belongs to a component');
+    if (isComposition) return refuse('a chart trial belongs to a part');
     if (target) return refuse(`a chart call takes no target, not "${target}"`);
     executes = ['prose.md'];
     keys = ['checks'];
   } else if (kind === 'tlc') {
-    if (!target && isSystem) return refuse('a system TLC call names its property or its walk: dossier call <system> <name> tlc <property|walk> --scenario <id>');
-    if (isSystem) {
-      const walk = system!.prose.walks.find(w => w.id === target!);
+    if (!target && isComposition) return refuse('a composition TLC call names its property or its walk: dossier call <composition> <name> tlc <property|walk> --scenario <id>');
+    if (isComposition) {
+      const walk = composition!.prose.walks.find(w => w.id === target!);
       if (walk) {
         const scenario = request.scenario || walk.scenario || 'all-honest';
-        const config = ((system!.composed as ComposedSystem).walks || []).find((w: WalkCfg) => w.id === target && w.scenario === scenario);
+        const config = ((composition!.composed as Composed).walks || []).find((w: WalkCfg) => w.id === target && w.scenario === scenario);
         if (!config) return refuse(`walk ${target} runs under ${walk.scenario || 'all-honest'}, not ${scenario}`);
         head.push(['walk', target!], ['scenario', scenario]);
         executes = [moduleRel, `${home}${config.cfg}`];
-        keys = parseCfg(system!.composed.cfgs[config.cfg] || '').enabled;
+        keys = parseCfg(composition!.composed.cfgs[config.cfg] || '').enabled;
         traceData = true;
       } else {
         const cell = cellOf(target!, request.scenario);
         if (!cell) return refuse(...problems);
         head.push(['property', target!], ['scenario', cell.scenario]);
         executes = [moduleRel, `${home}${cell.cfg}`];
-        keys = parseCfg(system!.composed.cfgs[cell.cfg] || '').enabled;
+        keys = parseCfg(composition!.composed.cfgs[cell.cfg] || '').enabled;
       }
     } else {
       if (!hasModule()) return refuse(noModule);
-      const cfg = componentCfg(where.dir, moduleName, target, component!.ir.walks.map(w => w.id), problems);
+      const cfg = partCfg(where.dir, moduleName, target, part!.ir.walks.map(w => w.id), problems);
       if (!cfg) return refuse(...problems);
       executes = [moduleRel, `model/${cfg}`];
       keys = parseCfg(readFileSync(join(where.dir, 'model', cfg), 'utf8')).enabled;
@@ -198,8 +198,8 @@ export function composeCall(root: string, where: Located, request: CallRequest):
     if (request.length != null && mode !== 'bounded') return refuse('--length goes with --mode bounded');
     if (!target && !request.inv) return refuse('an Apalache call names its property, or its invariant with --inv');
     const inv = request.inv || `Inv_${target}`;
-    if (isSystem) {
-      if (!target) return refuse('a system Apalache call names its property: dossier call <system> <name> apalache <property> --scenario <id>');
+    if (isComposition) {
+      if (!target) return refuse('a composition Apalache call names its property: dossier call <composition> <name> apalache <property> --scenario <id>');
       const cell = cellOf(target, request.scenario);
       if (!cell) return refuse(...problems);
       head.push(['property', target], ['scenario', cell.scenario]);
@@ -208,14 +208,14 @@ export function composeCall(root: string, where: Located, request: CallRequest):
     if (mode === 'bounded') head.push(['length', request.length ?? '']);
     head.push(['inv', inv]);
     if (request.init) head.push(['init', request.init]);
-    const cinit = isSystem ? constInitOf(request.scenario!) : 'ConstInit';
+    const cinit = isComposition ? constInitOf(request.scenario!) : 'ConstInit';
     head.push(['cinit', cinit]);
     const definitions = parseTla(moduleText()).definitions;
-    for (const n of [inv, cinit, ...(request.init ? [request.init] : [])]) if (!Object.hasOwn(definitions, n)) problems.push(`${moduleRel} does not define ${n}${isSystem ? ' (with extras.tla)' : ''}`);
+    for (const n of [inv, cinit, ...(request.init ? [request.init] : [])]) if (!Object.hasOwn(definitions, n)) problems.push(`${moduleRel} does not define ${n}${isComposition ? ' (with extras.tla)' : ''}`);
     executes = [moduleRel];
     keys = [inv];
   } else if (kind === 'alloy') {
-    if (isSystem) return refuse('an Alloy trial belongs to a component');
+    if (isComposition) return refuse('an Alloy trial belongs to a part');
     const als = alloyFile(where.dir, 'model', target, problems);
     if (!als) return refuse(...problems);
     executes = [`model/${als}`];
@@ -232,8 +232,8 @@ export function composeCall(root: string, where: Located, request: CallRequest):
     if (target) return refuse(`an external call takes no target; name its runner with --runner, not "${target}"`);
     head.push(['runner', request.runner ?? '']);
     executes = ['prose.md'];
-    keys = (isSystem ? system!.prose.walks : component!.ir.walks).map(w => w.id);
-    if (!keys.length) return refuse(`${isSystem ? 'systems' : 'components'}/${where.id} has no walks for an external runner to replay`);
+    keys = (isComposition ? composition!.prose.walks : part!.ir.walks).map(w => w.id);
+    if (!keys.length) return refuse(`${isComposition ? 'compositions' : 'parts'}/${where.id} has no walks for an external runner to replay`);
   } else if (kind === 'blunder') {
     if (!target) return refuse('a blunder call names its copy: dossier call <dossier> <name> blunder <copy>');
     const dir = join(where.dir, 'model', 'blunders');
@@ -249,13 +249,13 @@ export function composeCall(root: string, where: Located, request: CallRequest):
       keys = parseCfg(readFileSync(join(dir, cfgs[0]), 'utf8')).enabled;
       if (keys.length !== 1) return refuse(`model/blunders/${cfgs[0]} enables ${keys.join(', ') || 'nothing'}; a blunder configuration enables exactly the one property it must catch`);
       known[keys[0]] = 'violated';
-      if (isSystem) {
+      if (isComposition) {
         const cell = cellOf(keys[0].replace(/^Inv_/, ''), request.scenario);
         if (!cell) return refuse(...problems);
         head.push(['property', cell.property], ['scenario', cell.scenario]);
       }
     } else {
-      if (isSystem) return refuse('an Alloy blunder belongs to a component');
+      if (isComposition) return refuse('an Alloy blunder belongs to a part');
       executes = [`model/blunders/${target}.als`];
       const commands = parseAls(readFileSync(join(dir, `${target}.als`), 'utf8')).commands;
       if (commands.length !== 1) return refuse(`model/blunders/${target}.als has ${commands.map(c => c.name).join(', ') || 'no command'}; an Alloy blunder has exactly one`);
@@ -267,7 +267,7 @@ export function composeCall(root: string, where: Located, request: CallRequest):
     const own = ext === '.tla' ? `${moduleName}.tla` : null;
     if (request.base) {
       const base = request.base.includes('/') ? request.base : `${home}${request.base.endsWith(ext) ? request.base : request.base + ext}`;
-      if (!existsSync(join(where.dir, base)) && !(isSystem && base === moduleRel)) return refuse(`--base names ${base}, which does not exist`);
+      if (!existsSync(join(where.dir, base)) && !(isComposition && base === moduleRel)) return refuse(`--base names ${base}, which does not exist`);
       head.push(['base', base]);
     } else if (modules.length > 1) {
       if (!own || !modules.includes(own)) return refuse(`${home} holds ${modules.join(', ')}: name the module the blunder is a copy of with --base`);
@@ -279,7 +279,7 @@ export function composeCall(root: string, where: Located, request: CallRequest):
   if (request.traceData != null && !traceData) problems.push('--trace-data belongs to a witness, whose configuration enables a NotW<n>');
   if (request.runner != null && kind !== 'external') problems.push('--runner belongs to an external call');
   if (request.blunder != null && kind !== 'blunder') problems.push('--blunder belongs to a blunder call');
-  if (request.scenario != null && !isSystem) problems.push('--scenario belongs to a system trial');
+  if (request.scenario != null && !isComposition) problems.push('--scenario belongs to a composition trial');
   if ((request.inv != null || request.init != null) && kind !== 'apalache') problems.push('--inv and --init belong to an apalache call');
   if (request.mode != null && kind !== 'apalache') problems.push('--mode belongs to an apalache call');
   if (request.base != null && kind !== 'blunder') problems.push('--base belongs to a blunder call');
@@ -323,9 +323,9 @@ function expectSource(kind: string, executes: string[]): string {
   return executes[executes.length - 1];
 }
 
-// The configuration a component's TLC call runs: <Module>.cfg with no target, <Module>_<W>.cfg for a
+// The configuration a part's TLC call runs: <Module>.cfg with no target, <Module>_<W>.cfg for a
 // walk's witness, the configuration that enables a property, or one named as a file.
-function componentCfg(dir: string, module: string, target: string | null, walks: string[], problems: string[]): string | null {
+function partCfg(dir: string, module: string, target: string | null, walks: string[], problems: string[]): string | null {
   const model = join(dir, 'model');
   const exists = (f: string) => existsSync(join(model, f));
   if (!target) {

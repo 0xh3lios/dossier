@@ -1,4 +1,4 @@
-// What each completed answer of a component touched and covered, computed from its entry and never
+// What each completed answer of a part touched and covered, computed from its entry and never
 // from its reading. An answer covers a passage only when, had the passage been false of the model,
 // its trial would have returned otherwise.
 import type { Ir } from '../prose/ir.ts';

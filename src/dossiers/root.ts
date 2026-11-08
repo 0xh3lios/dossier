@@ -1,4 +1,4 @@
-// The dossiers root: a directory holding dossier.json, with components/ and systems/.
+// The dossiers root: a directory holding dossier.json, with parts/ and compositions/.
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
@@ -16,8 +16,8 @@ export interface Marker {
   note?: string;
   error?: string;
 }
-// A component or system dossier found under the root.
-export interface Located { kind: 'component' | 'system'; id: string; dir: string }
+// A part or composition dossier found under the root.
+export interface Located { kind: 'part' | 'composition'; id: string; dir: string }
 
 // A refusal the person fixes by naming something else: the command line prints it as
 // `dossier <command>: <message>` and exits 2, as for any other usage error.
@@ -38,10 +38,10 @@ export function idProblem(id: string): string | null {
   return DOSSIER_ID.test(id) ? null : `${JSON.stringify(id)} is not a dossier id: use lowercase letters and digits joined by single hyphens, starting with a letter, such as price-feed`;
 }
 
-// "components/<id>", "systems/<id>", or a bare id, split into the kind it names and the id.
-export function dossierName(name: string): { kind: 'components' | 'systems' | null; id: string } {
-  const m = String(name).match(/^(components|systems)\/([^/]*)\/?$/);
-  return m ? { kind: m[1] as 'components' | 'systems', id: m[2] } : { kind: null, id: String(name) };
+// "parts/<id>", "compositions/<id>", or a bare id, split into the kind it names and the id.
+export function dossierName(name: string): { kind: 'parts' | 'compositions' | null; id: string } {
+  const m = String(name).match(/^(parts|compositions)\/([^/]*)\/?$/);
+  return m ? { kind: m[1] as 'parts' | 'compositions', id: m[2] } : { kind: null, id: String(name) };
 }
 
 // --root, then DOSSIER_ROOT, then the nearest folder at or above cwd that is a root, holds
@@ -118,18 +118,18 @@ function markerProblem(marker: Record<string, unknown>): string | null {
   return null;
 }
 
-const folders = (root: string, kind: 'components' | 'systems'): string[] => {
+const folders = (root: string, kind: 'parts' | 'compositions'): string[] => {
   const dir = join(root, kind);
   if (!existsSync(dir)) return [];
-  return readdirSync(dir).filter(n => !n.startsWith('.') && !n.startsWith('_') && statSync(join(dir, n)).isDirectory() && existsSync(join(dir, n, kind === 'components' ? 'prose.md' : 'composition.md'))).sort();
+  return readdirSync(dir).filter(n => !n.startsWith('.') && !n.startsWith('_') && statSync(join(dir, n)).isDirectory() && existsSync(join(dir, n, kind === 'parts' ? 'prose.md' : 'wiring.md'))).sort();
 };
-export const listComponents = (root: string) => folders(root, 'components');
-export const listSystems = (root: string) => folders(root, 'systems');
+export const listParts = (root: string) => folders(root, 'parts');
+export const listCompositions = (root: string) => folders(root, 'compositions');
 
-// "components/timelock", "systems/control", or a bare id looked up in both: a component is a
-// folder with prose.md, a system one with composition.md. A name that is not a dossier id is
+// "parts/timelock", "compositions/control", or a bare id looked up in both: a part is a
+// folder with prose.md, a composition one with wiring.md. A name that is not a dossier id is
 // refused with the one message idProblem gives.
-// A dossier folder, and the components/ or systems/ folder above it, are directories of the root's own.
+// A dossier folder, and the parts/ or compositions/ folder above it, are directories of the root's own.
 // The commands write in them, so a link to a folder elsewhere would put records outside the root.
 export function dossierDirProblem(root: string, dir: string): string | null {
   for (const path of [dirname(dir), dir]) {
@@ -144,13 +144,13 @@ export function locate(root: string, name: string): Located | null {
   const { kind, id } = dossierName(name);
   const problem = idProblem(id);
   if (problem) throw new UsageError(problem);
-  const component: Located = { kind: 'component', id, dir: join(root, 'components', id) };
-  const system: Located = { kind: 'system', id, dir: join(root, 'systems', id) };
-  const isComponent = existsSync(join(component.dir, 'prose.md'));
-  const isSystem = existsSync(join(system.dir, 'composition.md'));
-  const found = kind === 'components' ? (isComponent ? component : null)
-    : kind === 'systems' ? (isSystem ? system : null)
-    : isComponent ? component : isSystem ? system : null;
+  const part: Located = { kind: 'part', id, dir: join(root, 'parts', id) };
+  const composition: Located = { kind: 'composition', id, dir: join(root, 'compositions', id) };
+  const isPart = existsSync(join(part.dir, 'prose.md'));
+  const isComposition = existsSync(join(composition.dir, 'wiring.md'));
+  const found = kind === 'parts' ? (isPart ? part : null)
+    : kind === 'compositions' ? (isComposition ? composition : null)
+    : isPart ? part : isComposition ? composition : null;
   const aliased = found && dossierDirProblem(root, found.dir);
   if (aliased) throw new UsageError(aliased);
   return found;

@@ -10,7 +10,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 const join_ = join;
 import { fileURLToPath } from 'node:url';
-import { listComponents, listSystems } from '../../src/dossiers/root.ts';
+import { listParts, listCompositions } from '../../src/dossiers/root.ts';
 import { completed, readEvidence, readingClassification } from '../../src/trials/answers.ts';
 import { forgottenAnswers, parseDecisions } from '../../src/dossiers/decisions.ts';
 import { readIntegrity } from '../../src/dossiers/integrity.ts';
@@ -22,8 +22,8 @@ import type { BackingState, Mark } from '../../src/verify/marks.ts';
 
 // The reviewed expectations for Harbor.
 interface ExpectedMarks {
-  components: Record<string, { tier: string; marks: Record<string, Pick<Mark, 'mark' | 'owner' | 'grounded'>>; backing: Record<string, BackingState['status']>; route: string; flags: string[] }>;
-  systems: Record<string, { cells: Record<string, { mark: CellMark; accepted: boolean }>; walks: Record<string, string>; propertyHeld: Record<string, string>; route: string; flags: string[] }>;
+  parts: Record<string, { tier: string; marks: Record<string, Pick<Mark, 'mark' | 'owner' | 'grounded'>>; backing: Record<string, BackingState['status']>; route: string; flags: string[] }>;
+  compositions: Record<string, { cells: Record<string, { mark: CellMark; accepted: boolean }>; walks: Record<string, string>; propertyHeld: Record<string, string>; route: string; flags: string[] }>;
 }
 
 const pluginRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
@@ -41,8 +41,8 @@ function verify(args: string[]) {
   return r;
 }
 const dossierDirs = () => [
-  ...listComponents(root).map(id => ({ kind: 'components', id, dir: join(root, 'components', id) })),
-  ...listSystems(root).map(id => ({ kind: 'systems', id, dir: join(root, 'systems', id) })),
+  ...listParts(root).map(id => ({ kind: 'parts', id, dir: join(root, 'parts', id) })),
+  ...listCompositions(root).map(id => ({ kind: 'compositions', id, dir: join(root, 'compositions', id) })),
 ];
 // Each dossier's entries in evidence/, by name, as the runner published them.
 const entriesOf = (dir: string): [string, Entry][] => {
@@ -120,11 +120,11 @@ test('verify needs no toolchain, exits 0, and every mark matches expected-marks.
   assert.equal(r.status, 0, r.stderr || r.stdout.slice(0, 500));
   const json = JSON.parse(r.stdout) as VerifyJson;
   assert.match(json.verify, /^verify: ok · /);
-  assert.deepEqual(json.components.map(c => c.id).sort(), Object.keys(expected.components).sort(), 'the same components');
-  assert.deepEqual(json.systems.map(s => s.id).sort(), Object.keys(expected.systems).sort(), 'the same systems');
+  assert.deepEqual(json.parts.map(c => c.id).sort(), Object.keys(expected.parts).sort(), 'the same parts');
+  assert.deepEqual(json.compositions.map(s => s.id).sort(), Object.keys(expected.compositions).sort(), 'the same compositions');
 
-  for (const [id, exp] of Object.entries(expected.components)) {
-    const c = json.components.find(x => x.id === id)!;
+  for (const [id, exp] of Object.entries(expected.parts)) {
+    const c = json.parts.find(x => x.id === id)!;
     assert.equal(c.tier, exp.tier, `${id} tier`);
     assert.deepEqual(c.tripwires, [], `${id} tripwires`);
     assert.deepEqual(Object.keys(c.marks).sort(), Object.keys(exp.marks).sort(), `${id} passages`);
@@ -137,8 +137,8 @@ test('verify needs no toolchain, exits 0, and every mark matches expected-marks.
     assert.equal(c.route.pass, exp.route, `${id} route`);
     assert.deepEqual(c.flags.map(f => f.name).sort(), exp.flags, `${id} flags`);
   }
-  for (const [id, exp] of Object.entries(expected.systems)) {
-    const s = json.systems.find(x => x.id === id)!;
+  for (const [id, exp] of Object.entries(expected.compositions)) {
+    const s = json.compositions.find(x => x.id === id)!;
     assert.deepEqual(s.tripwires, [], `${id} tripwires`);
     const cells = Object.fromEntries(s.cells.map(c => [`${c.property}|${c.scenario}`, { mark: c.mark, accepted: Boolean(c.accepted) }]));
     assert.deepEqual(cells, exp.cells, `${id} cells`);
@@ -150,16 +150,16 @@ test('verify needs no toolchain, exits 0, and every mark matches expected-marks.
 
   const brief = verify(['--brief']);
   assert.equal(brief.status, 0, brief.stdout);
-  assert.match(brief.stdout, /^verify: ok · \d+ components?, \d+ systems? · dossier /);
+  assert.match(brief.stdout, /^verify: ok · \d+ parts?, \d+ compositions? · dossier /);
 });
 
 // The fixture and the recorded outputs are published: none names a machine's paths or the machine.
 test('no fixture file and no recorded output names a machine path or the machine', () => {
-  // A path from the file system's root: a home, a temporary or a mounted folder, or any other such as /repo/.
+  // A path from the file composition's root: a home, a temporary or a mounted folder, or any other such as /repo/.
   // The runner writes the paths it knows as names ($PLUGIN, $DOSSIERS, $TRIAL, $INPUTS). A path counts where
   // it starts, not inside one such as $TRIAL/states/tmp/, and a URL's //host/ is not one.
   const MACHINE = /\/Users\/|\/home\/[a-z]|\/var\/folders\/|\/private\/(?:var|tmp)\/|[A-Z]:\\Users\\|(?<![\w.$/-])\/[A-Za-z][\w.-]*\//;
-  // TLC's banner names the machine's cores and heap, the process id, the system, and the JVM's vendor and
+  // TLC's banner names the machine's cores and heap, the process id, the composition, and the JVM's vendor and
   // architecture. A published file reads as the runner records it, and every banner carries the runner's
   // placeholders, whatever the vendor's name.
   const BANNER = /\b\d+ cores with\b|\b\d+MB heap\b|\[pid: (?!\$PID\] \(\$OS, \$JDK_VENDOR [\w.+-]+ \$JDK_ARCH, )/;
@@ -178,7 +178,7 @@ test('no fixture file and no recorded output names a machine path or the machine
 });
 
 test('a guarantee row names the backing its passage names', () => {
-  const adapter = readFileSync(join_(root, 'components', 'adapter', 'ledger.md'), 'utf8');
+  const adapter = readFileSync(join_(root, 'parts', 'adapter', 'ledger.md'), 'utf8');
   assert.ok(adapter.includes('\n| K1 | record adapter#property:held-equals-supply | backed |\n'), 'the adapter\'s record backing is printed as a record');
   for (const d of dossierDirs()) {
     const ledger = readFileSync(join_(d.dir, 'ledger.md'), 'utf8');

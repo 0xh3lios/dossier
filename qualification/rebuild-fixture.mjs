@@ -1,5 +1,5 @@
 // Rebuilds Harbor from the fixture's authored seed in an isolated output: draws every
-// component, scaffolds the models, writes the blunders through dossier blunder and the calls through
+// part, scaffolds the models, writes the blunders through dossier blunder and the calls through
 // dossier call, so that every call the tool writes is tried by the runner, runs every trial
 // through the runner, which publishes each answer to evidence/, writes the readings beside the
 // answers and the decisions, renders the views, verifies, and writes observed-marks.json for
@@ -20,8 +20,8 @@ import { createHash } from 'node:crypto';
 const plugin = dirname(dirname(fileURLToPath(import.meta.url)));
 const fixture = join(plugin, 'qualification', 'fixture');
 const bin = join(plugin, 'bin', 'dossier');
-const components = ['vault', 'adapter', 'token', 'timelock', 'breaker', 'oracle'];
-const systems = ['supply', 'control', 'upkeep'];
+const parts = ['vault', 'adapter', 'token', 'timelock', 'breaker', 'oracle'];
+const compositions = ['supply', 'control', 'upkeep'];
 const write = (path, text) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, text); };
 
 function statIfPresent(path) {
@@ -57,9 +57,9 @@ export function prepareFixture({ out } = {}) {
   if (existing && readdirSync(output).length) throw new Error('--out must be a new or empty folder; recheck an existing output instead of rebuilding into it');
 
   const seed = ['knowledge', 'protocol', 'tools', 'dossiers/actors', 'dossiers/README.md'];
-  for (const [kind, ids] of [['components', components], ['systems', systems]]) for (const id of ids) {
+  for (const [kind, ids] of [['parts', parts], ['compositions', compositions]]) for (const id of ids) {
     seed.push(`dossiers/${kind}/${id}/prose.md`);
-    if (kind === 'systems') seed.push(`dossiers/${kind}/${id}/composition.md`);
+    if (kind === 'compositions') seed.push(`dossiers/${kind}/${id}/wiring.md`);
     for (const name of ['doubts.md', 'margin.md']) if (existsSync(join(fixture, 'dossiers', kind, id, name))) seed.push(`dossiers/${kind}/${id}/${name}`);
   }
   for (const path of seed) isolatedTree(join(fixture, path));
@@ -68,7 +68,7 @@ export function prepareFixture({ out } = {}) {
   // The marker names the plugin that rebuilt the fixture, as setup would, never the one that built the last.
   marker.plugin = JSON.parse(readFileSync(join(plugin, 'package.json'), 'utf8')).version;
   for (const path of seed) { mkdirSync(dirname(join(output, path)), { recursive: true }); cpSync(join(fixture, path), join(output, path), { recursive: true, preserveTimestamps: true }); }
-  for (const [kind, ids] of [['components', components], ['systems', systems]]) for (const id of ids) {
+  for (const [kind, ids] of [['parts', parts], ['compositions', compositions]]) for (const id of ids) {
     write(join(root, kind, id, 'integrity.json'), JSON.stringify({ schema: 1, evidence: {}, decisionHead: null }, null, 2) + '\n');
   }
   // Commit the root format last: all visible dossiers start with empty authority.
@@ -86,40 +86,40 @@ export function ordinaryReading(result) {
   // These are review anchors, not generated goldens. If authored passages
   // change, review the corresponding interpretation before updating its anchor.
   const reviewedPassages = {
-    'components/adapter': '1515d02be7a705a745009959d894cac6f1b75e1a697a5c02cb47295e402667b4',
-    'components/breaker': '115d0b6a1af821a6d21f372d0ee8aff2225fa288bca0598b76af60b49f011b8f',
-    'components/oracle': '2b9e48459a52ea3dd4f35a8dda3588249df0cb2ff0a78434d442c763db1df4fd',
-    'components/timelock': 'a1cb53ca57edb14175f0cbf31a7e845aea7f37bbb4cb250d1ba0bc7cf25e6e40',
-    'components/token': '23759e76d0cc2569e491a0db2f45fbe522af681c141e6526113f86c930ce0824',
-    'components/vault': '99310772fe6973d4edcf3ff7dab4ac6ceca7a7ee2d7f27b4fee83c559ff9bbe5',
-    'systems/control': 'a31edd8f28c9685d2c91c7185b0d58c200c925214e4b1fe226ec593a01152d8b',
-    'systems/supply': '38e42430bddbbefa9e103e4f7818fe9f8c5f14e58c0530e6f09fc1ee29130c31',
-    'systems/upkeep': '57432ec9dea2c2fb3538234cfc23ba5447a80471e374c860768e78cf03a9dbae',
+    'parts/adapter': '1515d02be7a705a745009959d894cac6f1b75e1a697a5c02cb47295e402667b4',
+    'parts/breaker': '115d0b6a1af821a6d21f372d0ee8aff2225fa288bca0598b76af60b49f011b8f',
+    'parts/oracle': '2b9e48459a52ea3dd4f35a8dda3588249df0cb2ff0a78434d442c763db1df4fd',
+    'parts/timelock': 'a1cb53ca57edb14175f0cbf31a7e845aea7f37bbb4cb250d1ba0bc7cf25e6e40',
+    'parts/token': '23759e76d0cc2569e491a0db2f45fbe522af681c141e6526113f86c930ce0824',
+    'parts/vault': '99310772fe6973d4edcf3ff7dab4ac6ceca7a7ee2d7f27b4fee83c559ff9bbe5',
+    'compositions/control': 'a31edd8f28c9685d2c91c7185b0d58c200c925214e4b1fe226ec593a01152d8b',
+    'compositions/supply': '38e42430bddbbefa9e103e4f7818fe9f8c5f14e58c0530e6f09fc1ee29130c31',
+    'compositions/upkeep': '57432ec9dea2c2fb3538234cfc23ba5447a80471e374c860768e78cf03a9dbae',
   };
   const identity = createHash('sha256').update(JSON.stringify(Object.entries(result.snapshot.passages).sort())).digest('hex');
   if (identity !== reviewedPassages[result.dossier]) throw new Error('changed passages need a reviewed interpretation');
-  const component = result.dossier.replace(/^components\//, '');
-  const componentMeaning = {
+  const part = result.dossier.replace(/^parts\//, '');
+  const partMeaning = {
     vault: 'Borrow and repay change debt and credit together, move and release transfer credit between free and issued, and borrow respects the ceiling. This abstraction omits governance lowering the ceiling; a successful check does not resolve the rejected K4.',
-    adapter: 'Halt enters Halted and clears live; entries can continue while exits are refused. The component alone does not establish that its Vault and Token effects are delivered together.',
-    token: 'Mint is limited by the cap and burn lowers supply. Transfers leave supply unchanged. The component does not establish that minting is backed by credit in another module.',
+    adapter: 'Halt enters Halted and clears live; entries can continue while exits are refused. The part alone does not establish that its Vault and Token effects are delivered together.',
+    token: 'Mint is limited by the cap and burn lowers supply. Transfers leave supply unchanged. The part does not establish that minting is backed by credit in another module.',
     timelock: 'Execution requires remaining = 0 and only execution records early. Deadline and eventual-execution claims additionally depend on the prompt executor and ticking chain; the guard alone establishes neither.',
     breaker: 'The one successful stop moves Armed to Spent and sets halted. A second stop is refused by this abstraction; this result does not reconcile the knowledge record describing an idempotent repeated stop.',
     oracle: 'A post enters Fresh with stale = 0 and records the previous price in last. The price band depends on the lanes\' only-when assumptions, and freshness depends on a prompt lane. Neither assumption is a property of an arbitrary deployed keeper.',
   };
-  const systemMeaning = {
-    'systems/control': {
+  const compositionMeaning = {
+    'compositions/control': {
       A1: 'The property checks that timelock.early stays false. It does not establish that every possible governance change is delayed; the encoded plan and Vault change are narrower than that claim.',
       A2: 'The property checks that a halted Breaker implies a Halted Adapter. The composed step delivers the wired halt together with stop; runtime transaction coupling still requires grounding.',
       O1: 'The property checks eventual return to Idle after Scheduled under the encoded fairness assumptions. Those assumptions and the modeled free Vault sends require separate justification.',
       N1: 'The property checks the encoded deadline counter under this scenario. A prompt executor prevents a tick while execution is due; this result cannot be transferred to executor-offline or used to prove that the owner\'s intended real-time deadline has the same endpoint.',
     },
-    'systems/supply': {
+    'compositions/supply': {
       A1: 'The property is Vault conservation: debt equals free plus issued. Each modeled operation preserves that equation; it says nothing about prices or collateral.',
       A2: 'The property equates Token supply with Vault issued credit. Wiring credits and mints, or releases and burns, in the same modeled step; the proof relies on that transaction abstraction. The strengthened invariant also carries Vault conservation.',
       A3: 'The property equates Adapter held credit with Token supply. Wiring changes the two together. The strengthened invariant also carries Vault conservation; it does not model who holds the tokens.',
     },
-    'systems/upkeep': {
+    'compositions/upkeep': {
       A1: 'The price band follows the honest lanes\' only-when constraints. An arbitrary or captured lane is outside this successful scenario and may post a price outside the band.',
       N1: ({
         'all-honest': 'Both lanes are available and prompt; either can refresh a stale price before the next eligible tick.',
@@ -129,7 +129,7 @@ export function ordinaryReading(result) {
       })[result.scenario],
     },
   };
-  const meaning = componentMeaning[component] ?? systemMeaning[result.dossier]?.[result.property];
+  const meaning = partMeaning[part] ?? compositionMeaning[result.dossier]?.[result.property];
   if (!meaning) throw new Error(`no reviewed interpretation for ${result.dossier} ${result.property ?? result.kind} ${result.scenario ?? ''}`);
   const observed = Object.entries(result.outcomes).map(([id, outcome]) => `${id}: ${outcome}`).join('; ');
   let limit;
@@ -142,7 +142,7 @@ export function ordinaryReading(result) {
       throw new Error('an inductive reading requires successful base and step observations');
     }
     limit = 'Both stored base and step checks pass for the named invariant under the recorded constant initialization and TypeOK restrictions. This is induction over that model, not an unbounded claim about every deployment or unrelated property.';
-  } else if (result.kind === 'external' && result.dossier === 'components/token') {
+  } else if (result.kind === 'external' && result.dossier === 'parts/token') {
     if (result.evidence?.W1?.end?.state !== 'Live' || result.evidence?.W1?.end?.supply !== 0 || result.evidence?.W1?.problems?.length) {
       throw new Error('the Token replay observation no longer matches its reviewed interpretation');
     }
@@ -169,7 +169,7 @@ const controlInductionReading = result => {
   return `retelling: The stored induction counterexample has these Vault values:\n\n| State | debt | free | issued |\n| --- | --- | --- | --- |\n${rows.join('\n')}\n\nThe first state satisfies the proposed induction premise but violates the Vault's conservation relation. The step leaves TypeOK. This is an arbitrary induction state, not a reachable execution from Init.\nclassification: call was wrong\nThe call predicted TypeOK and A1 inductive on their own. Inv_A1_lemma in extras.tla adds the Vault's conservation, and the cell is tried again.\n`;
 };
 export function controlUnfairReading(result, output) {
-  if (result.result !== 'as-called' || result.dossier !== 'systems/control' || result.property !== 'O1' || result.outcomes.O1 !== 'violated') throw new Error('control liveness needs its recorded O1 violation');
+  if (result.result !== 'as-called' || result.dossier !== 'compositions/control' || result.property !== 'O1' || result.outcomes.O1 !== 'violated') throw new Error('control liveness needs its recorded O1 violation');
   const stutters = [...output.matchAll(/^(\d+): Stuttering[ \t]*$/gm)];
   const toolBacks = [...output.matchAll(/^(\d+): Back to state: <[^>\r\n]+>[ \t]*$/gm)];
   const textBacks = [...output.matchAll(/^(\d+): Back to state (\d+)(?:[ \t].*)?$/gm)];
@@ -197,13 +197,13 @@ export function controlUnfairReading(result, output) {
   const columns = ['timelock_state', 'timelock_remaining', 'vault_free', 'vault_issued'];
   const rows = states.map(step => `| ${step.index} | ${step.action} | ${columns.map(name => step.values[name]).join(' | ')} |`);
   const warnings = result.warnings?.length ? `\nChecker warnings:\n${result.warnings.map(warning => `- ${warning}`).join('\n')}\nA state-constrained liveness run must not be generalized to unconstrained behavior.\n` : '';
-  return `retelling: The stored counterexample takes these steps. Action labels are TLC's labels; state 1 is the initial state.\n\n| State | Action | Timelock | Remaining | Vault free | Vault issued |\n| --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nThe output closes the loop with: ${closing[0]}\n\n${behavior} Removing the executor's fairness lets the plan remain unresolved; O1 fails. The control composition leaves the Vault sends free, so this path is evidence about that abstraction, not a replay of complete transactions.\n${warnings}`;
+  return `retelling: The stored counterexample takes these steps. Action labels are TLC's labels; state 1 is the initial state.\n\n| State | Action | Timelock | Remaining | Vault free | Vault issued |\n| --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nThe output closes the loop with: ${closing[0]}\n\n${behavior} Removing the executor's fairness lets the plan remain unresolved; O1 fails. The control wiring leaves the Vault sends free, so this path is evidence about that abstraction, not a replay of complete transactions.\n${warnings}`;
 }
 
 function rebuildFixture(options) {
 for (const t of ['JAVA', 'TLA_TOOLS', 'ALLOY_JAR', 'APALACHE']) if (!process.env[t]) throw new Error(`${t} is not set; source .local/toolchain/env.sh`);
 const { output, root } = prepareFixture(options);
-const comp = id => join(root, 'components', id), sys = id => join(root, 'systems', id);
+const comp = id => join(root, 'parts', id), sys = id => join(root, 'compositions', id);
 const run = (args, { ok = [0], quiet = false } = {}) => {
   const r = spawnSync(bin, [...args, '--root', root], { cwd: output, encoding: 'utf8', env: process.env, maxBuffer: 64 * 1024 * 1024 });
   if (!quiet) console.log(`$ dossier ${args.join(' ')}\n${(r.stdout || '').trim()}${(r.stderr || '').trim() ? '\n' + r.stderr.trim() : ''}`);
@@ -212,7 +212,7 @@ const run = (args, { ok = [0], quiet = false } = {}) => {
   return r;
 };
 const trial = (name, callName, { expectExit = 0, read = null } = {}) => {
-  const dossier = name.startsWith('systems/') ? sys(name.split('/')[1]) : comp(name);
+  const dossier = name.startsWith('compositions/') ? sys(name.split('/')[1]) : comp(name);
   const trials = join(dossier, 'trials');
   const before = new Set(existsSync(trials) ? readdirSync(trials) : []);
   const r = run(['trial', name, `${callName}.md`], { ok: [0, 1, 3] });
@@ -230,7 +230,7 @@ const trial = (name, callName, { expectExit = 0, read = null } = {}) => {
 // The owner's forget of a surviving answer: the entry by name, at the first eight hex of the digest the
 // manifest binds. A superseded answer that holds a counterexample waits for it (ANSWER-DROP).
 const forget = (name, entry, words) => {
-  const dossier = name.startsWith('systems/') ? sys(name.split('/')[1]) : comp(name);
+  const dossier = name.startsWith('compositions/') ? sys(name.split('/')[1]) : comp(name);
   const bound = JSON.parse(readFileSync(join(dossier, 'integrity.json'), 'utf8')).evidence[entry];
   if (!bound) throw new Error(`${name}/evidence/${entry}.json is not bound`);
   run(['decide', name, 'forget', `${entry}@${bound.slice(0, 8)}`, '--', words]);
@@ -264,7 +264,7 @@ const witnessCall = (id, walk, reach, data, trace, because) => ask(id, `witness-
 const apalacheCall = (id, name, property, reach, because) => ask(id, name, 'apalache', property, { reach, expect: { [`Inv_${property}`]: 'holds' }, because });
 const replayCall = (id, reach, walks, because) => ask(id, 'replay', 'external', null, { runner: 'replay', reach, expect: Object.fromEntries(walks.map(w => [w, 'pass'])), because });
 
-// 2. Draw and scaffold every component.
+// 2. Draw and scaffold every part.
 for (const id of ['vault', 'adapter', 'token', 'timelock', 'breaker', 'oracle']) { run(['draw', id, '--brief']); run(['scaffold', id]); }
 
 // 3. Hand refinements: the Breaker's structure in Alloy.
@@ -280,7 +280,7 @@ assert A2_halts_from_governance { all h: Halt | h.by in Breaker and h.by.authori
 check A2_halts_from_governance for 4                      // reach: 4
 `);
 
-// 4. Blunders on the component models, each with its call.
+// 4. Blunders on the part models, each with its call.
 blunder('vault', 'lostfree', "    /\\ free' = (free + amount)\n    /\\ UNCHANGED <<issued, ceiling>>", "    /\\ UNCHANGED <<free, issued, ceiling>>", 'A1', 'amounts up to 2', 'borrow raises debt without crediting free');
 blunder('vault', 'noceiling', "    /\\ ((debt + amount) <= ceiling)\n", "", 'A2', 'amounts up to 2', 'borrow ignores the ceiling');
 blunder('adapter', 'stilllive', "  /\\ live' = FALSE\n", "  /\\ live' = live\n", 'A1', 'amounts up to 2', 'halt no longer clears live');
@@ -296,7 +296,7 @@ blunder('oracle', 'jumpy', "/\\ (((value + 1) >= price) /\\ (value <= (price + 1
 // The Alloy blunder: the seam no longer says who sends halts.
 blunder('breaker', 'rogue', "fact X1_halt_by_breaker { all h: Halt | h.by in Breaker }  // X1: halt crosses from Breaker to Adapter\n", "", null, 'scope 4', 'the seam no longer says halts come from Breakers', { base: 'Breaker.als', because: 'An Other may send a halt, and the assert finds it.' });
 
-// 5. Calls and trials, component by component.
+// 5. Calls and trials, part by part.
 
 // vault
 chartCall('vault', 'the chart over debt, free, issued 0..4 and ceiling 2..4');
@@ -371,7 +371,7 @@ trial('breaker', 'blunder-unhalted', { read: 'blunder: Spent with halted clear; 
 
 // oracle
 chartCall('oracle', 'the chart over stale 0..3, price and last 0..4');
-tlcCall('oracle', 'ordinary', null, 'stale up to 3; price up to 4', { TypeOK: 'holds', A1: 'holds', A2: 'holds', N1: 'holds' }, 'A1: both posts set stale to 0 as they enter Fresh. A2: a post moves the price by at most one step and last follows it, which the only-when Givens enforce in the component model. N1: a prompt lane posts before the next tick.');
+tlcCall('oracle', 'ordinary', null, 'stale up to 3; price up to 4', { TypeOK: 'holds', A1: 'holds', A2: 'holds', N1: 'holds' }, 'A1: both posts set stale to 0 as they enter Fresh. A2: a post moves the price by at most one step and last follows it, which the only-when Givens enforce in the part model. N1: a prompt lane posts before the next tick.');
 witnessCall('oracle', 'W1', 'stale up to 3', 'stale', 'Fresh/0 > Stale/1 > Fresh/0', 'W1 ticks once and lane A posts: M1 then M4.');
 trial('oracle', 'chart');
 trial('oracle', 'ordinary');
@@ -382,91 +382,91 @@ trial('oracle', 'blunder-unrefreshed', { read: 'blunder: a post leaves stale at 
 trial('oracle', 'blunder-idlelanes', { read: 'blunder: ticks no longer wait for a due post; two ticks in Stale take the counter past 1 and N1 fails.\n' });
 trial('oracle', 'blunder-jumpy', { read: 'blunder: the only-when Givens no longer bind the posts. A post of 0 after a price of 2 leaves last at 2 and price at 0; A2 fails on the first post. A2 is not hollow: it rests on G3 and G4.\n' });
 
-// 6. Systems: generate, then one trial per cell plus blunders.
+// 6. Compositions: generate, then one trial per cell plus blunders.
 write(join(sys('supply'), 'model', 'extras.tla'), `\\* Lemmas for the inductive proofs: A1 bounds free by debt, which TypeOK alone does not.\nInv_A2_lemma == TypeOK /\\ A1 /\\ A2\nInv_A3_lemma == TypeOK /\\ A1 /\\ A3\n`);
 for (const id of ['supply', 'control', 'upkeep']) run(['scaffold', id]);
-// The reach of a system's TLC cells, in the words of the data that system holds.
+// The reach of a composition's TLC cells, in the words of the data that composition holds.
 const REACH = { Supply: 'amounts up to 2; debt, free, issued, held and supply up to 4; effects up to 4', Control: 'delay 2; amounts up to 2; ceiling 2..4; effects up to 4', Upkeep: 'stale up to 3; price and last up to 4; clock up to 2; effects up to 4' };
 // A cell: TLC under its scenario, or Apalache's induction, whose invariant past A1 carries A1 as a lemma.
-const systemCall = (id, name, prop, scenario, because, kind = 'tlc') => {
+const compositionCall = (id, name, prop, scenario, because, kind = 'tlc') => {
   const module = id[0].toUpperCase() + id.slice(1);
-  if (kind === 'tlc') return ask(`systems/${id}`, name, 'tlc', prop, { scenario, reach: REACH[module], expect: { ...(/^O/.test(prop) ? {} : { TypeOK: 'holds' }), [prop]: 'holds' }, because });
+  if (kind === 'tlc') return ask(`compositions/${id}`, name, 'tlc', prop, { scenario, reach: REACH[module], expect: { ...(/^O/.test(prop) ? {} : { TypeOK: 'holds' }), [prop]: 'holds' }, because });
   const inv = `Inv_${prop}${prop === 'A1' ? '' : '_lemma'}`;
-  return ask(`systems/${id}`, name, 'apalache', prop, { scenario, inv: prop === 'A1' ? null : inv, reach: `unbounded; TypeOK${prop === 'A1' ? '' : ', A1'} and ${prop} inductive`, expect: { [inv]: 'holds' }, because });
+  return ask(`compositions/${id}`, name, 'apalache', prop, { scenario, inv: prop === 'A1' ? null : inv, reach: `unbounded; TypeOK${prop === 'A1' ? '' : ', A1'} and ${prop} inductive`, expect: { [inv]: 'holds' }, because });
 };
-const violatedCall = (id, name, prop, scenario, because) => ask(`systems/${id}`, name, 'tlc', prop, { scenario, reach: REACH[id[0].toUpperCase() + id.slice(1)], expect: { TypeOK: 'holds', [prop]: 'violated' }, because });
-const systemBlunder = (id, copy, from, to, prop, scenario, wrong, { all = false } = {}) => blunder(`systems/${id}`, copy, from, to, prop, 'amounts up to 2', wrong, { scenario, all, because: `With the wrong in place ${prop} fails on a short path under ${scenario}.` });
+const violatedCall = (id, name, prop, scenario, because) => ask(`compositions/${id}`, name, 'tlc', prop, { scenario, reach: REACH[id[0].toUpperCase() + id.slice(1)], expect: { TypeOK: 'holds', [prop]: 'violated' }, because });
+const compositionBlunder = (id, copy, from, to, prop, scenario, wrong, { all = false } = {}) => blunder(`compositions/${id}`, copy, from, to, prop, 'amounts up to 2', wrong, { scenario, all, because: `With the wrong in place ${prop} fails on a short path under ${scenario}.` });
 
 // supply: proved under all-honest, checked under user-malicious
-for (const p of ['A1', 'A2', 'A3']) systemCall('supply', `${p.toLowerCase()}-all-honest`, p, 'all-honest', `${p} is preserved by every wired step: credit moves and HRD mints happen together.`, 'apalache');
-for (const p of ['A1', 'A2', 'A3']) systemCall('supply', `${p.toLowerCase()}-user-malicious`, p, 'user-malicious', `A malicious user has no Given to cancel; the wiring alone keeps ${p}.`);
-ask('systems/supply', 'witness-w1', 'tlc', 'W1', { scenario: 'all-honest', reach: REACH.Supply, 'trace-data': 'vault_debt, adapter_held, token_supply', expect: { TypeOK: 'holds', NotW1: 'violated; trace: 0/0/0 > 2/0/0 > 2/2/2 > 2/1/1' }, because: 'W1 borrows 2 in the Vault, exits 2 through the Adapter, which takes the credit and mints 2 HRD in one wired step, and enters 1, which releases 1 and burns 1 in one wired step.' });
-systemBlunder('supply', 'doublemint', "token_supply' = (token_supply + amount)", "token_supply' = (token_supply + amount + amount)", 'A2', 'all-honest', 'the adapter mints twice the credit it takes');
-systemBlunder('supply', 'lostcredit', "    /\\ vault_free' = (vault_free + amount)\n", "    /\\ vault_free' = vault_free\n", 'A1', 'all-honest', 'borrow raises debt without crediting free');
-systemBlunder('supply', 'helddrift', "    /\\ adapter_held' = (adapter_held - amount)\n", "    /\\ adapter_held' = adapter_held\n", 'A3', 'all-honest', 'enter burns HRD without releasing held credit', { all: true });
-for (const c of ['a1-all-honest', 'a2-all-honest', 'a3-all-honest', 'a1-user-malicious', 'a2-user-malicious', 'a3-user-malicious']) trial('systems/supply', c);
-trial('systems/supply', 'blunder-doublemint', { read: 'blunder: mint credits twice the amount moved. After one exit of 1 the supply is 2 against issued 1; A2 fails.\n' });
-trial('systems/supply', 'blunder-lostcredit', { read: 'blunder: borrow raises debt alone; A1 fails after one borrow.\n' });
-trial('systems/supply', 'blunder-helddrift', { read: 'blunder: enter burns without lowering held; A3 fails after exit then enter.\n' });
-trial('systems/supply', 'witness-w1', { read: 'retelling: 0/0/0 --borrow 2--> 2/0/0 --exit 2--> 2/2/2, move and mint in one step --enter 1--> 2/1/1, release and burn in one step. The trace is W1 step for step under all-honest.\ncovers: W1 by the matched trace.\n' });
+for (const p of ['A1', 'A2', 'A3']) compositionCall('supply', `${p.toLowerCase()}-all-honest`, p, 'all-honest', `${p} is preserved by every wired step: credit moves and HRD mints happen together.`, 'apalache');
+for (const p of ['A1', 'A2', 'A3']) compositionCall('supply', `${p.toLowerCase()}-user-malicious`, p, 'user-malicious', `A malicious user has no Given to cancel; the wiring alone keeps ${p}.`);
+ask('compositions/supply', 'witness-w1', 'tlc', 'W1', { scenario: 'all-honest', reach: REACH.Supply, 'trace-data': 'vault_debt, adapter_held, token_supply', expect: { TypeOK: 'holds', NotW1: 'violated; trace: 0/0/0 > 2/0/0 > 2/2/2 > 2/1/1' }, because: 'W1 borrows 2 in the Vault, exits 2 through the Adapter, which takes the credit and mints 2 HRD in one wired step, and enters 1, which releases 1 and burns 1 in one wired step.' });
+compositionBlunder('supply', 'doublemint', "token_supply' = (token_supply + amount)", "token_supply' = (token_supply + amount + amount)", 'A2', 'all-honest', 'the adapter mints twice the credit it takes');
+compositionBlunder('supply', 'lostcredit', "    /\\ vault_free' = (vault_free + amount)\n", "    /\\ vault_free' = vault_free\n", 'A1', 'all-honest', 'borrow raises debt without crediting free');
+compositionBlunder('supply', 'helddrift', "    /\\ adapter_held' = (adapter_held - amount)\n", "    /\\ adapter_held' = adapter_held\n", 'A3', 'all-honest', 'enter burns HRD without releasing held credit', { all: true });
+for (const c of ['a1-all-honest', 'a2-all-honest', 'a3-all-honest', 'a1-user-malicious', 'a2-user-malicious', 'a3-user-malicious']) trial('compositions/supply', c);
+trial('compositions/supply', 'blunder-doublemint', { read: 'blunder: mint credits twice the amount moved. After one exit of 1 the supply is 2 against issued 1; A2 fails.\n' });
+trial('compositions/supply', 'blunder-lostcredit', { read: 'blunder: borrow raises debt alone; A1 fails after one borrow.\n' });
+trial('compositions/supply', 'blunder-helddrift', { read: 'blunder: enter burns without lowering held; A3 fails after exit then enter.\n' });
+trial('compositions/supply', 'witness-w1', { read: 'retelling: 0/0/0 --borrow 2--> 2/0/0 --exit 2--> 2/2/2, move and mint in one step --enter 1--> 2/1/1, release and burn in one step. The trace is W1 step for step under all-honest.\ncovers: W1 by the matched trace.\n' });
 
 // control
-systemCall('control', 'a1-all-honest', 'A1', 'all-honest', 'execute is guarded by remaining 0 in the Timelock, whoever Governance is.', 'apalache');
-systemCall('control', 'a1-governance-captured', 'A1', 'governance-captured', 'Captured Governance schedules and cancels at will but cannot execute early.');
-systemCall('control', 'a1-executor-offline', 'A1', 'executor-offline', 'With no executor nothing executes at all.');
-systemCall('control', 'a2-all-honest', 'A2', 'all-honest', 'stop sets halted and the wired halt moves the Adapter to Halted in the same step.');
-systemCall('control', 'a2-governance-captured', 'A2', 'governance-captured', 'The wiring does not depend on Governance being honest.');
-ask('systems/control', 'o1-all-honest', 'tlc', 'O1', { scenario: 'all-honest', reach: 'delay 2; effects up to 4', expect: { O1: 'holds' }, because: 'The chain keeps ticking and a prompt executor runs the plan once its delay is out, or Governance cancels it.' });
-systemCall('control', 'n1-all-honest', 'N1', 'all-honest', 'Two ticks exhaust the delay and the prompt executor fires before a third.');
-systemCall('control', 'n1-governance-captured', 'N1', 'governance-captured', 'Captured Governance can only cancel sooner.');
+compositionCall('control', 'a1-all-honest', 'A1', 'all-honest', 'execute is guarded by remaining 0 in the Timelock, whoever Governance is.', 'apalache');
+compositionCall('control', 'a1-governance-captured', 'A1', 'governance-captured', 'Captured Governance schedules and cancels at will but cannot execute early.');
+compositionCall('control', 'a1-executor-offline', 'A1', 'executor-offline', 'With no executor nothing executes at all.');
+compositionCall('control', 'a2-all-honest', 'A2', 'all-honest', 'stop sets halted and the wired halt moves the Adapter to Halted in the same step.');
+compositionCall('control', 'a2-governance-captured', 'A2', 'governance-captured', 'The wiring does not depend on Governance being honest.');
+ask('compositions/control', 'o1-all-honest', 'tlc', 'O1', { scenario: 'all-honest', reach: 'delay 2; effects up to 4', expect: { O1: 'holds' }, because: 'The chain keeps ticking and a prompt executor runs the plan once its delay is out, or Governance cancels it.' });
+compositionCall('control', 'n1-all-honest', 'N1', 'all-honest', 'Two ticks exhaust the delay and the prompt executor fires before a third.');
+compositionCall('control', 'n1-governance-captured', 'N1', 'governance-captured', 'Captured Governance can only cancel sooner.');
 violatedCall('control', 'n1-executor-offline', 'N1', 'executor-offline', 'With the executor offline a scheduled plan is never executed and the ticks pass; the counter exceeds 3.');
-ask('systems/control', 'witness-w1', 'tlc', 'W1', { scenario: 'governance-captured', reach: REACH.Control, 'trace-data': 'timelock_state, timelock_remaining, vault_ceiling', expect: { TypeOK: 'holds', NotW1: 'violated; trace: Idle/0/2 > Scheduled/2/2 > Scheduled/1/2 > Scheduled/0/2 > Idle/0/3' }, because: "Under captured Governance W1 schedules, is refused an early execute, waits two ticks and executes, and the wired change raises the Vault's ceiling to 3. The refused execute leaves no state." });
-systemBlunder('control', 'early', "  /\\ (timelock_remaining = 0)\n  /\\ timelock_state' = \"Idle\"", "  /\\ timelock_state' = \"Idle\"", 'A1', 'all-honest', 'execute no longer waits for the delay');
-systemBlunder('control', 'impatient', "TickStep == (Mode_chain /= \"offline\") /\\ Tick /\\ ~Due_public", "TickStep == (Mode_chain /= \"offline\") /\\ Tick", 'N1', 'all-honest', 'the chain ticks while an execute is due');
-systemBlunder('control', 'unfair', "        /\\ WF_vars(HonestPublic_timelock_Execute)        \\* from control.G1 timelock.G1\n", "", 'O1', 'all-honest', 'the executor is no longer fair');
-systemBlunder('control', 'unrelayed', "/\\ (adapter_state = \"Open\" /\\ adapter_state' = \"Halted\" /\\ adapter_live' = FALSE /\\ UNCHANGED <<adapter_held, adapter_sent_move, adapter_sent_release, adapter_sent_mint, adapter_sent_burn>>)", "/\\ (adapter_state = \"Open\" /\\ UNCHANGED <<adapter_state, adapter_held, adapter_live, adapter_sent_move, adapter_sent_release, adapter_sent_mint, adapter_sent_burn>>)", 'A2', 'all-honest', 'the breaker records a halt the adapter never receives');
-const plainA1 = trial('systems/control', 'a1-all-honest', { expectExit: 1, read: controlInductionReading });
+ask('compositions/control', 'witness-w1', 'tlc', 'W1', { scenario: 'governance-captured', reach: REACH.Control, 'trace-data': 'timelock_state, timelock_remaining, vault_ceiling', expect: { TypeOK: 'holds', NotW1: 'violated; trace: Idle/0/2 > Scheduled/2/2 > Scheduled/1/2 > Scheduled/0/2 > Idle/0/3' }, because: "Under captured Governance W1 schedules, is refused an early execute, waits two ticks and executes, and the wired change raises the Vault's ceiling to 3. The refused execute leaves no state." });
+compositionBlunder('control', 'early', "  /\\ (timelock_remaining = 0)\n  /\\ timelock_state' = \"Idle\"", "  /\\ timelock_state' = \"Idle\"", 'A1', 'all-honest', 'execute no longer waits for the delay');
+compositionBlunder('control', 'impatient', "TickStep == (Mode_chain /= \"offline\") /\\ Tick /\\ ~Due_public", "TickStep == (Mode_chain /= \"offline\") /\\ Tick", 'N1', 'all-honest', 'the chain ticks while an execute is due');
+compositionBlunder('control', 'unfair', "        /\\ WF_vars(HonestPublic_timelock_Execute)        \\* from control.G1 timelock.G1\n", "", 'O1', 'all-honest', 'the executor is no longer fair');
+compositionBlunder('control', 'unrelayed', "/\\ (adapter_state = \"Open\" /\\ adapter_state' = \"Halted\" /\\ adapter_live' = FALSE /\\ UNCHANGED <<adapter_held, adapter_sent_move, adapter_sent_release, adapter_sent_mint, adapter_sent_burn>>)", "/\\ (adapter_state = \"Open\" /\\ UNCHANGED <<adapter_state, adapter_held, adapter_live, adapter_sent_move, adapter_sent_release, adapter_sent_mint, adapter_sent_burn>>)", 'A2', 'all-honest', 'the breaker records a halt the adapter never receives');
+const plainA1 = trial('compositions/control', 'a1-all-honest', { expectExit: 1, read: controlInductionReading });
 // The plain call was wrong. Once the lemma question answers the cell, this answer is superseded, and the
 // owner's forget lets its counterexample go with that publication.
-forget('systems/control', plainA1, 'the plain inductive call was wrong; the lemma question answers the cell');
+forget('compositions/control', plainA1, 'the plain inductive call was wrong; the lemma question answers the cell');
 write(join(sys('control'), 'model', 'extras.tla'), `\\* Lemma for the inductive proof: the Vault's conservation bounds free by debt, which TypeOK alone does not.\nInv_A1_lemma == TypeOK /\\ (vault_debt = vault_free + vault_issued) /\\ A1\n`);
-ask('systems/control', 'a1-all-honest-strengthened', 'apalache', 'A1', { scenario: 'all-honest', inv: 'Inv_A1_lemma', reach: "unbounded; TypeOK, the Vault's conservation and A1 inductive", expect: { Inv_A1_lemma: 'holds' }, because: "execute is guarded by remaining 0 whoever Governance is, and the conservation lemma keeps the Vault's data within TypeOK." });
-trial('systems/control', 'a1-all-honest-strengthened', { read: 'Inv_A1_lemma carries the Vault\'s conservation. The step and the base pass. The plain call\'s miscall was classified and the owner forgot it, and the publication of this answer removed it.\n' });
-for (const c of ['a1-governance-captured', 'a1-executor-offline', 'a2-all-honest', 'a2-governance-captured', 'o1-all-honest', 'n1-all-honest', 'n1-governance-captured']) trial('systems/control', c);
-trial('systems/control', 'n1-executor-offline', { read: 'retelling: schedule, tick, tick, tick, tick: the plan is ready after two ticks and nobody executes it; N1 fails as called. This cell is violated by design of the scenario: the executor is the public, and an offline public is what N1 is conditioned on.\n' });
-trial('systems/control', 'blunder-early', { read: 'blunder: execute ignores the delay; early is set on the first execute and A1 fails.\n' });
-trial('systems/control', 'blunder-unrelayed', { read: 'blunder: stop no longer reaches the Adapter. halted is set while the Adapter stays Open; A2 fails.\n' });
-trial('systems/control', 'blunder-impatient', { read: 'blunder: ticks no longer wait for a due execute; four ticks in Scheduled take the counter past 3 and N1 fails. N1 is not hollow.\n' });
-trial('systems/control', 'blunder-unfair', { read: controlUnfairReading });
-trial('systems/control', 'witness-w1', { read: 'retelling: Idle/0/2 --schedule--> Scheduled/2/2 --execute, refused-- --tick--> Scheduled/1/2 --tick--> Scheduled/0/2 --execute--> Idle/0/3, change raising the ceiling. The trace is W1 step for step under governance-captured.\ncovers: W1 by the matched trace.\n' });
+ask('compositions/control', 'a1-all-honest-strengthened', 'apalache', 'A1', { scenario: 'all-honest', inv: 'Inv_A1_lemma', reach: "unbounded; TypeOK, the Vault's conservation and A1 inductive", expect: { Inv_A1_lemma: 'holds' }, because: "execute is guarded by remaining 0 whoever Governance is, and the conservation lemma keeps the Vault's data within TypeOK." });
+trial('compositions/control', 'a1-all-honest-strengthened', { read: 'Inv_A1_lemma carries the Vault\'s conservation. The step and the base pass. The plain call\'s miscall was classified and the owner forgot it, and the publication of this answer removed it.\n' });
+for (const c of ['a1-governance-captured', 'a1-executor-offline', 'a2-all-honest', 'a2-governance-captured', 'o1-all-honest', 'n1-all-honest', 'n1-governance-captured']) trial('compositions/control', c);
+trial('compositions/control', 'n1-executor-offline', { read: 'retelling: schedule, tick, tick, tick, tick: the plan is ready after two ticks and nobody executes it; N1 fails as called. This cell is violated by design of the scenario: the executor is the public, and an offline public is what N1 is conditioned on.\n' });
+trial('compositions/control', 'blunder-early', { read: 'blunder: execute ignores the delay; early is set on the first execute and A1 fails.\n' });
+trial('compositions/control', 'blunder-unrelayed', { read: 'blunder: stop no longer reaches the Adapter. halted is set while the Adapter stays Open; A2 fails.\n' });
+trial('compositions/control', 'blunder-impatient', { read: 'blunder: ticks no longer wait for a due execute; four ticks in Scheduled take the counter past 3 and N1 fails. N1 is not hollow.\n' });
+trial('compositions/control', 'blunder-unfair', { read: controlUnfairReading });
+trial('compositions/control', 'witness-w1', { read: 'retelling: Idle/0/2 --schedule--> Scheduled/2/2 --execute, refused-- --tick--> Scheduled/1/2 --tick--> Scheduled/0/2 --execute--> Idle/0/3, change raising the ceiling. The trace is W1 step for step under governance-captured.\ncovers: W1 by the matched trace.\n' });
 
 // upkeep
-systemCall('upkeep', 'n1-all-honest', 'N1', 'all-honest', 'Either prompt lane posts before the next block.');
-systemCall('upkeep', 'n1-lane-a-offline', 'N1', 'lane-a-offline', 'Lane B alone is prompt enough.');
+compositionCall('upkeep', 'n1-all-honest', 'N1', 'all-honest', 'Either prompt lane posts before the next block.');
+compositionCall('upkeep', 'n1-lane-a-offline', 'N1', 'lane-a-offline', 'Lane B alone is prompt enough.');
 violatedCall('upkeep', 'n1-lanes-offline', 'N1', 'lanes-offline', 'With both lanes offline the oracle goes stale and stays so; the second tick breaks N1.');
-ask('systems/upkeep', 'n1-lanes-offline-bounded', 'apalache', 'N1', { scenario: 'lanes-offline', mode: 'bounded', length: 4, inv: 'N1', reach: '4 steps', expect: { N1: 'violated' }, because: 'Three ticks suffice: the counter reaches 2.' });
-systemCall('upkeep', 'n1-lanes-down-one', 'N1', 'lanes-down-one', 'Both lanes are down for the first block only. The tick that makes the price stale ends the window, and a prompt lane posts before the next tick.');
+ask('compositions/upkeep', 'n1-lanes-offline-bounded', 'apalache', 'N1', { scenario: 'lanes-offline', mode: 'bounded', length: 4, inv: 'N1', reach: '4 steps', expect: { N1: 'violated' }, because: 'Three ticks suffice: the counter reaches 2.' });
+compositionCall('upkeep', 'n1-lanes-down-one', 'N1', 'lanes-down-one', 'Both lanes are down for the first block only. The tick that makes the price stale ends the window, and a prompt lane posts before the next tick.');
 violatedCall('upkeep', 'n1-lanes-down-two', 'N1', 'lanes-down-two', 'Both lanes are down for two blocks. The first tick makes the price stale and the second passes with nobody to post; the counter exceeds 1.');
-systemCall('upkeep', 'n1-stale-start', 'N1', 'stale-start', 'The price starts three blocks stale with both lanes live, and a prompt lane posts before the next tick.');
-systemCall('upkeep', 'a1-all-honest', 'A1', 'all-honest', 'An honest lane posts a price within one step of the current one, and last follows the price, so the two never differ by more than one.');
+compositionCall('upkeep', 'n1-stale-start', 'N1', 'stale-start', 'The price starts three blocks stale with both lanes live, and a prompt lane posts before the next tick.');
+compositionCall('upkeep', 'a1-all-honest', 'A1', 'all-honest', 'An honest lane posts a price within one step of the current one, and last follows the price, so the two never differ by more than one.');
 violatedCall('upkeep', 'a1-lane-a-captured', 'A1', 'lane-a-captured', 'A captured lane A posts any price. One post of 0 after a price of 2 puts last two steps from price.');
-systemBlunder('upkeep', 'idlelanes', "TickStep == (Mode_chain /= \"offline\") /\\ Tick /\\ ~Due_lane_a /\\ ~Due_lane_b", "TickStep == (Mode_chain /= \"offline\") /\\ Tick", 'N1', 'all-honest', 'the chain ticks while a post is due');
+compositionBlunder('upkeep', 'idlelanes', "TickStep == (Mode_chain /= \"offline\") /\\ Tick /\\ ~Due_lane_a /\\ ~Due_lane_b", "TickStep == (Mode_chain /= \"offline\") /\\ Tick", 'N1', 'all-honest', 'the chain ticks while a post is due');
 // The honest lanes' only-when conditions become comments, each line where it stood.
-systemBlunder('upkeep', 'jumpy', "    /\\ (ModeNow_lane_", "    \\* (ModeNow_lane_", 'A1', 'all-honest', 'the lanes may post any price', { all: true });
-trial('systems/upkeep', 'n1-all-honest');
-trial('systems/upkeep', 'n1-lane-a-offline');
-const lanesOffline = trial('systems/upkeep', 'n1-lanes-offline', { read: 'retelling: tick, tick: Stale with the counter at 2 and no lane to post. N1 fails as called; the cell is the point of the scenario.\n' });
-trial('systems/upkeep', 'n1-lanes-offline-bounded', { read: 'Apalache finds the same two-tick path symbolically, and its answer stands in for TLC\'s on this cell.\n' });
+compositionBlunder('upkeep', 'jumpy', "    /\\ (ModeNow_lane_", "    \\* (ModeNow_lane_", 'A1', 'all-honest', 'the lanes may post any price', { all: true });
+trial('compositions/upkeep', 'n1-all-honest');
+trial('compositions/upkeep', 'n1-lane-a-offline');
+const lanesOffline = trial('compositions/upkeep', 'n1-lanes-offline', { read: 'retelling: tick, tick: Stale with the counter at 2 and no lane to post. N1 fails as called; the cell is the point of the scenario.\n' });
+trial('compositions/upkeep', 'n1-lanes-offline-bounded', { read: 'Apalache finds the same two-tick path symbolically, and its answer stands in for TLC\'s on this cell.\n' });
 // Two answers on one cell: Apalache's, established later, stands in for TLC's, which holds a
 // counterexample and so waits for the owner's forget. The next publication removes it.
-forget('systems/upkeep', lanesOffline, 'Apalache found the same two-tick path symbolically; one answer on this cell is enough');
-trial('systems/upkeep', 'n1-lanes-down-one');
-trial('systems/upkeep', 'n1-lanes-down-two', { read: 'retelling: tick, tick: the first tick makes the price stale with both lanes still down, the second passes before the window ends, and the counter reaches 2. N1 fails as called; one block of outage is survivable and two are not.\n' });
-trial('systems/upkeep', 'n1-stale-start');
-trial('systems/upkeep', 'a1-all-honest');
-trial('systems/upkeep', 'a1-lane-a-captured', { read: 'retelling: tick, then lane A posts 0 while the price is 2: last becomes 2 and price 0, two steps apart. A1 fails as called; the band holds only while the lanes are honest, which is what G3 and G4 say.\n' });
-trial('systems/upkeep', 'blunder-idlelanes', { read: 'blunder: ticks no longer wait for due posts; N1 fails after two ticks under all-honest. N1 is not hollow.\n' });
-trial('systems/upkeep', 'blunder-jumpy', { read: 'blunder: the only-when Givens no longer bind the posts under all-honest; one post jumps the price and A1 fails. A1 is not hollow: it rests on G3 and G4.\n' });
+forget('compositions/upkeep', lanesOffline, 'Apalache found the same two-tick path symbolically; one answer on this cell is enough');
+trial('compositions/upkeep', 'n1-lanes-down-one');
+trial('compositions/upkeep', 'n1-lanes-down-two', { read: 'retelling: tick, tick: the first tick makes the price stale with both lanes still down, the second passes before the window ends, and the counter reaches 2. N1 fails as called; one block of outage is survivable and two are not.\n' });
+trial('compositions/upkeep', 'n1-stale-start');
+trial('compositions/upkeep', 'a1-all-honest');
+trial('compositions/upkeep', 'a1-lane-a-captured', { read: 'retelling: tick, then lane A posts 0 while the price is 2: last becomes 2 and price 0, two steps apart. A1 fails as called; the band holds only while the lanes are honest, which is what G3 and G4 say.\n' });
+trial('compositions/upkeep', 'blunder-idlelanes', { read: 'blunder: ticks no longer wait for due posts; N1 fails after two ticks under all-honest. N1 is not hollow.\n' });
+trial('compositions/upkeep', 'blunder-jumpy', { read: 'blunder: the only-when Givens no longer bind the posts under all-honest; one post jumps the price and A1 fails. A1 is not hollow: it rests on G3 and G4.\n' });
 
 // 7. Decisions and a doubt, in the owners' words.
 run(['decide', 'vault', 'accept', 'S1', 'E1', 'E2', 'E3', 'E4', 'E5', 'M1', 'M2', 'M3', 'M4', 'A1', 'A2', '--', 'the ledger as deployed: debt, free and issued, and the ceiling as the only limit']);
@@ -475,11 +475,11 @@ run(['decide', 'adapter', 'accept', 'S1', 'S2', 'E1', 'E2', 'E3', 'M1', 'M2', 'M
 run(['decide', 'timelock', 'accept', 'S1', 'S2', 'E1', 'E2', 'E3', 'E4', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'A1', 'N1', 'G1', 'G2', '--', 'two blocks of delay, then anyone executes']);
 run(['decide', 'token', 'accept', 'S1', 'E1', 'E2', 'E3', 'M1', 'M2', 'M3', 'A1', '--', 'only the adapter mints and burns']);
 run(['decide', 'breaker', 'accept', 'S1', 'S2', 'E1', 'M1', 'A1', 'A2', '--', 'a breaker halts and that is all']);
-run(['decide', 'systems/supply', 'accept', 'A1', 'A2', 'A3', '--', 'supply equals issued credit equals held credit']);
-run(['decide', 'systems/upkeep', 'risk', 'N1', 'lanes-offline', '--', 'both lanes down is an incident, not a design flaw']);
-run(['decide', 'systems/upkeep', 'risk', 'N1', 'lanes-down-two', '--', 'two blocks without a lane is the same incident, shorter; one block is what the lanes are sized for']);
-run(['decide', 'systems/upkeep', 'risk', 'A1', 'lane-a-captured', '--', 'a captured lane posts any price; the band is what honest lanes promise, not what the Oracle enforces']);
-run(['decide', 'systems/control', 'risk', 'N1', 'executor-offline', '--', 'an offline executor is the very thing N1 is conditioned on; governance re-plans']);
+run(['decide', 'compositions/supply', 'accept', 'A1', 'A2', 'A3', '--', 'supply equals issued credit equals held credit']);
+run(['decide', 'compositions/upkeep', 'risk', 'N1', 'lanes-offline', '--', 'both lanes down is an incident, not a design flaw']);
+run(['decide', 'compositions/upkeep', 'risk', 'N1', 'lanes-down-two', '--', 'two blocks without a lane is the same incident, shorter; one block is what the lanes are sized for']);
+run(['decide', 'compositions/upkeep', 'risk', 'A1', 'lane-a-captured', '--', 'a captured lane posts any price; the band is what honest lanes promise, not what the Oracle enforces']);
+run(['decide', 'compositions/control', 'risk', 'N1', 'executor-offline', '--', 'an offline executor is the very thing N1 is conditioned on; governance re-plans']);
 write(join(comp('oracle'), 'doubts.md'), `## D1
 on: M3
 assumed: a
@@ -493,9 +493,9 @@ Assumed a, because the Vault reads the price regardless of its age and the lanes
 run(['render']);
 const r = run(['verify']);
 const json = JSON.parse(run(['verify', '--json'], { quiet: true }).stdout);
-const observed = { components: {}, systems: {} };
-for (const c of json.components) observed.components[c.id] = { tier: c.tier, marks: Object.fromEntries(Object.entries(c.marks).map(([id, m]) => [id, { mark: m.mark, owner: m.owner, grounded: m.grounded }])), backing: Object.fromEntries(Object.entries(c.backing).map(([k, b]) => [k, b.status])), route: c.route.pass, flags: c.flags.map(f => f.name).sort() };
-for (const s of json.systems) observed.systems[s.id] = { cells: Object.fromEntries(s.cells.map(c => [`${c.property}|${c.scenario}`, { mark: c.mark, accepted: Boolean(c.accepted) }])), walks: Object.fromEntries(s.walks.map(w => [`${w.id}|${w.scenario}`, w.mark])), propertyHeld: s.propertyHeld, route: s.route.pass, flags: s.flags.map(f => f.name).sort() };
+const observed = { parts: {}, compositions: {} };
+for (const c of json.parts) observed.parts[c.id] = { tier: c.tier, marks: Object.fromEntries(Object.entries(c.marks).map(([id, m]) => [id, { mark: m.mark, owner: m.owner, grounded: m.grounded }])), backing: Object.fromEntries(Object.entries(c.backing).map(([k, b]) => [k, b.status])), route: c.route.pass, flags: c.flags.map(f => f.name).sort() };
+for (const s of json.compositions) observed.compositions[s.id] = { cells: Object.fromEntries(s.cells.map(c => [`${c.property}|${c.scenario}`, { mark: c.mark, accepted: Boolean(c.accepted) }])), walks: Object.fromEntries(s.walks.map(w => [`${w.id}|${w.scenario}`, w.mark])), propertyHeld: s.propertyHeld, route: s.route.pass, flags: s.flags.map(f => f.name).sort() };
 writeFileSync(join(output, 'observed-marks.json'), JSON.stringify(observed, null, 2) + '\n');
 console.log(`observed-marks.json written in ${output}; verify exited ${r.status}. These observations are not an approved golden.`);
 return { output, verified: r.status, observed };
@@ -510,7 +510,7 @@ export function installFixture({ output, verified, observed }) {
   const expected = JSON.parse(readFileSync(join(fixture, 'expected-marks.json'), 'utf8'));
   if (!isDeepStrictEqual(observed, expected)) {
     const moved = [];
-    for (const kind of ['components', 'systems']) for (const id of new Set([...Object.keys(expected[kind] || {}), ...Object.keys(observed[kind] || {})])) {
+    for (const kind of ['parts', 'compositions']) for (const id of new Set([...Object.keys(expected[kind] || {}), ...Object.keys(observed[kind] || {})])) {
       if (!isDeepStrictEqual(expected[kind]?.[id], observed[kind]?.[id])) moved.push(`${kind}/${id}`);
     }
     throw new Error(`observed marks differ from expected-marks.json in ${moved.join(', ') || 'their shape'}; review the moves and the golden by hand; the fixture is unchanged`);
@@ -518,7 +518,7 @@ export function installFixture({ output, verified, observed }) {
   const target = join(fixture, 'dossiers'), token = randomUUID();
   const staging = join(fixture, `.dossiers-installing-${token}`), replaced = join(fixture, `.dossiers-replaced-${token}`);
   // The bundles in trials/ and .running/ stay with the rebuild: Harbor commits its answers, not its trials' bundles.
-  const local = /[\\/](?:components|systems)[\\/][^\\/]+[\\/](?:trials|\.running)(?:[\\/]|$)/;
+  const local = /[\\/](?:parts|compositions)[\\/][^\\/]+[\\/](?:trials|\.running)(?:[\\/]|$)/;
   cpSync(join(output, 'dossiers'), staging, { recursive: true, preserveTimestamps: true, filter: source => !local.test(source.slice(join(output, 'dossiers').length)) });
   renameSync(target, replaced);
   renameSync(staging, target);

@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "dossier": "parts/adapter",
+  "question": {
+    "kind": "external",
+    "checker": "external",
+    "executes": [],
+    "expects": [
+      "W1",
+      "W2"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: external\nrunner: replay\nexecutes:\n  - prose.md\nreach: the stand-in deployment\nexpect:\n  W1: pass\n  W2: pass\nbecause: |\n  The stand-in's adapter calls the vault and the token the way the wiring says.\n",
+    "reach": "the stand-in deployment",
+    "expect": {
+      "W1": {
+        "expect": "pass"
+      },
+      "W2": {
+        "expect": "pass"
+      }
+    },
+    "because": "The stand-in's adapter calls the vault and the token the way the wiring says."
+  },
+  "answer": {
+    "enabled": [
+      "W1",
+      "W2"
+    ],
+    "outcomes": {
+      "W1": "pass",
+      "W2": "pass"
+    },
+    "runner": "replay",
+    "covers": [
+      "W1",
+      "W2"
+    ],
+    "evidence": {
+      "W1": {
+        "end": {
+          "state": "Open",
+          "held": 0,
+          "live": true
+        },
+        "problems": []
+      },
+      "W2": {
+        "end": {
+          "state": "Halted",
+          "held": 0,
+          "live": false
+        },
+        "problems": []
+      }
+    },
+    "reach": {
+      "text": "the stand-in deployment",
+      "values": {
+        "walks": 2
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "2dc0ea92",
+        "S2": "ab235827",
+        "E1": "d2a84fb7",
+        "E2": "3c7a98e6",
+        "E3": "27bd8252",
+        "M1": "bedff268",
+        "M2": "5a9c8009",
+        "M3": "c5468cd9",
+        "M4": "73630550",
+        "R1": "a9875744",
+        "R2": "02514039",
+        "R3": "d9dc2be9",
+        "A1": "add2e99f",
+        "W1": "f15d329e",
+        "W2": "503d5674",
+        "X1": "f8cba5eb",
+        "X2": "d8be73d4",
+        "X3": "6e012009",
+        "K1": "0f309b4d",
+        "T1": "cf2e6345"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "7b42dc7c1831a88a",
+          "path": "modules/adapter/behavior/invariants.md"
+        }
+      },
+      "ir": "b1b83ebc2a2874da"
+    },
+    "executed": {
+      "prose.md": "58d831b706099361e3b3fa6855a8b79b5d0c0fc8227521e7582ac34ad48c73fb"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "prose.md": "58d831b706099361e3b3fa6855a8b79b5d0c0fc8227521e7582ac34ad48c73fb"
+      },
+      "shared": [],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2337-external-5bdd8c",
+    "at": "2026-11-08T23:37:14.572Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0"
+    },
+    "bundle": "f8c435d992c4f26823eda3ab405551cf939953d406f51c8eec67fb167620ebc7"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

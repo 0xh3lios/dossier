@@ -54,7 +54,7 @@ async function run(graph) {
   return { nodes, edges, width: out.width, height: out.height };
 }
 
-// A component's statechart. Moves that stay in their state are lines inside the state's box.
+// A part's statechart. Moves that stay in their state are lines inside the state's box.
 export async function layoutChart(chart, { showRefusals = false, showChanges = false } = {}) {
   const stays = {};
   for (const t of chart.transitions) if (t.stays) (stays[t.from] ||= []).push(t);
@@ -88,9 +88,9 @@ export async function layoutChart(chart, { showRefusals = false, showChanges = f
   return { ...out, content };
 }
 
-// A system's graph: members, the actors that send into them, and stubs for what lies outside.
+// A composition's graph: members, the actors that send into them, and stubs for what lies outside.
 // Laid out across and down, keeping whichever fits the pane at the larger scale.
-export async function layoutSystem(nodes, edges, pane = { width: 800, height: 600 }) {
+export async function layoutComposition(nodes, edges, pane = { width: 800, height: 600 }) {
   const graph = direction => ({
     id: 'root',
     layoutOptions: { ...BASE, 'elk.direction': direction, 'elk.layered.spacing.nodeNodeBetweenLayers': direction === 'RIGHT' ? '90' : '60', 'elk.spacing.nodeNode': '28' },

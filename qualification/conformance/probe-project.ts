@@ -12,11 +12,11 @@ else {
   const before = fingerprint(root);
   const verified = verifyAll({ root, version: '0.1.0', write: false });
   const charts = [];
-  for (const c of verified.components) {
+  for (const c of verified.parts) {
     const run = c.ir.ok ? await checkIR({ root, ir: c.ir }) : null;
     charts.push({ id: c.id, compiled: c.ir.ok, errors: c.ir.errors, outcome: run?.outcome || 'unable', explored: run?.explored, limitHit: run?.limitHit || false, error: run?.error || run?.exceeded || run?.unevaluable, failed: run?.checks?.filter(x => x.status === 'failed'), gaps: run?.gaps });
   }
   assert.deepEqual(fingerprint(root), before, 'the probe must not write any dossier artifact');
-  console.log(JSON.stringify({ root, readOnly: true, tripwires: verified.tripwires, components: verified.components.map(c => ({ id: c.id, summary: c.summary, tripwires: c.tripwires, route: c.route })), systems: verified.systems.map(s => ({ id: s.id, summary: s.summary, tripwires: s.tripwires, cells: s.cells, route: s.route })), charts }, null, 2));
-  if (verified.tripwires.length || [...verified.components, ...verified.systems].some(x => x.tripwires.length) || charts.some(c => c.outcome !== 'pass')) process.exitCode = 1;
+  console.log(JSON.stringify({ root, readOnly: true, tripwires: verified.tripwires, parts: verified.parts.map(c => ({ id: c.id, summary: c.summary, tripwires: c.tripwires, route: c.route })), compositions: verified.compositions.map(s => ({ id: s.id, summary: s.summary, tripwires: s.tripwires, cells: s.cells, route: s.route })), charts }, null, 2));
+  if (verified.tripwires.length || [...verified.parts, ...verified.compositions].some(x => x.tripwires.length) || charts.some(c => c.outcome !== 'pass')) process.exitCode = 1;
 }

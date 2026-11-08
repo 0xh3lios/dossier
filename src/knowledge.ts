@@ -40,7 +40,7 @@ export interface Observation extends Digest { module: string; name: string; path
 export interface ModuleRecords { files: Record<string, YamlMap>; errors: { path: string; message: string }[] }
 export interface Edge { module: string; id: string | null; type: YamlValue; from: YamlValue; to: YamlValue; conditions: YamlValue[]; path: string; record: YamlMap }
 export interface EdgeFilter { types?: string[] | string; module?: string | null; asset?: string | null }
-// What a backing names, with the component's module: a Certora rule at a commit, or a file and rule.
+// What a backing names, with the part's module: a Certora rule at a commit, or a file and rule.
 export interface BackingSpec { kind: string; module?: string | null; path?: string; rule?: string | null; commit?: string }
 export interface Unresolved { status: 'unresolved'; reason: string }
 export interface Backed extends Digest { status: 'backed'; kind: 'certora' | 'file'; module?: string; commit?: string; path: string; rule: string | null; keyword: string; line: number; text: string }

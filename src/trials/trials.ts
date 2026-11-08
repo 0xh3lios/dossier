@@ -29,7 +29,7 @@ export interface TrialResult extends Answer {
   seconds: number | null;
   property: string | null;
   scenario: string | null;
-  // The system Walk a witness trial ran, beside its scenario; null for any other trial.
+  // The composition Walk a witness trial ran, beside its scenario; null for any other trial.
   walk?: string | null;
   executed: Record<string, string>;
   inputIdentity: InputIdentity;

@@ -6,12 +6,12 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { parseCall } from '../../src/trials/calls.ts';
 import { planTrial } from '../../src/trials/plan.ts';
-import { loadComponent, loadSystem, externalsOf } from '../../src/dossiers/load.ts';
-import { listComponents } from '../../src/dossiers/root.ts';
-import { readComposition } from '../../src/dossiers/composition.ts';
+import { loadPart, loadComposition, externalsOf } from '../../src/dossiers/load.ts';
+import { listParts } from '../../src/dossiers/root.ts';
+import { readWiring } from '../../src/dossiers/wiring.ts';
 import { readActors } from '../../src/dossiers/actors.ts';
-import { parseSystemProse } from '../../src/prose/prose.ts';
-import { composeSystem } from '../../src/models/compose.ts';
+import { parseCompositionProse } from '../../src/prose/prose.ts';
+import { composeMembers } from '../../src/models/compose.ts';
 import { parseDoubts } from '../../src/dossiers/doubts.ts';
 import { parseDecisions } from '../../src/dossiers/decisions.ts';
 import { fingerprint } from '../conformance/files.ts';
@@ -48,10 +48,10 @@ for (const example of catalog) test(`specified example: ${example.id}`, t => {
       const call = parseCall(input);
       assert.deepEqual(call.errors, []);
       const [kind, id] = example.setup!.split('/');
-      const loaded = kind === 'systems' ? loadSystem(root, id) : loadComponent(root, id);
+      const loaded = kind === 'compositions' ? loadComposition(root, id) : loadPart(root, id);
       const planned = planTrial({ call, dossierDir: loaded.dir, kind: loaded.kind,
-        ...(loaded.kind === 'system'
-          ? { systemProse: loaded.prose, scenarios: loaded.actors.scenarios, module: `model/generated/${loaded.composed.module}.tla`, cells: loaded.composed.cells }
+        ...(loaded.kind === 'composition'
+          ? { compositionProse: loaded.prose, scenarios: loaded.actors.scenarios, module: `model/generated/${loaded.composed.module}.tla`, cells: loaded.composed.cells }
           : { ir: loaded.ir }), externals: externalsOf(root) });
       assert.deepEqual(planned.problems, [], example.id);
       assert.ok(planned.plan.checker);
@@ -59,8 +59,8 @@ for (const example of catalog) test(`specified example: ${example.id}`, t => {
       // claiming a property that its configuration never enabled.
       const bad = parseCall(input.replace('expect:\n', 'expect:\n  DoesNotExist: holds\n'));
       const invalid = planTrial({ call: bad, dossierDir: loaded.dir, kind: loaded.kind,
-        ...(loaded.kind === 'system'
-          ? { systemProse: loaded.prose, scenarios: loaded.actors.scenarios, module: `model/generated/${loaded.composed.module}.tla`, cells: loaded.composed.cells }
+        ...(loaded.kind === 'composition'
+          ? { compositionProse: loaded.prose, scenarios: loaded.actors.scenarios, module: `model/generated/${loaded.composed.module}.tla`, cells: loaded.composed.cells }
           : { ir: loaded.ir }), externals: externalsOf(root) });
       if (call.kind !== 'external') assert.ok(invalid.problems.length > 0, 'an extra enabled-property claim must be refused');
       break;
@@ -71,11 +71,11 @@ for (const example of catalog) test(`specified example: ${example.id}`, t => {
       assert.equal(config.external.replay.cwd, '..');
       break;
     }
-    case 'composition': {
-      writeFileSync(join(work, 'composition.md'), fenced(input));
-      const composition = readComposition(work);
-      assert.deepEqual(composition.errors, []);
-      assert.deepEqual(composition.wiring, [{ effect: { component: 'adapter', name: 'move' }, event: { component: 'vault', name: 'move' } }]);
+    case 'wiring': {
+      writeFileSync(join(work, 'wiring.md'), fenced(input));
+      const wiring = readWiring(work);
+      assert.deepEqual(wiring.errors, []);
+      assert.deepEqual(wiring.wiring, [{ effect: { part: 'adapter', name: 'move' }, event: { part: 'vault', name: 'move' } }]);
       break;
     }
     case 'scenarios': {
@@ -88,11 +88,11 @@ for (const example of catalog) test(`specified example: ${example.id}`, t => {
       assert.deepEqual(actors.scenarioById['stale-start'].start, { 'oracle.state': 'Stale', 'oracle.stale': 3 });
       break;
     }
-    case 'system': {
-      const loaded = loadSystem(root, 'control');
-      const prose = parseSystemProse(input);
+    case 'composition': {
+      const loaded = loadComposition(root, 'control');
+      const prose = parseCompositionProse(input);
       assert.deepEqual(prose.errors, []);
-      const result = composeSystem({ name: 'control', prose, composition: loaded.composition, members: loaded.members, actors: loaded.actors, components: listComponents(root), retired: [] });
+      const result = composeMembers({ name: 'control', prose, wiring: loaded.wiring, members: loaded.members, actors: loaded.actors, parts: listParts(root), retired: [] });
       assert.deepEqual(result.errors, []);
       assert.equal(result.cells.length, 9);
       assert.ok(result.cfgs['W1_governance_captured.cfg']);
@@ -100,9 +100,9 @@ for (const example of catalog) test(`specified example: ${example.id}`, t => {
     }
     case 'givens': {
       for (const [line, id, passage] of [[input.trim().split('\n')[0], 'timelock', 'G1'], [input.trim().split('\n')[1], 'oracle', 'G3']]) {
-        const component = loadComponent(root, id);
-        assert.deepEqual(component.ir.errors, []);
-        assert.equal(line.replace(/^\[G\d+\] /, ''), component.prose.passages.find(p => p.id === passage)?.text);
+        const part = loadPart(root, id);
+        assert.deepEqual(part.ir.errors, []);
+        assert.equal(line.replace(/^\[G\d+\] /, ''), part.prose.passages.find(p => p.id === passage)?.text);
       }
       break;
     }

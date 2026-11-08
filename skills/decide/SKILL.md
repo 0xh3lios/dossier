@@ -1,7 +1,7 @@
 ---
 name: decide
 description: Record one of the owners' decisions on a dossier in their own words. Accept passages, reject one with a reason, give a doubt's answer, accept the risk on a violated cell, forget a recorded answer, begin or retire a dossier. The owner invokes it with the dossier, the verb and its arguments, then their words after --, such as decide timelock accept S1 -- "the delay as deployed". The words pass through untouched.
-argument-hint: <component|system> accept|reject|answer|risk|forget|begin|retire ... -- "<words>"
+argument-hint: <part|composition> accept|reject|answer|risk|forget|begin|retire ... -- "<words>"
 disable-model-invocation: true
 allowed-tools: Bash(dossier *)
 ---

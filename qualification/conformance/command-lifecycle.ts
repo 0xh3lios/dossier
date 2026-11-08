@@ -37,7 +37,7 @@ export function commandExpectation(state: unknown) {
 }
 
 // Harbor ships Control's N1 under executor-offline violated with the risk accepted, so a path
-// on a copy of Harbor starts at accepted; a fresh system starts at pending. The acceptance holds
+// on a copy of Harbor starts at accepted; a fresh composition starts at pending. The acceptance holds
 // while the cell's entry still names the trial the owner was shown (spec/evidence.md). EDIT moves
 // the property's words and SHIFT something else that answer rested on, such as the scenario under
 // the same name or a member: either lapses the cell, and the violation a refresh shows owes a new

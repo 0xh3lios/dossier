@@ -8,7 +8,7 @@ Before a checker runs, the agent writes a call with `dossier call`. The command 
 
 Writing the expectation first matters. An answer that matches the call is `as-called`. An answer that differs is `miscalled`, and a miscall cannot be quietly rerun until it agrees. The agent interprets each answer in a reading, a note it writes beside the answer. A miscall's reading classifies it on a `classification:` line, with one of these five, word for word:
 
-- `model misread prose, action`. An action says something its [passage](components-systems-scenarios.md#prose-and-passages) does not. The model is fixed and tried again.
+- `model misread prose, action`. An action says something its [passage](parts-compositions-scenarios.md#prose-and-passages) does not. The model is fixed and tried again.
 - `model misread prose, property`. A property says something its passage does not. The model is fixed and tried again.
 - `chart differs from prose`. The compiler and the model disagree, which is a defect in the tool.
 - `prose at fault`. Every step is licensed by the prose and the property is faithful, so the prose contradicts itself. The owner decides.
@@ -18,7 +18,7 @@ An unclassified miscall fails verify, and so does a classification worded otherw
 
 ## One answer per question
 
-Each call asks a question: which kind of check to run on which files, which passages to expect outcomes for, and under which [scenario](components-systems-scenarios.md#actors-modes-and-scenarios) or along which walk. How far the trial looks is not part of the question. It is part of the answer, so a trial that looks further asks the same question again. Each question's current answer is kept in a file under the dossier's `evidence/`, the question's entry, which only the runner writes. The entry holds the call's prediction, the answer with any trace, the hashes of everything the answer rested on, and the trial that established it. The agent's reading of the answer sits beside it. A dossier keeps one entry per question, so its record grows with the questions it asks, not with how often it asks them.
+Each call asks a question: which kind of check to run on which files, which passages to expect outcomes for, and under which [scenario](parts-compositions-scenarios.md#actors-modes-and-scenarios) or along which walk. How far the trial looks does not belong to the question. It belongs to the answer, so a trial that looks further asks the same question again. Each question's current answer is kept in a file under the dossier's `evidence/`, the question's entry, which only the runner writes. The entry holds the call's prediction, the answer with any trace, the hashes of everything the answer rested on, and the trial that established it. The agent's reading of the answer sits beside it. A dossier keeps one entry per question, so its record grows with the questions it asks, not with how often it asks them.
 
 A trial ends in publication, the step that writes its answer to the entry, keeps the entry as it is, or refuses the answer. A trial that gives the current answer again, while that answer has not [lapsed](#a-snapshot-behind-every-result), leaves the entry unchanged. Otherwise the new answer replaces the entry, within limits that keep a surprise from being rerun away:
 
@@ -27,7 +27,7 @@ A trial ends in publication, the step that writes its answer to the entry, keeps
 - **The last different answer stays.** When a new answer's verdict or outcomes differ, the entry keeps the answer it replaced, with its trace and its classification. When the new answer looks less far, the entry keeps the further reach, flagged `narrowed`, until an answer looks as far again.
 - **An aborted trial never replaces an answer.** Its answer is written only for a question with no entry yet, and is flagged `unrun` until a completed answer replaces it.
 
-Each question keeps its own entry, so several current answers can speak for one passage or one [cell](components-systems-scenarios.md#cells-and-the-matrix). One of them decides the mark. A miscall on that passage or cell decides while it is the latest answer there and has not lapsed. Otherwise a counterexample that has not lapsed decides over any proof or check from another question, until the owner forgets it. Among the rest, a proof decides before a check, and the latest decides among equals. [Marks](../reference/marks.md) gives the rule in full.
+Each question keeps its own entry, so several current answers can speak for one passage or one [cell](parts-compositions-scenarios.md#cells-and-the-matrix). One of them decides the mark. A miscall on that passage or cell decides while it is the latest answer there and has not lapsed. Otherwise a counterexample that has not lapsed decides over any proof or check from another question, until the owner forgets it. Among the rest, a proof decides before a check, and the latest decides among equals. [Marks](../reference/marks.md) gives the rule in full.
 
 A question is gone when a passage it expects an outcome for, its scenario, its walk or a file it executes no longer exists. Verify flags its entry `question gone`, and the next publication in the dossier that is not refused removes it.
 
@@ -37,9 +37,9 @@ An answer is superseded when answers to other questions speak for everything it 
 
 ## Every model element cites a passage
 
-A model encodes the prose and is meant to add nothing of its own. Every action in a TLA+ model names the Move it encodes, and every fairness clause names the [Given](components-systems-scenarios.md#prose-and-passages) it comes from. Every fact, assertion and check in an Alloy model names its passage. An element that names none is a tripwire: `action without Move`, `fairness without Given` or `fact without passage`. An agent therefore cannot slip in an assumption that a keeper always acts. The fairness needs a Given, the Given names the keeper, and a scenario can drop it. Verify does not read a model's `Init` or a state constraint in a TLC configuration this way, so a restriction there is a question for a [second read](#a-second-read).
+A model encodes the prose and is meant to add nothing of its own. Every action in a TLA+ model names the Move it encodes, and every fairness clause names the [Given](parts-compositions-scenarios.md#prose-and-passages) it comes from. Every fact, assertion and check in an Alloy model names its passage. An element that names none is a tripwire: `action without Move`, `fairness without Given` or `fact without passage`. An agent therefore cannot slip in an assumption that a keeper always acts. The fairness needs a Given, the Given names the keeper, and a scenario can drop it. Verify does not read a model's `Init` or a state constraint in a TLC configuration this way, so a restriction there is a question for a [second read](#a-second-read).
 
-Two flags catch quieter edits. A property whose definition in a component's model changed while its passage did not is `reworded` until a trial runs the new definition. An answer that records a smaller reach than the answer it replaced, in the numbers both record, is `narrowed`. A system's properties cannot be reworded this way, because its model is generated from the prose and never edited.
+Two flags catch quieter edits. A property whose definition in a part's model changed while its passage did not is `reworded` until a trial runs the new definition. An answer that records a smaller reach than the answer it replaced, in the numbers both record, is `narrowed`. A composition's properties cannot be reworded this way, because its model is generated from the prose and never edited.
 
 ## A planted bug for every property
 
@@ -53,7 +53,7 @@ A blunder counts only for the property's current text. When the passage changes,
 
 ## A snapshot behind every result
 
-Every answer records its basis, the hashes of everything it rested on. Its snapshot is the part taken from the dossier's text and records: the passages and the Givens they cite, the records the dossier pins or cites, and the backing of each [guarantee](three-kinds-of-tool.md#the-grounding-backs). A system's snapshot also holds its composition, its members, the module the tool generated, and the actors the system uses with the modes, windows and start its scenario gives them. The rest of the basis is the hashes of the files the trial executed and of the local files they import. When any part of it moves, the marks and cells that rested on that part lapse. An edit to a hand-refined model, for instance, lapses every mark whose answer executed it. Nothing else lapses a mark or a cell, so a change costs exactly one new trial for each answer it lapsed.
+Every answer records its basis, the hashes of everything it rested on. Its snapshot is what the basis takes from the dossier's text and records: the passages and the Givens they cite, the records the dossier pins or cites, and the backing of each [guarantee](three-kinds-of-tool.md#the-grounding-backs). A composition's snapshot also holds its wiring, its members, the module the tool generated, and the actors the composition uses with the modes, windows and start its scenario gives them. The rest of the basis is the hashes of the files the trial executed and of the local files they import. When anything in it moves, the marks and cells that rested on it lapse. An edit to a hand-refined model, for instance, lapses every mark whose answer executed it. Nothing else lapses a mark or a cell, so a change costs exactly one new trial for each answer it lapsed.
 
 ## Guards and tripwires
 

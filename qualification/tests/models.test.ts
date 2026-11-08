@@ -1,6 +1,6 @@
 // The models: the TLA+ scaffold and the readers of hand-edited modules
-// (tla.ts), the Alloy reader (alloy.ts), actors and scenarios, compositions,
-// the composed system module (compose.ts) and the loaders (load.ts).
+// (tla.ts), the Alloy reader (alloy.ts), actors and scenarios, wirings,
+// the composed composition module (compose.ts) and the loaders (load.ts).
 // Run: node --test qualification/tests/models.test.ts
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,19 +11,19 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { prefixHead } from '../../src/dossiers/integrity.ts';
-import { parseProse, parseSystemProse } from '../../src/prose/prose.ts';
+import { parseProse, parseCompositionProse } from '../../src/prose/prose.ts';
 import { compileIR } from '../../src/prose/ir.ts';
 import { actorName, domainTla, parseCfg, parseTla, reachValues, scaffoldCfgs, scaffoldTla, statePredicate, targetsOf, typeOf } from '../../src/models/tla.ts';
 import { parseAls } from '../../src/models/alloy.ts';
-import { composeSystem } from '../../src/models/compose.ts';
+import { composeMembers } from '../../src/models/compose.ts';
 import { ACTOR_KINDS, MODES, actorId, findActor, modeOf, readActors, windowOf } from '../../src/dossiers/actors.ts';
-import { readComposition } from '../../src/dossiers/composition.ts';
-import { externalsOf, knowledgeOf, loadAllComponents, loadComponent, loadSystem, systemModuleText } from '../../src/dossiers/load.ts';
-import type { SystemProse } from '../../src/prose/prose.ts';
-import type { ComposedSystem } from '../../src/models/compose.ts';
+import { readWiring } from '../../src/dossiers/wiring.ts';
+import { externalsOf, knowledgeOf, loadAllParts, loadPart, loadComposition, compositionModuleText } from '../../src/dossiers/load.ts';
+import type { CompositionProse } from '../../src/prose/prose.ts';
+import type { Composed } from '../../src/models/compose.ts';
 import type { ActorsModel } from '../../src/dossiers/actors.ts';
-import type { Composition } from '../../src/dossiers/composition.ts';
-import type { SystemLoad } from '../../src/dossiers/load.ts';
+import type { Wiring } from '../../src/dossiers/wiring.ts';
+import type { CompositionLoad } from '../../src/dossiers/load.ts';
 
 const TIMELOCK = `# Timelock
 Tier: modeled
@@ -185,13 +185,13 @@ scenarios:
 // so it joins SCENARIOS only where adapter holds paused and level.
 const PAUSED = '  - id: paused\n    start: { adapter.paused: true, adapter.level: High }\n';
 
-const COMPOSITION = `# Composition
+const COMPOSITION = `# Wiring
 \`\`\`yaml
 members:
-  - component: adapter
+  - part: adapter
     role: member
     pins: [adapter#contract:adapter]
-  - component: token
+  - part: token
     role: member
 wiring:
   - effect: adapter.mint
@@ -399,8 +399,8 @@ describe('scaffoldTla', () => {
   });
 });
 
-describe('scaffoldTla against the root\'s actors and components', () => {
-  // Who sends what: a chain actor that sends block, a keeper that sends an event named tick, and a component.
+describe('scaffoldTla against the root\'s actors and parts', () => {
+  // Who sends what: a chain actor that sends block, a keeper that sends an event named tick, and a part.
   const CLOCKED = `# Lamp
 Tier: modeled
 Module: lamp
@@ -438,13 +438,13 @@ It holds n, a count from 0 to 2. It sends price-update to the Vault.
   const actors = roster('```yaml\nactors:\n  - id: chain\n    name: the chain\n    kind: chain\n  - id: keeper\n    name: the keeper\n    kind: keeper\n  - id: lane-a\n    name: lane A\n    kind: keeper\n```\n');
   const ir = irOf(CLOCKED);
 
-  it('takes an event as the chain\'s tick when its sender is an actor of kind chain, whatever its name, and never a component\'s send', () => {
+  it('takes an event as the chain\'s tick when its sender is an actor of kind chain, whatever its name, and never a part\'s send', () => {
     assert.deepEqual(ir.errors, []);
-    const tla = scaffoldTla(ir, { actors, components: ['vault'] });
+    const tla = scaffoldTla(ir, { actors, parts: ['vault'] });
     assert.ok(block(tla, 'M2_Block').includes('\n  /\\ ~Due_LaneA                      \\* G1\n'), 'block from the chain waits on the prompt lane');
     assert.ok(block(tla, 'M2_Block').includes('(IF n1_ticks > 2 THEN n1_ticks ELSE n1_ticks + 1)'), 'and counts as a tick for the Within');
     assert.ok(!block(tla, 'M3_Tick').includes('Due_') && !block(tla, 'M3_Tick').includes('n1_ticks + 1'), 'a keeper\'s event named tick is no tick');
-    assert.ok(!block(tla, 'M4_TickIn').includes('Due_'), 'a component\'s send is no tick');
+    assert.ok(!block(tla, 'M4_TickIn').includes('Due_'), 'a part\'s send is no tick');
   });
 
   it('reads an event as the tick by its name only where no actors file resolves its sender', () => {
@@ -492,29 +492,29 @@ describe('the scaffold command', () => {
   before(() => {
     write('cli/dossier.json', '{"plugin":"0.1.0","storage":"integrity-v1"}\n');
     write('cli/actors/actors.md', '```yaml\nactors:\n  - id: chain\n    name: the chain\n    kind: chain\n  - id: lane-a\n    name: lane A\n    kind: keeper\n  - id: user\n    name: the user\n    kind: user\n```\n');
-    write('cli/components/lamp/prose.md', '# Lamp\n\nIt holds n, a count from 0 to 1.\n\n## States\n[S1] Off: dark.\n[S2] On: lit.\n\n## Events\n[E1] block, from the chain: a block passes.\n[E2] post-a, from lane A: a post.\n\n## Moves\n[M1] When Off receives post-a, it becomes On.\n[M2] When On receives block, it becomes Off.\n[R1] In Off, block is refused.\n[R2] In On, post-a is refused.\n\n## Given\n[G1] Given that lane A posts promptly. If this is false, nothing. Actor: lane A, on post-a, prompt.\n');
-    write('cli/components/old/prose.md', ADAPTER);
-    write('cli/systems/gone/composition.md', COMPOSITION);
-    write('cli/systems/gone/prose.md', SUPPLY);
-    retire('components/old');
-    retire('systems/gone');
+    write('cli/parts/lamp/prose.md', '# Lamp\n\nIt holds n, a count from 0 to 1.\n\n## States\n[S1] Off: dark.\n[S2] On: lit.\n\n## Events\n[E1] block, from the chain: a block passes.\n[E2] post-a, from lane A: a post.\n\n## Moves\n[M1] When Off receives post-a, it becomes On.\n[M2] When On receives block, it becomes Off.\n[R1] In Off, block is refused.\n[R2] In On, post-a is refused.\n\n## Given\n[G1] Given that lane A posts promptly. If this is false, nothing. Actor: lane A, on post-a, prompt.\n');
+    write('cli/parts/old/prose.md', ADAPTER);
+    write('cli/compositions/gone/wiring.md', COMPOSITION);
+    write('cli/compositions/gone/prose.md', SUPPLY);
+    retire('parts/old');
+    retire('compositions/gone');
   });
 
-  it('decides the chain\'s ticks from actors.md, as a system does', () => {
+  it('decides the chain\'s ticks from actors.md, as a composition does', () => {
     const r = run('scaffold', 'lamp');
     assert.equal(r.status, 0, r.stderr);
-    const tla = readFileSync(join(root, 'cli', 'components', 'lamp', 'model', 'Lamp.tla'), 'utf8');
+    const tla = readFileSync(join(root, 'cli', 'parts', 'lamp', 'model', 'Lamp.tla'), 'utf8');
     assert.ok(block(tla, 'M2_Block').includes('~Due_LaneA'), 'block from the chain is the tick');
   });
 
-  it('refuses a retired component or system, and says which begin reopens it', () => {
+  it('refuses a retired part or composition, and says which begin reopens it', () => {
     const c = run('scaffold', 'old');
     assert.equal(c.status, 2);
-    assert.equal(c.stderr, 'dossier scaffold: components/old is retired; dossier decide components/old begin reopens it\n');
-    assert.equal(existsSync(join(root, 'cli', 'components', 'old', 'model')), false);
-    const s = run('scaffold', 'systems/gone');
+    assert.equal(c.stderr, 'dossier scaffold: parts/old is retired; dossier decide parts/old begin reopens it\n');
+    assert.equal(existsSync(join(root, 'cli', 'parts', 'old', 'model')), false);
+    const s = run('scaffold', 'compositions/gone');
     assert.equal(s.status, 2);
-    assert.equal(s.stderr, 'dossier scaffold: systems/gone is retired; dossier decide systems/gone begin reopens it\n');
+    assert.equal(s.stderr, 'dossier scaffold: compositions/gone is retired; dossier decide compositions/gone begin reopens it\n');
   });
 });
 
@@ -748,7 +748,7 @@ describe('readActors', () => {
       'scenarios.md: empty gives lane a window from 2 until 2, which is empty',
       'scenarios.md: bad-mode gives lane mode "malicious", which that actor does not allow',
       'scenarios.md: no-actor names actor "nobody", which actors.md does not declare',
-      'scenarios.md: loose-start has start "oracle.stale", not a map of <component>.<datum> to values',
+      'scenarios.md: loose-start has start "oracle.stale", not a map of <part>.<datum> to values',
     ]);
     assert.deepEqual(a.scenarioById['no-mode'].modes, {}, 'a window with no mode gives none');
   });
@@ -816,7 +816,7 @@ describe('readActors', () => {
     assert.equal(findActor(a, 'governance')!.id, 'governance');
     assert.equal(findActor(a, 'Governance')!.id, 'governance');
     assert.equal(findActor(a, 'The governance')!.id, 'governance');
-    assert.equal(findActor(a, 'the Adapter'), null, 'a component is no actor');
+    assert.equal(findActor(a, 'the Adapter'), null, 'a part is no actor');
     assert.equal(actorId('the Adapter'), 'adapter');
     assert.equal(findActor(a, 'nobody'), null);
     assert.equal(findActor(a, ''), null);
@@ -827,62 +827,62 @@ describe('readActors', () => {
   });
 });
 
-// ---------------------------------------------------------------- composition.ts
+// ---------------------------------------------------------------- wiring.ts
 
-describe('readComposition', () => {
+describe('readWiring', () => {
   it('reads members, wiring, closure and default scenarios', () => {
-    write('sys/supply/composition.md', COMPOSITION);
-    const c = readComposition(join(root, 'sys', 'supply'));
+    write('sys/supply/wiring.md', COMPOSITION);
+    const c = readWiring(join(root, 'sys', 'supply'));
     assert.deepEqual(c.errors, []);
-    assert.deepEqual(c.members, [{ component: 'adapter', role: 'member', pins: ['adapter#contract:adapter'] }, { component: 'token', role: 'member', pins: [] }]);
-    assert.deepEqual(c.wiring, [{ effect: { component: 'adapter', name: 'mint' }, event: { component: 'token', name: 'mint' } }]);
+    assert.deepEqual(c.members, [{ part: 'adapter', role: 'member', pins: ['adapter#contract:adapter'] }, { part: 'token', role: 'member', pins: [] }]);
+    assert.deepEqual(c.wiring, [{ effect: { part: 'adapter', name: 'mint' }, event: { part: 'token', name: 'mint' } }]);
     assert.deepEqual(c.closure, [{ asset: 'hrd', edges: ['mints_asset'], modules: [] }]);
     assert.deepEqual(c.scenarios, ['all-honest', 'breaker-offline']);
     assert.equal(c.text, COMPOSITION);
   });
 
-  it('reports a missing file, a member without a component, a bad role and malformed wiring', () => {
-    assert.deepEqual(readComposition(join(root, 'sys', 'nowhere')), { members: [], wiring: [], free: [], closure: [], scenarios: [], errors: ['composition.md is missing'], text: '' });
-    write('sys/bad/composition.md', '```yaml\nmembers:\n  - role: member\n  - component: vault\n    role: bystander\nwiring:\n  - effect: adapter.mint\n    event: token\nclosure:\n  - asset: hrd\n    modules: [vault]\n```\n');
-    const c = readComposition(join(root, 'sys', 'bad'));
-    assert.deepEqual(c.errors, ['composition.md: a member names no component', 'composition.md: vault has role "bystander", not member or surroundings', 'composition.md: wiring needs effect: <component>.<effect> and event: <component>.<event>']);
+  it('reports a missing file, a member without a part, a bad role and malformed wiring', () => {
+    assert.deepEqual(readWiring(join(root, 'sys', 'nowhere')), { members: [], wiring: [], free: [], closure: [], scenarios: [], errors: ['wiring.md is missing'], text: '' });
+    write('sys/bad/wiring.md', '```yaml\nmembers:\n  - role: member\n  - part: vault\n    role: bystander\nwiring:\n  - effect: adapter.mint\n    event: token\nclosure:\n  - asset: hrd\n    modules: [vault]\n```\n');
+    const c = readWiring(join(root, 'sys', 'bad'));
+    assert.deepEqual(c.errors, ['wiring.md: a member names no part', 'wiring.md: vault has role "bystander", not member or surroundings', 'wiring.md: wiring needs effect: <part>.<effect> and event: <part>.<event>']);
     assert.deepEqual(c.closure, [{ asset: 'hrd', edges: [], modules: ['vault'] }]);
     assert.deepEqual(c.scenarios, []);
-    write('sys/free/composition.md', '```yaml\nmembers:\n  - component: token\nfree: [token.mint, mint]\n```\n');
-    const free = readComposition(join(root, 'sys', 'free'));
+    write('sys/free/wiring.md', '```yaml\nmembers:\n  - part: token\nfree: [token.mint, mint]\n```\n');
+    const free = readWiring(join(root, 'sys', 'free'));
     assert.deepEqual(free.free, ['token.mint', 'mint']);
-    assert.deepEqual(free.errors, ['composition.md: free names "mint", not <component>.<event>']);
-    write('sys/twice/composition.md', '```yaml\nmembers:\n  - component: adapter\n  - component: token\n  - component: adapter\n    role: surroundings\n  - component: adapter\nscenarios: [all-honest, quiet, all-honest]\n```\n');
-    const twice = readComposition(join(root, 'sys', 'twice'));
-    assert.deepEqual(twice.errors, ['composition.md: adapter is listed as a member more than once; the first is read', 'composition.md: scenarios lists all-honest more than once']);
-    assert.deepEqual(twice.members.map(m => [m.component, m.role]), [['adapter', 'member'], ['token', 'member']]);
+    assert.deepEqual(free.errors, ['wiring.md: free names "mint", not <part>.<event>']);
+    write('sys/twice/wiring.md', '```yaml\nmembers:\n  - part: adapter\n  - part: token\n  - part: adapter\n    role: surroundings\n  - part: adapter\nscenarios: [all-honest, quiet, all-honest]\n```\n');
+    const twice = readWiring(join(root, 'sys', 'twice'));
+    assert.deepEqual(twice.errors, ['wiring.md: adapter is listed as a member more than once; the first is read', 'wiring.md: scenarios lists all-honest more than once']);
+    assert.deepEqual(twice.members.map(m => [m.part, m.role]), [['adapter', 'member'], ['token', 'member']]);
     assert.deepEqual(twice.scenarios, ['all-honest', 'quiet']);
-    write('sys/yaml/composition.md', '```yaml\nmembers: [\n```\n');
-    assert.match(readComposition(join(root, 'sys', 'yaml')).errors[0], /^composition\.md: yaml line/);
+    write('sys/yaml/wiring.md', '```yaml\nmembers: [\n```\n');
+    assert.match(readWiring(join(root, 'sys', 'yaml')).errors[0], /^wiring\.md: yaml line/);
   });
 });
 
 // ---------------------------------------------------------------- compose.ts
 
-describe('composeSystem', () => {
+describe('composeMembers', () => {
   const members = { adapter: irOf(ADAPTER), token: irOf(TOKEN) };
-  let actors: ActorsModel, composition: Composition, prose: SystemProse, composed: ComposedSystem;
+  let actors: ActorsModel, wiring: Wiring, prose: CompositionProse, composed: Composed;
   before(() => {
     write('compose/actors/actors.md', ACTORS);
     write('compose/actors/scenarios.md', SCENARIOS);
-    write('compose/systems/supply/composition.md', COMPOSITION);
+    write('compose/compositions/supply/wiring.md', COMPOSITION);
     actors = readActors(join(root, 'compose'));
-    composition = readComposition(join(root, 'compose', 'systems', 'supply'));
-    prose = parseSystemProse(SUPPLY);
+    wiring = readWiring(join(root, 'compose', 'compositions', 'supply'));
+    prose = parseCompositionProse(SUPPLY);
     assert.deepEqual(prose.errors, []);
-    composed = composeSystem({ name: 'supply', prose, composition, members, actors });
+    composed = composeMembers({ name: 'supply', prose, wiring, members, actors });
   });
 
   it('composes without errors and names the module, the actors and the prefixed variables', () => {
     assert.deepEqual(composed.errors, []);
     assert.equal(composed.module, 'Supply');
     assert.deepEqual(composed.actors, ['breaker', 'chain', 'user']);
-    assert.deepEqual(composed.components, ['adapter']);
+    assert.deepEqual(composed.parts, ['adapter']);
     assert.deepEqual(composed.free, [{ event: 'token.burn', from: 'adapter', declared: false }]);
     assert.deepEqual(composed.outside, []);
     assert.deepEqual(composed.vars, ['adapter_state', 'adapter_held', 'adapter_sent_mint', 'token_state', 'token_supply', 'n1_ticks', 'w1_at']);
@@ -931,7 +931,7 @@ describe('composeSystem', () => {
     assert.ok(indexOf(composed.tla, '\nHonestUser_adapter_Exit ==') < indexOf(composed.tla, '\nDue_user =='));
   });
 
-  it('gates every actor by its mode, leaves a component sender without one, and writes fairness for the honest actors of the Givens', () => {
+  it('gates every actor by its mode, leaves a part sender without one, and writes fairness for the honest actors of the Givens', () => {
     assert.ok(composed.tla.includes('\nBreaker == (Mode_breaker /= "offline") /\\ (adapter_M2_Halt)\nHonestBreaker == (Mode_breaker = "honest") /\\ Breaker\nUser == (Mode_user /= "offline") /\\ (adapter_M1_Exit)\nHonestUser == (Mode_user = "honest") /\\ User\nHonestUser_adapter_Exit == (Mode_user = "honest") /\\ (adapter_M1_Exit)   \\* on adapter.exit\n'));
     assert.ok(composed.tla.includes('\nAdapter == token_M2_Burn   \\* sends left free\n'));
     assert.ok(!composed.tla.includes('Mode_adapter'));
@@ -965,80 +965,80 @@ describe('composeSystem', () => {
   });
 
   it('reports an unknown member, unknown wiring, an undeclared sender and an unknown scenario', () => {
-    const ghost = composeSystem({ name: 'supply', prose, composition: { ...composition, members: [...composition.members, { component: 'ghost', role: 'member', pins: [] }] }, members, actors });
-    assert.ok(ghost.errors.includes('composition names component ghost, which has no dossier or does not compile'));
-    const wiring = composeSystem({ name: 'supply', prose, composition: { ...composition, wiring: [{ effect: { component: 'adapter', name: 'nothing' }, event: { component: 'token', name: 'nobody' } }, { effect: { component: 'vault', name: 'x' }, event: { component: 'token', name: 'mint' } }] }, members, actors });
-    assert.ok(wiring.errors.includes('wiring names effect adapter.nothing, which adapter does not send'));
-    assert.ok(wiring.errors.includes('wiring names event token.nobody, which token does not receive'));
-    assert.ok(wiring.errors.includes('wiring names vault, which is not a member'));
-    const sender = composeSystem({ name: 'supply', prose, composition, members: { ...members, token: irOf(TOKEN.replaceAll('from the Adapter', 'from the Ghost')) }, actors });
-    assert.ok(sender.errors.includes('token: event mint comes from "the Ghost", which is neither an actor in actors.md nor a component'));
-    assert.ok(sender.errors.includes('token: event burn comes from "the Ghost", which is neither an actor in actors.md nor a component'));
-    const retired = composeSystem({ name: 'supply', prose, composition, members: { ...members, token: irOf(TOKEN.replaceAll('from the Adapter', 'from the Ghost')) }, actors, retired: ['ghost'] });
-    assert.ok(retired.errors.includes('token: event mint comes from "the Ghost", which is a retired component'));
-    const scenario = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, nope.')), composition, members, actors });
+    const ghost = composeMembers({ name: 'supply', prose, wiring: { ...wiring, members: [...wiring.members, { part: 'ghost', role: 'member', pins: [] }] }, members, actors });
+    assert.ok(ghost.errors.includes('wiring names part ghost, which has no dossier or does not compile'));
+    const badWiring = composeMembers({ name: 'supply', prose, wiring: { ...wiring, wiring: [{ effect: { part: 'adapter', name: 'nothing' }, event: { part: 'token', name: 'nobody' } }, { effect: { part: 'vault', name: 'x' }, event: { part: 'token', name: 'mint' } }] }, members, actors });
+    assert.ok(badWiring.errors.includes('wiring names effect adapter.nothing, which adapter does not send'));
+    assert.ok(badWiring.errors.includes('wiring names event token.nobody, which token does not receive'));
+    assert.ok(badWiring.errors.includes('wiring names vault, which is not a member'));
+    const sender = composeMembers({ name: 'supply', prose, wiring, members: { ...members, token: irOf(TOKEN.replaceAll('from the Adapter', 'from the Ghost')) }, actors });
+    assert.ok(sender.errors.includes('token: event mint comes from "the Ghost", which is neither an actor in actors.md nor a part'));
+    assert.ok(sender.errors.includes('token: event burn comes from "the Ghost", which is neither an actor in actors.md nor a part'));
+    const retired = composeMembers({ name: 'supply', prose, wiring, members: { ...members, token: irOf(TOKEN.replaceAll('from the Adapter', 'from the Ghost')) }, actors, retired: ['ghost'] });
+    assert.ok(retired.errors.includes('token: event mint comes from "the Ghost", which is a retired part'));
+    const scenario = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, nope.')), wiring, members, actors });
     assert.ok(scenario.errors.includes('A1 claims scenario "nope", which scenarios.md does not declare'));
     assert.equal(scenario.cells.some(c => c.scenario === 'nope'), false);
-    const unknownRef = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('{token.supply = adapter.held}', '{token.supply = vault.debt + adapter.nothing}')), composition, members, actors });
+    const unknownRef = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('{token.supply = adapter.held}', '{token.supply = vault.debt + adapter.nothing}')), wiring, members, actors });
     assert.ok(unknownRef.errors.includes('"vault.debt" names vault, which is not a member'));
     assert.ok(unknownRef.errors.includes('"adapter.nothing": adapter holds no data or state named nothing'));
-    const given = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Pope.')), composition, members, actors });
+    const given = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Pope.')), wiring, members, actors });
     assert.ok(given.errors.includes('supply G1: actor "the Pope" is not declared in actors.md'));
   });
 
-  it('reports a member that does not compile once, and nothing that names it, while a component that is no member is still reported', () => {
-    const p = parseSystemProse(SUPPLY
+  it('reports a member that does not compile once, and nothing that names it, while a part that is no member is still reported', () => {
+    const p = parseCompositionProse(SUPPLY
       .replace('[A2] Always, {adapter.Open or adapter.Halted}.', '[A2] Always, {adapter.Open or adapter.Halted or ghost.level = 0 or vault.debt = 0}.')
       .replace('Actor: the Breaker.', 'Actor: the Breaker, on ghost.stop.')
       .replace('adapter.halt, adapter.exit amount 1 refused', 'adapter.halt, ghost.post, adapter.exit amount 1 refused'));
     assert.deepEqual(p.errors, []);
-    const ghostly = composeSystem({
+    const ghostly = composeMembers({
       name: 'supply', prose: p, members, actors,
-      composition: {
-        ...composition,
-        members: [...composition.members, { component: 'ghost', role: 'member', pins: [] }],
-        wiring: [...composition.wiring, { effect: { component: 'ghost', name: 'out' }, event: { component: 'token', name: 'burn' } }, { effect: { component: 'adapter', name: 'mint' }, event: { component: 'ghost', name: 'mint' } }],
+      wiring: {
+        ...wiring,
+        members: [...wiring.members, { part: 'ghost', role: 'member', pins: [] }],
+        wiring: [...wiring.wiring, { effect: { part: 'ghost', name: 'out' }, event: { part: 'token', name: 'burn' } }, { effect: { part: 'adapter', name: 'mint' }, event: { part: 'ghost', name: 'mint' } }],
         free: ['ghost.post', 'token.burn'],
       },
     });
-    assert.deepEqual(ghostly.errors, ['composition names component ghost, which has no dossier or does not compile', '"vault.debt" names vault, which is not a member'], 'no wiring, free:, condition, Given or walk error about ghost');
+    assert.deepEqual(ghostly.errors, ['wiring names part ghost, which has no dossier or does not compile', '"vault.debt" names vault, which is not a member'], 'no wiring, free:, condition, Given or walk error about ghost');
   });
 
   it('acknowledges a free send declared under free:', () => {
-    const declared = composeSystem({ name: 'supply', prose, composition: { ...composition, free: ['token.burn'] }, members, actors });
+    const declared = composeMembers({ name: 'supply', prose, wiring: { ...wiring, free: ['token.burn'] }, members, actors });
     assert.deepEqual(declared.errors, []);
     assert.deepEqual(declared.free, [{ event: 'token.burn', from: 'adapter', declared: true }]);
   });
 
   it('reports a free: entry that names an unknown event, a wired event or an event no member sends', () => {
-    const bad = composeSystem({ name: 'supply', prose, composition: { ...composition, free: ['token.nothing', 'token.mint', 'adapter.exit'] }, members, actors });
+    const bad = composeMembers({ name: 'supply', prose, wiring: { ...wiring, free: ['token.nothing', 'token.mint', 'adapter.exit'] }, members, actors });
     assert.ok(bad.errors.includes('free: names token.nothing, which no member receives'));
     assert.ok(bad.errors.includes('free: names token.mint, which is wired'));
     assert.ok(bad.errors.includes('free: names adapter.exit, which no member sends'));
   });
 
-  it('names a component outside the composition and leaves its sends free', () => {
-    const alone = composeSystem({ name: 'supply', prose: parseSystemProse('# Supply\nConcern: supply\n\nThe token alone.\n\n## Always\n[A1] Always, {token.supply <= 4}.\n\n## Words only\n[T1] Nothing more.\n'), composition: { ...composition, members: [{ component: 'token', role: 'member', pins: [] }], wiring: [] }, members, actors, components: ['adapter', 'token'] });
+  it('names a part outside the wiring and leaves its sends free', () => {
+    const alone = composeMembers({ name: 'supply', prose: parseCompositionProse('# Supply\nConcern: supply\n\nThe token alone.\n\n## Always\n[A1] Always, {token.supply <= 4}.\n\n## Words only\n[T1] Nothing more.\n'), wiring: { ...wiring, members: [{ part: 'token', role: 'member', pins: [] }], wiring: [] }, members, actors, parts: ['adapter', 'token'] });
     assert.deepEqual(alone.errors, []);
     assert.deepEqual(alone.outside, [{ from: 'adapter', events: ['token.mint', 'token.burn'] }]);
     assert.deepEqual(alone.free, []);
-    assert.ok(alone.tla.includes('\nAdapter == token_M1_Mint \\/ token_M2_Burn   \\* outside the composition\n'));
+    assert.ok(alone.tla.includes('\nAdapter == token_M1_Mint \\/ token_M2_Burn   \\* outside the wiring\n'));
   });
 
-  it('reports a system Given naming an event its actor does not send, and a Given naming a component', () => {
-    const notSent = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Breaker, on adapter.exit, prompt.')), composition, members, actors });
+  it('reports a composition Given naming an event its actor does not send, and a Given naming a part', () => {
+    const notSent = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Breaker, on adapter.exit, prompt.')), wiring, members, actors });
     assert.ok(notSent.errors.includes('supply G1 names event adapter.exit, which the Breaker does not send'));
-    const unknown = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Breaker, on adapter.nothing.')), composition, members, actors });
+    const unknown = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Breaker, on adapter.nothing.')), wiring, members, actors });
     assert.ok(unknown.errors.includes('supply G1 names event adapter.nothing, which no member receives'));
-    const component = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Adapter.')), composition, members, actors });
-    assert.ok(component.errors.includes('supply G1: names "the Adapter", which is a component; a rely on a component is a Guarantee or a wiring'));
+    const part = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Adapter.')), wiring, members, actors });
+    assert.ok(part.errors.includes('supply G1: names "the Adapter", which is a part; a rely on a part is a Guarantee or a wiring'));
   });
 
-  it('restricts an actor\'s moves by a system Given\'s only when, while the actor is honest, and adds no fairness for it', () => {
+  it('restricts an actor\'s moves by a composition Given\'s only when, while the actor is honest, and adds no fairness for it', () => {
     const text = SUPPLY.replace('\n\n## Walks', '\n[G3] Given that the user exits small amounts. If this is false, A1 is at risk. Actor: the user, on adapter.exit, only when {amount <= 1}.\n\n## Walks');
-    const p = parseSystemProse(text);
+    const p = parseCompositionProse(text);
     assert.deepEqual(p.errors, []);
-    const restricted = composeSystem({ name: 'supply', prose: p, composition, members, actors });
+    const restricted = composeMembers({ name: 'supply', prose: p, wiring, members, actors });
     assert.deepEqual(restricted.errors, []);
     const exit = block(restricted.tla, 'adapter_M1_Exit');
     assert.ok(exit.includes('\n    /\\ ((adapter_held + amount) <= 2)\n    /\\ (Mode_user /= "honest" \\/ (amount <= 1))   \\* supply.G3\n    /\\ adapter_state\' = adapter_state\n'));
@@ -1046,13 +1046,13 @@ describe('composeSystem', () => {
     assert.ok(restricted.tla.includes('\n        /\\ WF_vars(HonestUser_adapter_Exit)        \\* from supply.G2 adapter.G1\n'), 'only when adds no fairness');
   });
 
-  it('claims the composition\'s default scenarios for a property without a Scenarios sentence, and all-honest when none are declared', () => {
-    const none = composeSystem({ name: 'supply', prose, composition: { ...composition, scenarios: [] }, members, actors });
+  it('claims the wiring\'s default scenarios for a property without a Scenarios sentence, and all-honest when none are declared', () => {
+    const none = composeMembers({ name: 'supply', prose, wiring: { ...wiring, scenarios: [] }, members, actors });
     assert.deepEqual(none.cells.filter(c => c.property === 'A2').map(c => c.scenario), ['all-honest']);
   });
 
   it('writes a ConstInit for all-honest even when no cell or walk claims it, and none for a scenario none claims', () => {
-    const only = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: breaker-offline.').replace('Scenarios: all-honest.', 'Scenarios: breaker-offline.').replace('Walk Exit under all-honest', 'Walk Exit under breaker-offline')), composition: { ...composition, scenarios: ['breaker-offline'] }, members, actors });
+    const only = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: breaker-offline.').replace('Scenarios: all-honest.', 'Scenarios: breaker-offline.').replace('Walk Exit under all-honest', 'Walk Exit under breaker-offline')), wiring: { ...wiring, scenarios: ['breaker-offline'] }, members, actors });
     assert.deepEqual(only.errors, []);
     assert.deepEqual(only.tla.match(/^ConstInit_\w+/gm), ['ConstInit_all_honest', 'ConstInit_breaker_offline']);
     assert.deepEqual([...new Set(only.cells.map(c => c.scenario))], ['breaker-offline']);
@@ -1066,11 +1066,11 @@ describe('composeSystem', () => {
 
   describe('with a window in a claimed scenario', () => {
     // user-away: the user offline from tick 1 until tick 3, the chain offline from tick 2 on.
-    let w: ComposedSystem;
+    let w: Composed;
     before(() => {
-      const p = parseSystemProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, user-away.').replace('\n\n## Walks', '\n[G3] Given that the chain keeps ticking. If this is false, nothing moves. Actor: the chain.\n[G4] Given that the user exits small amounts. If this is false, A1 is at risk. Actor: the user, on adapter.exit, only when {amount <= 1}.\n\n## Walks'));
+      const p = parseCompositionProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, user-away.').replace('\n\n## Walks', '\n[G3] Given that the chain keeps ticking. If this is false, nothing moves. Actor: the chain.\n[G4] Given that the user exits small amounts. If this is false, A1 is at risk. Actor: the user, on adapter.exit, only when {amount <= 1}.\n\n## Walks'));
       assert.deepEqual(p.errors, []);
-      w = composeSystem({ name: 'supply', prose: p, composition, members, actors });
+      w = composeMembers({ name: 'supply', prose: p, wiring, members, actors });
       assert.deepEqual(w.errors, []);
     });
 
@@ -1128,9 +1128,9 @@ describe('composeSystem', () => {
     // halted-full starts adapter.state, adapter.held and token.supply; paused starts adapter.paused and adapter.level.
     const JOIN_DATA = ADAPTER.replace('It holds held, a count from 0 to 2.', 'It holds held, a count from 0 to 2. It holds paused, a flag. It holds level, one of Low, Mid or High.');
     const started = { ...members, adapter: irOf(JOIN_DATA) };
-    let s: ComposedSystem;
+    let s: Composed;
     before(() => {
-      s = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, halted-full, paused.')), composition, members: started, actors: actorsWith('start-claimed', PAUSED) });
+      s = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, halted-full, paused.')), wiring, members: started, actors: actorsWith('start-claimed', PAUSED) });
       assert.deepEqual(s.errors, []);
     });
 
@@ -1156,13 +1156,13 @@ describe('composeSystem', () => {
       assert.ok(s.cfgs['A1_paused.cfg'].includes('\nCONSTANT Start_adapter_state = "Open"\nCONSTANT Start_adapter_held = 0\nCONSTANT Start_adapter_paused = TRUE\nCONSTANT Start_adapter_level = "High"\nCONSTANT Start_token_supply = 0\nCONSTRAINT SentBounded\n'));
     });
 
-    it('reports a start naming no component, a datum the member does not hold or a value outside its range, ignores another system\'s component, and sets nothing it cannot read', () => {
-      const bad = composeSystem({
-        name: 'supply', prose: parseSystemProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, bad-start.')), composition, members: started, components: ['adapter', 'token', 'vault'],
+    it('reports a start naming no part, a datum the member does not hold or a value outside its range, ignores another composition\'s part, and sets nothing it cannot read', () => {
+      const bad = composeMembers({
+        name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, bad-start.')), wiring, members: started, parts: ['adapter', 'token', 'vault'],
         actors: actorsWith('start-errors', '  - id: bad-start\n    start: { ghost.level: 1, vault.debt: 1, adapter.nothing: 1, adapter.sent_mint: 1, adapter.held: 3, adapter.paused: maybe, adapter.level: Top, adapter.state: Closed }\n'),
       });
       assert.deepEqual(bad.errors, [
-        'start: bad-start starts ghost.level, which names no component',
+        'start: bad-start starts ghost.level, which names no part',
         'start: bad-start starts adapter.nothing, which adapter does not hold',
         'start: bad-start starts adapter.sent_mint, which adapter does not hold',
         'start: bad-start starts adapter.held at 3, outside 0..2',
@@ -1174,16 +1174,16 @@ describe('composeSystem', () => {
     });
 
     it('reads the start of every declared scenario against the members, claimed or not, and makes constants only of a claimed one\'s', () => {
-      const unclaimed = composeSystem({
-        name: 'supply', prose: parseSystemProse(SUPPLY), composition, members, components: ['adapter', 'token', 'vault'],
+      const unclaimed = composeMembers({
+        name: 'supply', prose: parseCompositionProse(SUPPLY), wiring, members, parts: ['adapter', 'token', 'vault'],
         actors: actorsWith('start-unclaimed', `${PAUSED}  - id: bad-start\n    start: { ghost.level: 1, vault.debt: 1, adapter.held: 3, token.supply: 4 }\n`),
       });
       assert.deepEqual(unclaimed.errors, [
         'start: paused starts adapter.paused, which adapter does not hold',
         'start: paused starts adapter.level, which adapter does not hold',
-        'start: bad-start starts ghost.level, which names no component',
+        'start: bad-start starts ghost.level, which names no part',
         'start: bad-start starts adapter.held at 3, outside 0..2',
-      ], 'halted-full reads; vault is another system\'s');
+      ], 'halted-full reads; vault is another composition\'s');
       assert.ok(!unclaimed.tla.includes('Start_'), 'no cell or walk claims halted-full, paused or bad-start');
       assert.deepEqual(unclaimed.tla.match(/^ConstInit_\w+/gm), ['ConstInit_all_honest', 'ConstInit_user_malicious', 'ConstInit_breaker_offline']);
     });
@@ -1193,11 +1193,11 @@ describe('composeSystem', () => {
     // W1 exits, takes a tick and is halted, under a scenario no cell claims; W2 is a free send, under all-honest.
     const WALKS = SUPPLY.replace('[W1] Walk Exit under all-honest: from adapter.Open, adapter.exit amount 1, adapter.halt, adapter.exit amount 1 refused; ends adapter.Halted.',
       '[W1] Walk Drain under user-greedy: from adapter.Open, adapter.exit amount 2, adapter.tick, adapter.exit amount 2 refused, adapter.halt; ends adapter.Halted.\n[W2] Walk Burn: from token.Live, token.burn amount {adapter.held}; ends token.Live.');
-    let w: ComposedSystem;
+    let w: Composed;
     before(() => {
-      const p = parseSystemProse(WALKS);
+      const p = parseCompositionProse(WALKS);
       assert.deepEqual(p.errors, []);
-      w = composeSystem({ name: 'supply', prose: p, composition, members, actors: actorsWith('walks', '  - id: user-greedy\n    modes: { user: malicious }\n') });
+      w = composeMembers({ name: 'supply', prose: p, wiring, members, actors: actorsWith('walks', '  - id: user-greedy\n    modes: { user: malicious }\n') });
       assert.deepEqual(w.errors, []);
     });
 
@@ -1239,16 +1239,16 @@ describe('composeSystem', () => {
     });
 
     it('runs a walk under its scenario\'s window and start', () => {
-      const p = parseSystemProse(SUPPLY.replace('Walk Exit under all-honest', 'Walk Exit under user-away').replace('\n\n## Walks', '\n\n## Walks\n[W2] Walk Full under halted-full: from adapter.Halted, token.burn amount 1; ends token.Live.'));
-      const run = composeSystem({ name: 'supply', prose: p, composition, members, actors });
+      const p = parseCompositionProse(SUPPLY.replace('Walk Exit under all-honest', 'Walk Exit under user-away').replace('\n\n## Walks', '\n\n## Walks\n[W2] Walk Full under halted-full: from adapter.Halted, token.burn amount 1; ends token.Live.'));
+      const run = composeMembers({ name: 'supply', prose: p, wiring, members, actors });
       assert.deepEqual(run.errors, []);
       assert.ok(run.tla.includes('\nModeNow_user == '), 'user-away\'s window, claimed by W1 alone, gives the user a clock');
       assert.ok(run.cfgs['W1_user_away.cfg'].includes('\nCONSTANT Mode_user = "offline"\nCONSTANT From_chain = 2\nCONSTANT Until_chain = 0\nCONSTANT From_user = 1\nCONSTANT Until_user = 3\n'));
       assert.ok(run.cfgs['W2_halted_full.cfg'].includes('\nCONSTANT Start_adapter_state = "Halted"\nCONSTANT Start_adapter_held = 2\nCONSTANT Start_token_supply = 2\n'));
     });
 
-    it('reports a step on an event reached through wiring, on an event its member does not receive, on a component that is no member, a field or value the event does not carry, and an undeclared scenario', () => {
-      const bad = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('[W1] Walk Exit under all-honest: from adapter.Open, adapter.exit amount 1, adapter.halt, adapter.exit amount 1 refused; ends adapter.Halted.', '[W1] Walk Wrong under nope: from adapter.Open, token.mint amount 1, adapter.nothing, vault.change, adapter.exit speed 2, adapter.exit amount lots; ends adapter.Halted.')), composition, members, actors });
+    it('reports a step on an event reached through wiring, on an event its member does not receive, on a part that is no member, a field or value the event does not carry, and an undeclared scenario', () => {
+      const bad = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('[W1] Walk Exit under all-honest: from adapter.Open, adapter.exit amount 1, adapter.halt, adapter.exit amount 1 refused; ends adapter.Halted.', '[W1] Walk Wrong under nope: from adapter.Open, token.mint amount 1, adapter.nothing, vault.change, adapter.exit speed 2, adapter.exit amount lots; ends adapter.Halted.')), wiring, members, actors });
       assert.deepEqual(bad.errors, [
         'W1 steps on token.mint, which is reached through wiring',
         'W1 steps on adapter.nothing, which adapter does not receive',
@@ -1267,10 +1267,10 @@ describe('composeSystem', () => {
     const CLOCK = '# Clock\n\nIt holds n, a count from 0 to 2. It sends beat to the Meter.\n\n## States\n[S1] Run: running.\n\n## Events\n[E1] tick, from the chain: a block passes.\n\n## Moves\n[M1] When Run receives tick and n is below 2, it stays Run, n grows by one, sends beat.\n[M2] When Run receives tick and n is 2, it stays Run.\n';
     const METER = '# Meter\n\nIt holds count, a count from 0 to 3.\n\n## States\n[S1] Live: counting.\n\n## Events\n[E1] beat, from the Clock: one beat.\n\n## Moves\n[M1] When Live receives beat and count is below 3, it stays Live, count grows by one.\n';
     const BEATS = '# Beats\nConcern: beats\n\nThe meter counts the clock.\n\n## Always\n[A1] Always, {meter.count <= 3}.\n';
-    const wiredTick = { members: [{ component: 'clock', role: 'member', pins: [] }, { component: 'meter', role: 'member', pins: [] }], wiring: [{ effect: { component: 'clock', name: 'beat' }, event: { component: 'meter', name: 'beat' } }], free: [], closure: [], scenarios: [], errors: [], text: '' };
+    const wiredTick = { members: [{ part: 'clock', role: 'member', pins: [] }, { part: 'meter', role: 'member', pins: [] }], wiring: [{ effect: { part: 'clock', name: 'beat' }, event: { part: 'meter', name: 'beat' } }], free: [], closure: [], scenarios: [], errors: [], text: '' };
 
     it('conjoins the wired target\'s move in the tick, keeps unchanged what a tick move does not reach, and leaves no member the tick reaches to stand still in Tick', () => {
-      const c = composeSystem({ name: 'beats', prose: parseSystemProse(BEATS), composition: wiredTick, members: { clock: irOf(CLOCK), meter: irOf(METER) }, actors, components: ['adapter', 'token'] });
+      const c = composeMembers({ name: 'beats', prose: parseCompositionProse(BEATS), wiring: wiredTick, members: { clock: irOf(CLOCK), meter: irOf(METER) }, actors, parts: ['adapter', 'token'] });
       assert.deepEqual(c.errors, []);
       assert.ok(c.tla.includes('\nclock_Tick == \\/ (clock_state = "Run" /\\ (clock_n < 2) /\\ clock_state\' = clock_state /\\ clock_n\' = (clock_n + 1) /\\ clock_sent_beat\' = clock_sent_beat + 1 /\\ (meter_state = "Live" /\\ (meter_count < 3) /\\ meter_state\' = meter_state /\\ meter_count\' = (meter_count + 1)))\n'
         + '            \\/ (clock_state = "Run" /\\ (clock_n = 2) /\\ clock_state\' = clock_state /\\ UNCHANGED <<clock_n, clock_sent_beat, meter_state, meter_count>>)\n'
@@ -1281,54 +1281,54 @@ describe('composeSystem', () => {
     });
 
     it('refuses a tick that would move one member twice in a step', () => {
-      const both = composeSystem({ name: 'beats', prose: parseSystemProse(BEATS), composition: wiredTick, members: { clock: irOf(CLOCK), meter: irOf(METER.replace('[E1] beat, from the Clock: one beat.', '[E1] beat, from the Clock: one beat.\n[E2] tick, from the chain: a block passes.').replace('count grows by one.', 'count grows by one.\n[M2] When Live receives tick, it stays Live, count becomes 0.')) }, actors, components: ['adapter', 'token'] });
-      assert.deepEqual(both.problems, [{ name: 'composition does not compose', message: 'the chain\'s tick reaches meter through clock and meter; a member takes one move in a step' }]);
+      const both = composeMembers({ name: 'beats', prose: parseCompositionProse(BEATS), wiring: wiredTick, members: { clock: irOf(CLOCK), meter: irOf(METER.replace('[E1] beat, from the Clock: one beat.', '[E1] beat, from the Clock: one beat.\n[E2] tick, from the chain: a block passes.').replace('count grows by one.', 'count grows by one.\n[M2] When Live receives tick, it stays Live, count becomes 0.')) }, actors, parts: ['adapter', 'token'] });
+      assert.deepEqual(both.problems, [{ name: 'wiring does not compose', message: 'the chain\'s tick reaches meter through clock and meter; a member takes one move in a step' }]);
     });
   });
 
   it('binds what a wired effect carries from the source\'s data in Can_, as the action does', () => {
     const VAULT = '# Vault\n\nIt holds amount, a count from 0 to 2. It sends push to the Sink, carrying amount.\n\n## States\n[S1] Open: open.\n\n## Events\n[E1] go, from the user: go.\n\n## Moves\n[M1] When Open receives go, it stays Open, sends push.\n';
     const SINK = '# Sink\n\nIt holds total, a count from 0 to 2.\n\n## States\n[S1] Live: live.\n\n## Events\n[E1] push, from the Vault: pushed. Carries amount, a count from 0 to 2.\n\n## Moves\n[M1] When Live receives push and {total + amount <= 2}, it stays Live, total grows by amount.\n';
-    const c = composeSystem({ name: 'push', prose: parseSystemProse('# Push\nConcern: push\n\n## Always\n[A1] Always, {sink.total <= 2}.\n'), composition: { members: [{ component: 'vault', role: 'member', pins: [] }, { component: 'sink', role: 'member', pins: [] }], wiring: [{ effect: { component: 'vault', name: 'push' }, event: { component: 'sink', name: 'push' } }], free: [], closure: [], scenarios: [], errors: [], text: '' }, members: { vault: irOf(VAULT), sink: irOf(SINK) }, actors, components: ['adapter', 'token'] });
+    const c = composeMembers({ name: 'push', prose: parseCompositionProse('# Push\nConcern: push\n\n## Always\n[A1] Always, {sink.total <= 2}.\n'), wiring: { members: [{ part: 'vault', role: 'member', pins: [] }, { part: 'sink', role: 'member', pins: [] }], wiring: [{ effect: { part: 'vault', name: 'push' }, event: { part: 'sink', name: 'push' } }], free: [], closure: [], scenarios: [], errors: [], text: '' }, members: { vault: irOf(VAULT), sink: irOf(SINK) }, actors, parts: ['adapter', 'token'] });
     assert.deepEqual(c.errors, []);
     assert.ok(c.tla.includes('\nCan_vault_M1_Go == vault_state = "Open" /\\ ((sink_state = "Live" /\\ ((sink_total + vault_amount) <= 2)))\n'), 'no fresh \\E over amount');
     assert.ok(block(c.tla, 'vault_M1_Go').includes('(sink_state = "Live" /\\ ((sink_total + vault_amount) <= 2) /\\ sink_state\' = sink_state /\\ sink_total\' = (sink_total + vault_amount))'));
   });
 
   it('restricts the chain\'s tick by an only when on it, in the tick as in its Can_', () => {
-    const p = parseSystemProse(SUPPLY.replace('\n\n## Walks', '\n[G3] Given that the chain ticks only while the adapter holds more than one. If this is false, nothing. Actor: the chain, on adapter.tick, only when {adapter.held > 1}.\n\n## Walks'));
-    const c = composeSystem({ name: 'supply', prose: p, composition, members, actors });
+    const p = parseCompositionProse(SUPPLY.replace('\n\n## Walks', '\n[G3] Given that the chain ticks only while the adapter holds more than one. If this is false, nothing. Actor: the chain, on adapter.tick, only when {adapter.held > 1}.\n\n## Walks'));
+    const c = composeMembers({ name: 'supply', prose: p, wiring, members, actors });
     assert.deepEqual(c.errors, []);
     assert.ok(c.tla.includes('\nadapter_Tick == \\/ (adapter_state = "Open" /\\ (adapter_held > 0) /\\ (Mode_chain /= "honest" \\/ (adapter_held > 1)) /\\ adapter_state\' = adapter_state /\\ adapter_held\' = (adapter_held - 1) /\\ UNCHANGED <<adapter_sent_mint>>)\n'));
     assert.ok(c.tla.includes('\nCan_adapter_M3_Tick == adapter_state = "Open" /\\ (adapter_held > 0) /\\ (Mode_chain /= "honest" \\/ (adapter_held > 1))\n'));
   });
 
   it('refuses a window in a claimed scenario when no member takes the chain\'s tick, since the clock that opens and closes it never moves', () => {
-    const alone = composeSystem({ name: 'supply', prose: parseSystemProse('# Supply\nConcern: supply\n\nThe token alone.\n\n## Always\n[A1] Always, {token.supply <= 4}. Scenarios: all-honest, user-away.\n'), composition: { ...composition, members: [{ component: 'token', role: 'member', pins: [] }], wiring: [] }, members: { token: irOf(TOKEN.replaceAll('from the Adapter', 'from the user')) }, actors, components: ['adapter', 'token'] });
-    assert.deepEqual(alone.problems, [{ name: 'composition does not compose', message: 'user-away gives user a window, but no member of supply takes the chain\'s tick, so the clock that opens and closes the window never moves' }]);
+    const alone = composeMembers({ name: 'supply', prose: parseCompositionProse('# Supply\nConcern: supply\n\nThe token alone.\n\n## Always\n[A1] Always, {token.supply <= 4}. Scenarios: all-honest, user-away.\n'), wiring: { ...wiring, members: [{ part: 'token', role: 'member', pins: [] }], wiring: [] }, members: { token: irOf(TOKEN.replaceAll('from the Adapter', 'from the user')) }, actors, parts: ['adapter', 'token'] });
+    assert.deepEqual(alone.problems, [{ name: 'wiring does not compose', message: 'user-away gives user a window, but no member of supply takes the chain\'s tick, so the clock that opens and closes the window never moves' }]);
   });
 
-  it('reads a system Given naming a component as a rely on the component, even where an actor has the same id', () => {
+  it('reads a composition Given naming a part as a rely on the part, even where an actor has the same id', () => {
     const shadow = actorsWith('shadow', '');
     shadow.actors.push({ id: 'adapter', name: 'the Adapter', kind: 'user', modes: ['honest'], pins: [], notes: null });
     shadow.byId.join = shadow.actors[shadow.actors.length - 1];
-    const c = composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Adapter.')), composition, members, actors: shadow });
-    assert.deepEqual(c.problems.filter(x => x.message.startsWith('supply G1')), [{ name: 'Given names a component', message: 'supply G1: names "the Adapter", which is a component; a rely on a component is a Guarantee or a wiring' }]);
+    const c = composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Adapter.')), wiring, members, actors: shadow });
+    assert.deepEqual(c.problems.filter(x => x.message.startsWith('supply G1')), [{ name: 'Given names a part', message: 'supply G1: names "the Adapter", which is a part; a rely on a part is a Guarantee or a wiring' }]);
   });
 
   it('says a member is retired where it is, and composes no cell twice for a scenario claimed twice', () => {
-    const gone = composeSystem({ name: 'supply', prose, composition: { ...composition, members: [...composition.members, { component: 'ghost', role: 'member', pins: [] }] }, members, actors, retired: ['ghost'] });
-    assert.deepEqual(gone.problems, [{ name: 'composition cites unknown component', message: 'composition names component ghost, which is retired' }]);
-    const twice = parseSystemProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, user-malicious, user-malicious.'));
+    const gone = composeMembers({ name: 'supply', prose, wiring: { ...wiring, members: [...wiring.members, { part: 'ghost', role: 'member', pins: [] }] }, members, actors, retired: ['ghost'] });
+    assert.deepEqual(gone.problems, [{ name: 'wiring names unknown part', message: 'wiring names part ghost, which is retired' }]);
+    const twice = parseCompositionProse(SUPPLY.replace('Scenarios: all-honest, user-malicious.', 'Scenarios: all-honest, user-malicious, user-malicious.'));
     assert.deepEqual(twice.errors, ['A1: claims scenario user-malicious twice']);
-    const c = composeSystem({ name: 'supply', prose: twice, composition, members, actors });
+    const c = composeMembers({ name: 'supply', prose: twice, wiring, members, actors });
     assert.deepEqual(c.cells.filter(x => x.property === 'A1').map(x => x.scenario), ['all-honest', 'user-malicious']);
   });
 
   it('leaves out of the module a property the prose could not read, so nothing is written from it', () => {
-    const p = parseSystemProse(SUPPLY.replace('[N1] Within 2 ticks of adapter.Open', '[N1] Within many ticks of adapter.Open').replace('[A2] Always, {adapter.Open or adapter.Halted}.', '[A2] Always, {adapter.Open or}.'));
+    const p = parseCompositionProse(SUPPLY.replace('[N1] Within 2 ticks of adapter.Open', '[N1] Within many ticks of adapter.Open').replace('[A2] Always, {adapter.Open or adapter.Halted}.', '[A2] Always, {adapter.Open or}.'));
     assert.deepEqual(p.errors, ['A2: unexpected end of {adapter.Open or}', 'N1: "many" is not a number of ticks']);
-    const c = composeSystem({ name: 'supply', prose: p, composition, members, actors });
+    const c = composeMembers({ name: 'supply', prose: p, wiring, members, actors });
     assert.deepEqual(c.errors, []);
     assert.ok(!c.tla.includes('undefined') && !c.tla.includes('n1_ticks') && !/^A2 ==/m.test(c.tla));
     assert.deepEqual([...new Set(c.cells.map(x => x.property))], ['A1', 'O1']);
@@ -1336,48 +1336,48 @@ describe('composeSystem', () => {
 
   it('names each problem by the tripwire it trips', () => {
     const problems = [
-      composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('{token.supply = adapter.held}', '{token.supply = vault.debt + adapter.nothing + held}').replace('Actor: the Breaker.', 'Actor: the Pope.').replace('[W1] Walk Exit under all-honest: from adapter.Open, adapter.exit amount 1, adapter.halt, adapter.exit amount 1 refused; ends adapter.Halted.', '[W1] Walk Wrong under nope: from adapter.Open, token.mint amount 1, adapter.nothing, vault.change, adapter.exit speed 2, adapter.exit amount lots; ends adapter.Halted.').replace('Scenarios: all-honest.', 'Scenarios: nope.')), composition: { ...composition, members: [...composition.members, { component: 'ghost', role: 'member', pins: [] }], wiring: [...composition.wiring, { effect: { component: 'adapter', name: 'nothing' }, event: { component: 'token', name: 'nobody' } }, { effect: { component: 'vault', name: 'x' }, event: { component: 'token', name: 'mint' } }], free: ['token.nothing', 'token.mint'] }, members: { ...members, token: irOf(TOKEN.replace('[E1] mint, from the Adapter', '[E1] mint, from the Phantom')) }, actors: actorsWith('names', '  - id: bad-start\n    start: { phantom.level: 1 }\n') }).problems,
-      composeSystem({ name: 'supply', prose: parseSystemProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Adapter.').replace('Actor: the user, on adapter.exit, prompt.', 'Actor: the Breaker, on adapter.exit, prompt.')), composition, members: { ...members, token: irOf(TOKEN.replace('[E2] burn, from the Adapter', '[E2] burn, from the Ghost')) }, actors, retired: ['ghost'] }).problems,
+      composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('{token.supply = adapter.held}', '{token.supply = vault.debt + adapter.nothing + held}').replace('Actor: the Breaker.', 'Actor: the Pope.').replace('[W1] Walk Exit under all-honest: from adapter.Open, adapter.exit amount 1, adapter.halt, adapter.exit amount 1 refused; ends adapter.Halted.', '[W1] Walk Wrong under nope: from adapter.Open, token.mint amount 1, adapter.nothing, vault.change, adapter.exit speed 2, adapter.exit amount lots; ends adapter.Halted.').replace('Scenarios: all-honest.', 'Scenarios: nope.')), wiring: { ...wiring, members: [...wiring.members, { part: 'ghost', role: 'member', pins: [] }], wiring: [...wiring.wiring, { effect: { part: 'adapter', name: 'nothing' }, event: { part: 'token', name: 'nobody' } }, { effect: { part: 'vault', name: 'x' }, event: { part: 'token', name: 'mint' } }], free: ['token.nothing', 'token.mint'] }, members: { ...members, token: irOf(TOKEN.replace('[E1] mint, from the Adapter', '[E1] mint, from the Phantom')) }, actors: actorsWith('names', '  - id: bad-start\n    start: { phantom.level: 1 }\n') }).problems,
+      composeMembers({ name: 'supply', prose: parseCompositionProse(SUPPLY.replace('Actor: the Breaker.', 'Actor: the Adapter.').replace('Actor: the user, on adapter.exit, prompt.', 'Actor: the Breaker, on adapter.exit, prompt.')), wiring, members: { ...members, token: irOf(TOKEN.replace('[E2] burn, from the Adapter', '[E2] burn, from the Ghost')) }, actors, retired: ['ghost'] }).problems,
     ].flat();
     assert.deepEqual(problems.map(p => `${p.name} | ${p.message}`), [
-      'composition cites unknown component | composition names component ghost, which has no dossier or does not compile',
-      'sender is not declared | token: event mint comes from "the Phantom", which is neither an actor in actors.md nor a component',
-      'malformed actors | start: bad-start starts phantom.level, which names no component',
+      'wiring names unknown part | wiring names part ghost, which has no dossier or does not compile',
+      'sender is not declared | token: event mint comes from "the Phantom", which is neither an actor in actors.md nor a part',
+      'malformed actors | start: bad-start starts phantom.level, which names no part',
       'wiring names unknown effect or event | wiring names effect adapter.nothing, which adapter does not send',
       'wiring names unknown effect or event | wiring names event token.nobody, which token does not receive',
-      'composition cites unknown component | wiring names vault, which is not a member',
-      'malformed composition | free: names token.nothing, which no member receives',
-      'malformed composition | free: names token.mint, which is wired',
+      'wiring names unknown part | wiring names vault, which is not a member',
+      'malformed wiring | free: names token.nothing, which no member receives',
+      'malformed wiring | free: names token.mint, which is wired',
       'sender is not declared | supply G1: actor "the Pope" is not declared in actors.md',
-      'composition does not compose | W1 steps on token.mint, which is reached through wiring',
+      'wiring does not compose | W1 steps on token.mint, which is reached through wiring',
       'misnamed | W1 steps on adapter.nothing, which adapter does not receive',
-      'composition cites unknown component | W1 steps on vault.change, but vault is not a member',
+      'wiring names unknown part | W1 steps on vault.change, but vault is not a member',
       'misnamed | W1: adapter.exit carries no field "speed"',
       'misnamed | W1: "lots" in the step adapter.exit is neither member data nor a value of amount',
-      'composition cites unknown component | "vault.debt" names vault, which is not a member',
+      'wiring names unknown part | "vault.debt" names vault, which is not a member',
       'misnamed | "adapter.nothing": adapter holds no data or state named nothing',
-      'misnamed | "held" must read <component>.<data> or <component>.<State>',
+      'misnamed | "held" must read <part>.<data> or <part>.<State>',
       'property claims unknown scenario | O1 claims scenario "nope", which scenarios.md does not declare',
       'property claims unknown scenario | W1 names scenario "nope", which scenarios.md does not declare',
-      'sender is not declared | token: event burn comes from "the Ghost", which is a retired component',
-      'Given names a component | supply G1: names "the Adapter", which is a component; a rely on a component is a Guarantee or a wiring',
+      'sender is not declared | token: event burn comes from "the Ghost", which is a retired part',
+      'Given names a part | supply G1: names "the Adapter", which is a part; a rely on a part is a Guarantee or a wiring',
       'misnamed | supply G2 names event adapter.exit, which the Breaker does not send',
     ]);
-    const loop = composeSystem({ name: 'supply', prose, composition: { ...composition, wiring: [...composition.wiring, { effect: { component: 'adapter', name: 'mint' }, event: { component: 'token', name: 'burn' } }] }, members, actors });
-    assert.deepEqual(loop.problems, [{ name: 'composition does not compose', message: 'wiring delivers adapter.mint to token twice; a member takes one move in a step' }]);
+    const loop = composeMembers({ name: 'supply', prose, wiring: { ...wiring, wiring: [...wiring.wiring, { effect: { part: 'adapter', name: 'mint' }, event: { part: 'token', name: 'burn' } }] }, members, actors });
+    assert.deepEqual(loop.problems, [{ name: 'wiring does not compose', message: 'wiring delivers adapter.mint to token twice; a member takes one move in a step' }]);
   });
 
   describe('with ids that have hyphens', () => {
     // price-feed and lane-a, with a scenario whose id has hyphens too.
     const FEED = '# Price Feed\nTier: modeled\nModule: price-feed\n\nIt holds price, a count from 0 to 4. It sends price-update to the Vault.\n\n## States\n[S1] Fresh: posted.\n[S2] Stale: not posted.\n\n## Events\n[E1] tick, from the chain: a block passes.\n[E2] post-a, from lane A: a price. Carries value, a count from 0 to 4.\n\n## Moves\n[M1] When Fresh receives tick, it becomes Stale.\n[M2] When Stale receives tick, it stays Stale.\n[M3] When Stale receives post-a, it becomes Fresh, price becomes value, sends price-update.\n[R1] In Fresh, post-a is refused.\n';
     const FEEDS = '# Feeds\nConcern: feeds\n\nThe feed.\n\n## Always\n[A1] Always, {price-feed.price <= 4 and price-feed.sent_price_update <= 4}. Scenarios: all-honest, lane-a-down.\n\n## Within\n[N1] Within 1 tick of price-feed.Stale, price-feed.Fresh, given G1. Scenarios: all-honest.\n\n## Given\n[G1] Given that lane A posts promptly. If this is false, nothing. Actor: lane A, on price-feed.post-a, prompt.\n\n## Walks\n[W1] Walk Post: from price-feed.Fresh, price-feed.post-a value 2; ends price-feed.Fresh.\n[W2] Walk Late: from price-feed.Fresh, price-feed.tick, price-feed.post-a value 2, price-feed.post-a value 3 refused; ends price-feed.Fresh.\n';
-    let c: ComposedSystem;
+    let c: Composed;
     before(() => {
       write('hyphens/actors/actors.md', '```yaml\nactors:\n  - id: chain\n    name: the chain\n    kind: chain\n  - id: lane-a\n    name: lane A\n    kind: keeper\n```\n');
       write('hyphens/actors/scenarios.md', '```yaml\nscenarios:\n  - id: lane-a-down\n    modes: { lane-a: { mode: offline, until: 2 } }\n```\n');
       const ir = irOf(FEED);
       assert.deepEqual(ir.errors, []);
-      c = composeSystem({ name: 'price-feeds', prose: parseSystemProse(FEEDS), composition: { members: [{ component: 'price-feed', role: 'member', pins: [] }], wiring: [], free: [], closure: [], scenarios: [], errors: [], text: '' }, members: { 'price-feed': ir }, actors: readActors(join(root, 'hyphens')) });
+      c = composeMembers({ name: 'price-feeds', prose: parseCompositionProse(FEEDS), wiring: { members: [{ part: 'price-feed', role: 'member', pins: [] }], wiring: [], free: [], closure: [], scenarios: [], errors: [], text: '' }, members: { 'price-feed': ir }, actors: readActors(join(root, 'hyphens')) });
     });
 
     it('composes with every identifier built from an id or a name as TLA+ takes it', () => {
@@ -1401,69 +1401,69 @@ describe('composeSystem', () => {
 
 // ---------------------------------------------------------------- load.ts
 
-describe('loadComponent, loadSystem and systemModuleText', () => {
+describe('loadPart, loadComposition and compositionModuleText', () => {
   before(() => {
     write('load/dossier.json', JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1', external: { replay: { command: ['node', 'replay.mjs'] } } }) + '\n');
     write('load/actors/actors.md', ACTORS);
     write('load/actors/scenarios.md', SCENARIOS);
-    write('load/components/adapter/prose.md', ADAPTER);
-    write('load/components/token/prose.md', TOKEN);
-    write('load/components/adapter/calls/ordinary.md', 'kind: tlc\n');
-    write('load/components/adapter/calls/notes.txt', 'ignored');
-    write('load/components/broken/prose.md', '# Broken\n\n## States\n[S1] bad\n');
-    write('load/systems/supply/composition.md', COMPOSITION);
-    write('load/systems/supply/prose.md', SUPPLY);
-    write('load/systems/supply/model/extras.tla', 'Helper == TRUE\n');
-    write('load/systems/bare/composition.md', COMPOSITION.replace('component: token', 'component: ghost'));
-    write('load/systems/bare/prose.md', SUPPLY);
+    write('load/parts/adapter/prose.md', ADAPTER);
+    write('load/parts/token/prose.md', TOKEN);
+    write('load/parts/adapter/calls/ordinary.md', 'kind: tlc\n');
+    write('load/parts/adapter/calls/notes.txt', 'ignored');
+    write('load/parts/broken/prose.md', '# Broken\n\n## States\n[S1] bad\n');
+    write('load/compositions/supply/wiring.md', COMPOSITION);
+    write('load/compositions/supply/prose.md', SUPPLY);
+    write('load/compositions/supply/model/extras.tla', 'Helper == TRUE\n');
+    write('load/compositions/bare/wiring.md', COMPOSITION.replace('part: token', 'part: ghost'));
+    write('load/compositions/bare/prose.md', SUPPLY);
   });
 
-  it('loads a component with its prose, IR, hash and pending calls', () => {
-    const c = loadComponent(join(root, 'load'), 'adapter');
-    assert.equal(c.kind, 'component');
+  it('loads a part with its prose, IR, hash and pending calls', () => {
+    const c = loadPart(join(root, 'load'), 'adapter');
+    assert.equal(c.kind, 'part');
     assert.equal(c.id, 'adapter');
-    assert.equal(c.dir, join(root, 'load', 'components', 'adapter'));
+    assert.equal(c.dir, join(root, 'load', 'parts', 'adapter'));
     assert.equal(c.text, ADAPTER);
     assert.equal(c.ir.ok, true);
     assert.match(c.irHash, /^[0-9a-f]{16}$/);
-    assert.equal(c.irHash, loadComponent(join(root, 'load'), 'adapter').irHash);
+    assert.equal(c.irHash, loadPart(join(root, 'load'), 'adapter').irHash);
     assert.deepEqual(c.pendingCalls, ['ordinary.md']);
-    assert.deepEqual(loadComponent(join(root, 'load'), 'token').pendingCalls, []);
-    assert.equal(loadComponent(join(root, 'load'), 'broken').ir.ok, false);
-    assert.equal(loadComponent(join(root, 'load'), 'nowhere').prose.title, null);
-    assert.deepEqual(Object.keys(loadAllComponents(join(root, 'load'))).sort(), ['adapter', 'broken', 'token']);
+    assert.deepEqual(loadPart(join(root, 'load'), 'token').pendingCalls, []);
+    assert.equal(loadPart(join(root, 'load'), 'broken').ir.ok, false);
+    assert.equal(loadPart(join(root, 'load'), 'nowhere').prose.title, null);
+    assert.deepEqual(Object.keys(loadAllParts(join(root, 'load'))).sort(), ['adapter', 'broken', 'token']);
   });
 
-  it('loads a system with its members, composition, actors and composed module', () => {
-    const s = loadSystem(join(root, 'load'), 'supply');
-    assert.equal(s.kind, 'system');
+  it('loads a composition with its members, wiring, actors and composed module', () => {
+    const s = loadComposition(join(root, 'load'), 'supply');
+    assert.equal(s.kind, 'composition');
     assert.equal(s.prose.concern, 'supply');
     assert.deepEqual(Object.keys(s.members), ['adapter', 'token']);
-    assert.equal(s.memberLoads.adapter!.irHash, loadComponent(join(root, 'load'), 'adapter').irHash);
+    assert.equal(s.memberLoads.adapter!.irHash, loadPart(join(root, 'load'), 'adapter').irHash);
     assert.deepEqual(s.composed.errors, []);
     assert.equal(s.composed.module, 'Supply');
     assert.equal(s.extras, 'Helper == TRUE\n');
     assert.deepEqual(s.pendingCalls, []);
-    assert.deepEqual(s.composition.scenarios, ['all-honest', 'breaker-offline']);
+    assert.deepEqual(s.wiring.scenarios, ['all-honest', 'breaker-offline']);
     assert.equal(s.actors.byId.breaker.kind, 'multisig');
-    const shared = loadSystem(join(root, 'load'), 'supply', { components: loadAllComponents(join(root, 'load')) });
+    const shared = loadComposition(join(root, 'load'), 'supply', { parts: loadAllParts(join(root, 'load')) });
     assert.equal(shared.composed.tla, s.composed.tla);
   });
 
   it('appends extras before the end line of the composed module', () => {
-    const s = loadSystem(join(root, 'load'), 'supply');
-    const text = systemModuleText(s);
+    const s = loadComposition(join(root, 'load'), 'supply');
+    const text = compositionModuleText(s);
     assert.ok(text.endsWith('\nNotW1 == ~W1_End\n\\* extras.tla, hand-written:\nHelper == TRUE\n' + '='.repeat(70) + '\n'));
     assert.equal(text.slice(0, -1).split('\n').filter(l => /^=+$/.test(l)).length, 1);
-    assert.equal(systemModuleText({ ...s, extras: '' }), s.composed.tla);
-    assert.equal(systemModuleText({ ...s, extras: '  \n' }), s.composed.tla);
-    assert.equal(systemModuleText({ composed: null } as unknown as SystemLoad), '');
+    assert.equal(compositionModuleText({ ...s, extras: '' }), s.composed.tla);
+    assert.equal(compositionModuleText({ ...s, extras: '  \n' }), s.composed.tla);
+    assert.equal(compositionModuleText({ composed: null } as unknown as CompositionLoad), '');
   });
 
-  it('keeps a system whose composition fails, with the errors on composed', () => {
-    const s = loadSystem(join(root, 'load'), 'bare');
+  it('keeps a composition whose wiring fails, with the errors on composed', () => {
+    const s = loadComposition(join(root, 'load'), 'bare');
     assert.deepEqual(Object.keys(s.members), ['adapter']);
-    assert.ok(s.composed.errors.includes('composition names component ghost, which has no dossier or does not compile'));
+    assert.ok(s.composed.errors.includes('wiring names part ghost, which has no dossier or does not compile'));
     assert.ok(s.composed.errors.includes('wiring names token, which is not a member'));
   });
 

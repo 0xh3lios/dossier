@@ -11,7 +11,7 @@ import { historiesOf, movesOf, parseTla } from '../../src/models/tla.ts';
 import { parseProse } from '../../src/prose/prose.ts';
 import { compileIR } from '../../src/prose/ir.ts';
 import type { PlanInput } from '../../src/trials/plan.ts';
-import type { SystemProse } from '../../src/prose/prose.ts';
+import type { CompositionProse } from '../../src/prose/prose.ts';
 import type { Ir, IrState } from '../../src/prose/ir.ts';
 import type { Scenario } from '../../src/dossiers/actors.ts';
 
@@ -99,7 +99,7 @@ describe('parseCall', () => {
     assert.deepEqual(KINDS, ['chart', 'blunder', 'tlc', 'apalache', 'alloy', 'external']);
   });
 
-  it('reads a system witness: walk: and scenario: in place of property:', () => {
+  it('reads a composition witness: walk: and scenario: in place of property:', () => {
     const c = call('kind: tlc\nwalk: W1\nscenario: governance-captured\ntrace-data: timelock_state, timelock_left\nexecutes:\n  - model/generated/Control.tla\n  - model/generated/W1_governance_captured.cfg\nreach: r\nexpect:\n  TypeOK: holds\n  NotW1: violated; trace: Idle/0 > Scheduled/2\nbecause: b\n');
     assert.deepEqual(c.errors, []);
     assert.equal(c.walk, 'W1');
@@ -160,40 +160,40 @@ describe('parseOutcome', () => {
 describe('planTrial', () => {
   let root: string, dir: string, sdir: string, ir: Ir;
   const write = (rel: string, text: string) => { const p = join(root, rel); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, text); return p; };
-  const plan = (text: string, extra: Partial<PlanInput> = {}) => { const c = call(text); assert.deepEqual(c.errors, [], c.errors.join('; ')); return planTrial({ call: c, dossierDir: dir, kind: 'component', ir, ...extra }); };
-  const splan = (text: string) => { const c = call(text); assert.deepEqual(c.errors, []); return planTrial({ call: c, dossierDir: sdir, kind: 'system', ir: null, systemProse: { properties: [{ id: 'A1' }], walks: [{ id: 'W1', scenario: null }, { id: 'W2', scenario: 'user-malicious' }] } as SystemProse, scenarios: [{ id: 'all-honest' }, { id: 'user-malicious' }] as Scenario[] }); };
+  const plan = (text: string, extra: Partial<PlanInput> = {}) => { const c = call(text); assert.deepEqual(c.errors, [], c.errors.join('; ')); return planTrial({ call: c, dossierDir: dir, kind: 'part', ir, ...extra }); };
+  const splan = (text: string) => { const c = call(text); assert.deepEqual(c.errors, []); return planTrial({ call: c, dossierDir: sdir, kind: 'composition', ir: null, compositionProse: { properties: [{ id: 'A1' }], walks: [{ id: 'W1', scenario: null }, { id: 'W2', scenario: 'user-malicious' }] } as CompositionProse, scenarios: [{ id: 'all-honest' }, { id: 'user-malicious' }] as Scenario[] }); };
 
   before(() => {
     root = mkdtempSync(join(tmpdir(), 'dossier-plan-'));
-    dir = join(root, 'components', 'timelock');
-    sdir = join(root, 'systems', 'supply');
+    dir = join(root, 'parts', 'timelock');
+    sdir = join(root, 'compositions', 'supply');
     ir = compileIR(parseProse(PROSE));
     assert.equal(ir.ok, true);
-    write('components/timelock/prose.md', PROSE);
-    write('components/timelock/model/Timelock.tla', MODULE('Timelock'));
-    write('components/timelock/model/Timelock.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
-    write('components/timelock/model/Timelock_W1.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK NotW1\n');
-    write('components/timelock/model/Timelock_W1x.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK NotW1 A1\n');
-    write('components/timelock/model/Timelock_O1.cfg', 'SPECIFICATION Spec\nPROPERTIES O1\n');
-    write('components/timelock/model/Timelock_O2.cfg', 'SPECIFICATION Spec\nPROPERTIES O1 O2\n');
-    write('components/timelock/model/blunders/loose.tla', MODULE('loose', 3));
-    write('components/timelock/model/blunders/loose_A1.cfg', 'SPECIFICATION Spec\nINVARIANTS A1\n');
-    write('components/timelock/model/blunders/loose_two.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
-    write('components/timelock/model/blunders/same.tla', MODULE('Timelock'));
-    write('components/timelock/model/Timelock.als', 'sig Plan {}\nfact S1_idle { some Plan }\nassert A1_bound { all p: Plan | p in Plan }\ncheck A1_bound for 4\nrun W1_plan for 3\n');
-    write('components/timelock/model/blunders/rogue.als', 'sig Plan {}\nassert A1_bound { all p: Plan | p in Plan }\ncheck A1_bound for 4\n');
+    write('parts/timelock/prose.md', PROSE);
+    write('parts/timelock/model/Timelock.tla', MODULE('Timelock'));
+    write('parts/timelock/model/Timelock.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
+    write('parts/timelock/model/Timelock_W1.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK NotW1\n');
+    write('parts/timelock/model/Timelock_W1x.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK NotW1 A1\n');
+    write('parts/timelock/model/Timelock_O1.cfg', 'SPECIFICATION Spec\nPROPERTIES O1\n');
+    write('parts/timelock/model/Timelock_O2.cfg', 'SPECIFICATION Spec\nPROPERTIES O1 O2\n');
+    write('parts/timelock/model/blunders/loose.tla', MODULE('loose', 3));
+    write('parts/timelock/model/blunders/loose_A1.cfg', 'SPECIFICATION Spec\nINVARIANTS A1\n');
+    write('parts/timelock/model/blunders/loose_two.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
+    write('parts/timelock/model/blunders/same.tla', MODULE('Timelock'));
+    write('parts/timelock/model/Timelock.als', 'sig Plan {}\nfact S1_idle { some Plan }\nassert A1_bound { all p: Plan | p in Plan }\ncheck A1_bound for 4\nrun W1_plan for 3\n');
+    write('parts/timelock/model/blunders/rogue.als', 'sig Plan {}\nassert A1_bound { all p: Plan | p in Plan }\ncheck A1_bound for 4\n');
     const mutated = JSON.parse(JSON.stringify(ir)) as Ir;
     mutated.transitions.find(t => t.id === 'M3')!.guard = null;
-    write('components/timelock/chart/blunders/loose.json', JSON.stringify(mutated));
-    write('components/timelock/chart/blunders/same.json', JSON.stringify(ir));
-    write('components/timelock/chart/elsewhere.json', JSON.stringify(mutated));
-    write('systems/supply/model/generated/Supply.tla', `---- MODULE Supply ----\nEXTENDS Naturals\nVARIABLES x, adapter_state, adapter_held\nInit == x = 0\nNext == x' = x\nSpec == Init /\\ [][Next]_x\nTypeOK == x \\in 0..1\nA1 == x = 0\nInv_A1 == TypeOK /\\ A1\nW1_End == x = 1\nNotW1 == ~W1_End\nW2_End == x = 0\nNotW2 == ~W2_End\nConstInit_all_honest == TRUE\nConstInit_user_malicious == TRUE\n====\n`);
-    write('systems/supply/model/generated/A1_all_honest.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
-    write('systems/supply/model/generated/A1_user_malicious.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
-    write('systems/supply/model/generated/Copy.tla', `---- MODULE Copy ----\nVARIABLES x\nTypeOK == x \\in 0..1\nA1 == x = 0\n====\n`);
-    write('systems/supply/model/generated/W1_all_honest.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK NotW1\n');
-    write('systems/supply/model/generated/W2_user_malicious.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK NotW2\n');
-    write('systems/supply/model/A1_elsewhere.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
+    write('parts/timelock/chart/blunders/loose.json', JSON.stringify(mutated));
+    write('parts/timelock/chart/blunders/same.json', JSON.stringify(ir));
+    write('parts/timelock/chart/elsewhere.json', JSON.stringify(mutated));
+    write('compositions/supply/model/generated/Supply.tla', `---- MODULE Supply ----\nEXTENDS Naturals\nVARIABLES x, adapter_state, adapter_held\nInit == x = 0\nNext == x' = x\nSpec == Init /\\ [][Next]_x\nTypeOK == x \\in 0..1\nA1 == x = 0\nInv_A1 == TypeOK /\\ A1\nW1_End == x = 1\nNotW1 == ~W1_End\nW2_End == x = 0\nNotW2 == ~W2_End\nConstInit_all_honest == TRUE\nConstInit_user_malicious == TRUE\n====\n`);
+    write('compositions/supply/model/generated/A1_all_honest.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
+    write('compositions/supply/model/generated/A1_user_malicious.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
+    write('compositions/supply/model/generated/Copy.tla', `---- MODULE Copy ----\nVARIABLES x\nTypeOK == x \\in 0..1\nA1 == x = 0\n====\n`);
+    write('compositions/supply/model/generated/W1_all_honest.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK NotW1\n');
+    write('compositions/supply/model/generated/W2_user_malicious.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK NotW2\n');
+    write('compositions/supply/model/A1_elsewhere.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
   });
   after(() => rmSync(root, { recursive: true, force: true }));
 
@@ -211,7 +211,7 @@ describe('planTrial', () => {
       assert.deepEqual(plan(chart().replace('  checks: pass', '  checks: pass\n  A1: holds')).problems, ['a chart call expects only checks:']);
       assert.deepEqual(plan(chart().replace('  checks: pass', '  A1: holds')).problems, ['a chart call expects "checks: pass" or "checks: fail <ids>"', 'a chart call expects only checks:']);
       assert.deepEqual(plan(chart(), { ir: { ok: false } as Ir }).problems, ['prose.md does not compile; run dossier draw first']);
-      assert.deepEqual(planTrial({ call: call(chart()), dossierDir: sdir, kind: 'system', ir }).problems, ['a chart trial belongs to a component']);
+      assert.deepEqual(planTrial({ call: call(chart()), dossierDir: sdir, kind: 'composition', ir }).problems, ['a chart trial belongs to a part']);
     });
 
     it('accepts a chart blunder under chart/blunders that differs from the prose and expects the ids it breaks', () => {
@@ -288,31 +288,31 @@ describe('planTrial', () => {
       assert.deepEqual(plan(tlc(['model/blunders/loose.tla', 'model/blunders/loose_A1.cfg'], { A1: 'holds' })).problems, ['only a blunder trial executes a module under model/blunders/']);
     });
 
-    it('refuses a cell on a component trial', () => {
-      assert.deepEqual(plan(tlc(['model/Timelock.tla', 'model/Timelock.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: all-honest\n')).problems, ['property: and scenario: belong to a system trial']);
+    it('refuses a cell on a part trial', () => {
+      assert.deepEqual(plan(tlc(['model/Timelock.tla', 'model/Timelock.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: all-honest\n')).problems, ['property: and scenario: belong to a composition trial']);
     });
   });
 
-  describe('system', () => {
+  describe('composition', () => {
     it('needs a cell, a generated configuration, a declared property and scenario', () => {
       const good = splan(tlc(['model/generated/Supply.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: all-honest\n'));
       assert.deepEqual(good.problems, []);
       assert.equal(good.plan.checker, 'tlc');
-      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' })).problems, ['a system trial names its cell, property: and scenario:, or its witness, walk: and scenario:']);
+      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' })).problems, ['a composition trial names its cell, property: and scenario:, or its witness, walk: and scenario:']);
       assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/A1_elsewhere.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: all-honest\n')).problems, ['the cell A1 × all-honest executes model/generated/A1_all_honest.cfg']);
-      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A9\nscenario: nope\n')).problems, ['property A9 is not a passage of this system', 'scenario nope is not declared in actors/scenarios.md', 'the configuration does not enable A9']);
+      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A9\nscenario: nope\n')).problems, ['property A9 is not a passage of this composition', 'scenario nope is not declared in actors/scenarios.md', 'the configuration does not enable A9']);
     });
 
-    it('pins a cell to its own configuration and to the generated module, and to a cell the system claims', () => {
+    it('pins a cell to its own configuration and to the generated module, and to a cell the composition claims', () => {
       // A1 × user-malicious running the all-honest configuration would run another cell.
       assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: user-malicious\n')).problems, ['the cell A1 × user-malicious executes model/generated/A1_user_malicious.cfg']);
-      const generated = (text: string, extra: Partial<PlanInput> = {}) => { const c = call(text); assert.deepEqual(c.errors, []); return planTrial({ call: c, dossierDir: sdir, kind: 'system', ir: null, systemProse: { properties: [{ id: 'A1' }], walks: [] } as unknown as SystemProse, scenarios: [{ id: 'all-honest' }, { id: 'user-malicious' }] as Scenario[], module: 'model/generated/Supply.tla', cells: [{ property: 'A1', scenario: 'all-honest' }], ...extra }).problems; };
+      const generated = (text: string, extra: Partial<PlanInput> = {}) => { const c = call(text); assert.deepEqual(c.errors, []); return planTrial({ call: c, dossierDir: sdir, kind: 'composition', ir: null, compositionProse: { properties: [{ id: 'A1' }], walks: [] } as unknown as CompositionProse, scenarios: [{ id: 'all-honest' }, { id: 'user-malicious' }] as Scenario[], module: 'model/generated/Supply.tla', cells: [{ property: 'A1', scenario: 'all-honest' }], ...extra }).problems; };
       assert.deepEqual(generated(tlc(['model/generated/Supply.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: all-honest\n')), []);
-      assert.deepEqual(generated(tlc(['model/generated/Copy.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: all-honest\n')), ['a system trial executes the generated module, model/generated/Supply.tla']);
-      assert.deepEqual(generated(tlc(['model/generated/Supply.tla', 'model/generated/A1_user_malicious.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: user-malicious\n')), ['A1 × user-malicious is not a cell of this system: A1 does not claim user-malicious']);
+      assert.deepEqual(generated(tlc(['model/generated/Copy.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: all-honest\n')), ['a composition trial executes the generated module, model/generated/Supply.tla']);
+      assert.deepEqual(generated(tlc(['model/generated/Supply.tla', 'model/generated/A1_user_malicious.cfg'], { TypeOK: 'holds', A1: 'holds' }, 'property: A1\nscenario: user-malicious\n')), ['A1 × user-malicious is not a cell of this composition: A1 does not claim user-malicious']);
     });
 
-    it('accepts a witness: walk: and scenario:, the walk\'s generated configuration under that scenario, and NotW expected violated as a component\'s witness is', () => {
+    it('accepts a witness: walk: and scenario:, the walk\'s generated configuration under that scenario, and NotW expected violated as a part\'s witness is', () => {
       const good = splan(tlc(['model/generated/Supply.tla', 'model/generated/W1_all_honest.cfg'], { TypeOK: 'holds', NotW1: 'violated; trace: Open/0 > Halted/1' }, 'walk: W1\nscenario: all-honest\ntrace-data: adapter_state, adapter_held\n'));
       assert.deepEqual(good.problems, []);
       assert.equal(good.plan.checker, 'tlc');
@@ -321,17 +321,17 @@ describe('planTrial', () => {
       assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/W2_user_malicious.cfg'], { TypeOK: 'holds', NotW2: 'violated' }, 'walk: W2\nscenario: user-malicious\n')).problems, [], 'the walk\'s own scenario; the trace is the caller\'s to give');
     });
 
-    it('refuses a witness under another scenario than its walk\'s, on another configuration, expecting NotW to hold, naming no walk of the system, or not a tlc trial; and a system blunder without its property', () => {
+    it('refuses a witness under another scenario than its walk\'s, on another configuration, expecting NotW to hold, naming no walk of the composition, or not a tlc trial; and a composition blunder without its property', () => {
       const witness = 'walk: W1\nscenario: all-honest\n';
-      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' }, witness)).problems, ['a system witness executes model/generated/W1_all_honest.cfg', 'the configuration does not enable NotW1']);
+      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/A1_all_honest.cfg'], { TypeOK: 'holds', A1: 'holds' }, witness)).problems, ['a composition witness executes model/generated/W1_all_honest.cfg', 'the configuration does not enable NotW1']);
       assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/W1_all_honest.cfg'], { TypeOK: 'holds', NotW1: 'violated' }, 'walk: W1\nscenario: user-malicious\n')).problems, ['walk W1 runs under all-honest, not user-malicious']);
-      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/W1_all_honest.cfg'], { TypeOK: 'holds', NotW1: 'violated' }, 'walk: W2\nscenario: user-malicious\n')).problems, ['a system witness executes model/generated/W2_user_malicious.cfg', 'the configuration does not enable NotW2'], 'another walk\'s witness configuration');
+      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/W1_all_honest.cfg'], { TypeOK: 'holds', NotW1: 'violated' }, 'walk: W2\nscenario: user-malicious\n')).problems, ['a composition witness executes model/generated/W2_user_malicious.cfg', 'the configuration does not enable NotW2'], 'another walk\'s witness configuration');
       assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/W1_all_honest.cfg'], { TypeOK: 'holds', NotW1: 'holds' }, witness)).problems, ['NotW1 is expected "violated[; trace: ...]"']);
-      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/W1_all_honest.cfg'], { TypeOK: 'holds', NotW1: 'violated' }, 'walk: W9\nscenario: all-honest\n')).problems, ['walk W9 is not a walk of this system', 'a system witness executes model/generated/W9_all_honest.cfg', 'the configuration does not enable NotW9']);
-      assert.deepEqual(splan(apalache(['mode: inductive', 'walk: W1', 'scenario: all-honest', 'inv: Inv_A1', 'cinit: ConstInit_all_honest'], { Inv_A1: 'holds' }).replace('  - model/Timelock.tla', '  - model/generated/Supply.tla')).problems, ['a system witness is a tlc trial']);
-      assert.ok(splan(blunder(['model/blunders/x.tla', 'model/blunders/x_A1.cfg'], { A1: 'violated' }, witness)).problems.includes('a system blunder names the property it must catch under property:, not a walk'));
-      assert.ok(splan(blunder(['model/blunders/x.tla', 'model/blunders/x_A1.cfg'], { A1: 'violated' })).problems.includes('a system trial names its cell: property: and scenario:'));
-      assert.deepEqual(plan(tlc(['model/Timelock.tla', 'model/Timelock_W1.cfg'], { TypeOK: 'holds', NotW1: 'violated' }, witness)).problems, ['property: and scenario: belong to a system trial', 'walk: belongs to a system trial']);
+      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/W1_all_honest.cfg'], { TypeOK: 'holds', NotW1: 'violated' }, 'walk: W9\nscenario: all-honest\n')).problems, ['walk W9 is not a walk of this composition', 'a composition witness executes model/generated/W9_all_honest.cfg', 'the configuration does not enable NotW9']);
+      assert.deepEqual(splan(apalache(['mode: inductive', 'walk: W1', 'scenario: all-honest', 'inv: Inv_A1', 'cinit: ConstInit_all_honest'], { Inv_A1: 'holds' }).replace('  - model/Timelock.tla', '  - model/generated/Supply.tla')).problems, ['a composition witness is a tlc trial']);
+      assert.ok(splan(blunder(['model/blunders/x.tla', 'model/blunders/x_A1.cfg'], { A1: 'violated' }, witness)).problems.includes('a composition blunder names the property it must catch under property:, not a walk'));
+      assert.ok(splan(blunder(['model/blunders/x.tla', 'model/blunders/x_A1.cfg'], { A1: 'violated' })).problems.includes('a composition trial names its cell: property: and scenario:'));
+      assert.deepEqual(plan(tlc(['model/Timelock.tla', 'model/Timelock_W1.cfg'], { TypeOK: 'holds', NotW1: 'violated' }, witness)).problems, ['property: and scenario: belong to a composition trial', 'walk: belongs to a composition trial']);
     });
 
     it('matches an Apalache cinit to the scenario exactly, and runs the module alone', () => {
@@ -339,8 +339,8 @@ describe('planTrial', () => {
       assert.deepEqual(mismatch.problems, ['cinit ConstInit_user_malicious does not match scenario all-honest: name ConstInit_all_honest']);
       const suffixed = splan(apalache(['mode: inductive', 'property: A1', 'scenario: all-honest', 'inv: Inv_A1', 'cinit: ConstInit_user_malicious_all_honest'], { Inv_A1: 'holds' }).replace('  - model/Timelock.tla', '  - model/generated/Supply.tla'));
       assert.ok(suffixed.problems.includes('cinit ConstInit_user_malicious_all_honest does not match scenario all-honest: name ConstInit_all_honest'), 'the scenario\'s name at the end is not enough');
-      assert.deepEqual(splan(apalache(['mode: inductive', 'property: A1', 'scenario: all-honest', 'inv: Inv_A1'], { Inv_A1: 'holds' }).replace('  - model/Timelock.tla', '  - model/generated/Supply.tla')).problems, ['a system Apalache trial names cinit: ConstInit_all_honest, the constants of scenario all-honest']);
-      assert.deepEqual(splan(apalache(['mode: inductive', 'property: A1', 'scenario: all-honest', 'inv: Inv_A1', 'cinit: ConstInit_all_honest'], { Inv_A1: 'holds' }).replace('  - model/Timelock.tla', '  - model/generated/Supply.tla\n  - model/generated/A1_all_honest.cfg')).problems, ['a system Apalache trial executes its module alone: the scenario comes from cinit:']);
+      assert.deepEqual(splan(apalache(['mode: inductive', 'property: A1', 'scenario: all-honest', 'inv: Inv_A1'], { Inv_A1: 'holds' }).replace('  - model/Timelock.tla', '  - model/generated/Supply.tla')).problems, ['a composition Apalache trial names cinit: ConstInit_all_honest, the constants of scenario all-honest']);
+      assert.deepEqual(splan(apalache(['mode: inductive', 'property: A1', 'scenario: all-honest', 'inv: Inv_A1', 'cinit: ConstInit_all_honest'], { Inv_A1: 'holds' }).replace('  - model/Timelock.tla', '  - model/generated/Supply.tla\n  - model/generated/A1_all_honest.cfg')).problems, ['a composition Apalache trial executes its module alone: the scenario comes from cinit:']);
       const good = splan(apalache(['mode: inductive', 'property: A1', 'scenario: all-honest', 'inv: Inv_A1', 'cinit: ConstInit_all_honest'], { Inv_A1: 'holds' }).replace('  - model/Timelock.tla', '  - model/generated/Supply.tla'));
       assert.deepEqual(good.problems, []);
       assert.equal(good.plan.cinit, 'ConstInit_all_honest');
@@ -372,7 +372,7 @@ describe('planTrial', () => {
     it('refuses a walk\'s witness as the invariant, and a blunder of either checker enabling one', () => {
       assert.deepEqual(plan(apalache(['mode: bounded', 'length: 3', 'inv: NotW1'], { NotW1: 'holds' })).problems, ['NotW1 is a walk\'s witness, which a tlc trial checks']);
       assert.deepEqual(plan(blunder(['model/blunders/loose.tla'], { NotW1: 'violated' }, 'mode: bounded\nlength: 3\ninv: NotW1\n')).problems, ['NotW1 is a walk\'s witness, which a tlc trial checks']);
-      write('components/timelock/model/blunders/loose_W1.cfg', 'SPECIFICATION Spec\nINVARIANTS NotW1\n');
+      write('parts/timelock/model/blunders/loose_W1.cfg', 'SPECIFICATION Spec\nINVARIANTS NotW1\n');
       assert.deepEqual(plan(blunder(['model/blunders/loose.tla', 'model/blunders/loose_W1.cfg'], { NotW1: 'violated' })).problems, ['a blunder enables the property it must catch, not NotW1, a walk\'s witness']);
     });
 
@@ -416,7 +416,7 @@ describe('planTrial', () => {
 
   describe('what a blunder leaves alone', () => {
     // A Within N1 counted in n1_ticks, updated as a bullet (M1, M2) and inline in parentheses (M3),
-    // as a system's Tick does; A1 reads the helper Safe, which reads the constant Cap.
+    // as a composition's Tick does; A1 reads the helper Safe, which reads the constant Cap.
     const COUNT = `---- MODULE Count ----
 EXTENDS Naturals
 CONSTANTS
@@ -460,35 +460,35 @@ Inv_N1 == TypeOK /\\ N1
     // A guard loosened: a legitimate blunder for A1 and N1 alike.
     const LOOSE = COUNT.replace('  /\\ remaining > 1\n', '  /\\ remaining > 0\n');
     let cdir: string;
-    const cplan = (text: string) => { const c = call(text); assert.deepEqual(c.errors, [], c.errors.join('; ')); return planTrial({ call: c, dossierDir: cdir, kind: 'component', ir }).problems; };
+    const cplan = (text: string) => { const c = call(text); assert.deepEqual(c.errors, [], c.errors.join('; ')); return planTrial({ call: c, dossierDir: cdir, kind: 'part', ir }).problems; };
 
     before(() => {
-      cdir = join(root, 'components', 'count');
-      write('components/count/model/Count.tla', COUNT);
-      write('components/count/model/Count.cfg', cfg(2, 4, 'TypeOK A1 N1'));
-      write('components/count/model/Count.als', ALS);
-      write('components/count/model/blunders/A1.cfg', cfg(2, 4, 'A1'));
-      write('components/count/model/blunders/N1.cfg', cfg(2, 4, 'N1'));
-      write('components/count/model/blunders/cap_A1.cfg', cfg(1, 4, 'A1'));
-      write('components/count/model/blunders/maxsent_A1.cfg', cfg(2, 1, 'A1'));
-      write('components/count/model/blunders/loose.tla', LOOSE);
-      write('components/count/model/blunders/tight.tla', COUNT.replace('A1 == Safe\n', 'A1 == Safe /\\ remaining <= 1\n'));
-      write('components/count/model/blunders/safe.tla', COUNT.replace('Safe == remaining <= Cap', 'Safe == remaining < Cap'));
-      write('components/count/model/blunders/count.tla', COUNT.replace('ELSE n1_ticks + 1))\nNext', 'ELSE n1_ticks + 2))\nNext'));
-      write('components/count/model/blunders/start.tla', COUNT.replace('  /\\ n1_ticks = 0', '  /\\ n1_ticks = 1'));
-      write('components/count/model/blunders/kept.tla', COUNT.replace(/( {2}\/\\ remaining' = 2\n {2}\/\\ )n1_ticks' = [^\n]*/, '$1UNCHANGED n1_ticks'));
-      write('components/count/model/blunders/dropped.tla', COUNT.replace(/^M3_Tick == [^\n]*\n/m, '').replace('Next == M1_Schedule \\/ M2_Tick \\/ M3_Tick', 'Next == M1_Schedule \\/ M2_Tick'));
-      write('components/count/model/blunders/capped.tla', LOOSE.replace('ConstInit == Cap = 2', 'ConstInit == Cap = 1'));
-      write('components/count/model/blunders/maxed.tla', LOOSE.replace('MaxSent = 4\nVARIABLES', 'MaxSent = 1\nVARIABLES'));
-      write('components/count/model/blunders/wider.tla', COUNT.replace('N1 == n1_ticks <= 2', 'N1 == n1_ticks <= 3'));
-      write('components/count/model/blunders/strict.als', ALS.replace('settled[p] }', 'settled[p] and no p.next }'));
-      write('components/count/model/blunders/unsettled.als', ALS.replace('pred settled[p: Plan] { p not in p.^next }', 'pred settled[p: Plan] { p not in p.*next }'));
-      write('components/count/model/blunders/factless.als', ALS.replace(/^fact [^\n]*\n/m, ''));
-      write('systems/supply/model/blunders/tight.tla', `---- MODULE Supply ----\nEXTENDS Naturals\nVARIABLES x, adapter_state, adapter_held\nInit == x = 0\nNext == x' = x\nSpec == Init /\\ [][Next]_x\nTypeOK == x \\in 0..1\nA1 == x = 0 /\\ x > 0\nInv_A1 == TypeOK /\\ A1\nW1_End == x = 1\nNotW1 == ~W1_End\nW2_End == x = 0\nNotW2 == ~W2_End\nConstInit_all_honest == TRUE\nConstInit_user_malicious == TRUE\n====\n`);
-      write('systems/supply/model/blunders/tight_A1.cfg', 'SPECIFICATION Spec\nINVARIANTS A1\n');
+      cdir = join(root, 'parts', 'count');
+      write('parts/count/model/Count.tla', COUNT);
+      write('parts/count/model/Count.cfg', cfg(2, 4, 'TypeOK A1 N1'));
+      write('parts/count/model/Count.als', ALS);
+      write('parts/count/model/blunders/A1.cfg', cfg(2, 4, 'A1'));
+      write('parts/count/model/blunders/N1.cfg', cfg(2, 4, 'N1'));
+      write('parts/count/model/blunders/cap_A1.cfg', cfg(1, 4, 'A1'));
+      write('parts/count/model/blunders/maxsent_A1.cfg', cfg(2, 1, 'A1'));
+      write('parts/count/model/blunders/loose.tla', LOOSE);
+      write('parts/count/model/blunders/tight.tla', COUNT.replace('A1 == Safe\n', 'A1 == Safe /\\ remaining <= 1\n'));
+      write('parts/count/model/blunders/safe.tla', COUNT.replace('Safe == remaining <= Cap', 'Safe == remaining < Cap'));
+      write('parts/count/model/blunders/count.tla', COUNT.replace('ELSE n1_ticks + 1))\nNext', 'ELSE n1_ticks + 2))\nNext'));
+      write('parts/count/model/blunders/start.tla', COUNT.replace('  /\\ n1_ticks = 0', '  /\\ n1_ticks = 1'));
+      write('parts/count/model/blunders/kept.tla', COUNT.replace(/( {2}\/\\ remaining' = 2\n {2}\/\\ )n1_ticks' = [^\n]*/, '$1UNCHANGED n1_ticks'));
+      write('parts/count/model/blunders/dropped.tla', COUNT.replace(/^M3_Tick == [^\n]*\n/m, '').replace('Next == M1_Schedule \\/ M2_Tick \\/ M3_Tick', 'Next == M1_Schedule \\/ M2_Tick'));
+      write('parts/count/model/blunders/capped.tla', LOOSE.replace('ConstInit == Cap = 2', 'ConstInit == Cap = 1'));
+      write('parts/count/model/blunders/maxed.tla', LOOSE.replace('MaxSent = 4\nVARIABLES', 'MaxSent = 1\nVARIABLES'));
+      write('parts/count/model/blunders/wider.tla', COUNT.replace('N1 == n1_ticks <= 2', 'N1 == n1_ticks <= 3'));
+      write('parts/count/model/blunders/strict.als', ALS.replace('settled[p] }', 'settled[p] and no p.next }'));
+      write('parts/count/model/blunders/unsettled.als', ALS.replace('pred settled[p: Plan] { p not in p.^next }', 'pred settled[p: Plan] { p not in p.*next }'));
+      write('parts/count/model/blunders/factless.als', ALS.replace(/^fact [^\n]*\n/m, ''));
+      write('compositions/supply/model/blunders/tight.tla', `---- MODULE Supply ----\nEXTENDS Naturals\nVARIABLES x, adapter_state, adapter_held\nInit == x = 0\nNext == x' = x\nSpec == Init /\\ [][Next]_x\nTypeOK == x \\in 0..1\nA1 == x = 0 /\\ x > 0\nInv_A1 == TypeOK /\\ A1\nW1_End == x = 1\nNotW1 == ~W1_End\nW2_End == x = 0\nNotW2 == ~W2_End\nConstInit_all_honest == TRUE\nConstInit_user_malicious == TRUE\n====\n`);
+      write('compositions/supply/model/blunders/tight_A1.cfg', 'SPECIFICATION Spec\nINVARIANTS A1\n');
     });
 
-    it('refuses a copy that only tightens the property, as a component\'s or a system\'s', () => {
+    it('refuses a copy that only tightens the property, as a part\'s or a composition\'s', () => {
       assert.deepEqual(cplan(blunder(['model/blunders/tight.tla', 'model/blunders/A1.cfg'], { A1: 'violated' })), [`model/blunders/tight.tla changes A1 itself: A1 differs from model/Count.tla; ${NEVER}`]);
       assert.deepEqual(splan(blunder(['model/blunders/tight.tla', 'model/blunders/tight_A1.cfg'], { A1: 'violated' }, 'base: model/generated/Supply.tla\nproperty: A1\nscenario: all-honest\n')).problems, [`model/blunders/tight.tla changes A1 itself: A1 differs from model/generated/Supply.tla; ${NEVER}`]);
     });
@@ -533,7 +533,7 @@ Inv_N1 == TypeOK /\\ N1
       assert.deepEqual(cplan(blunder(['model/blunders/loose.tla', 'model/blunders/cap_A1.cfg'], { Inv_A1: 'violated' }, inductive)), [`model/blunders/cap_A1.cfg sets Cap, which Inv_A1 reads, otherwise than ConstInit in model/Count.tla; ${NEVER}`]);
       // Without cinit:, nothing in the base sets the constant for Apalache.
       assert.deepEqual(cplan(blunder(['model/blunders/loose.tla', 'model/blunders/cap_A1.cfg'], { Inv_A1: 'violated' }, 'mode: inductive\ninv: Inv_A1\n')), [`model/blunders/cap_A1.cfg sets Cap, which Inv_A1 reads: an Apalache blunder takes them from cinit:, as model/Count.tla does; ${NEVER}`]);
-      write('components/count/model/blunders/maxsent_only.cfg', 'CONSTANT MaxSent = 1\n');
+      write('parts/count/model/blunders/maxsent_only.cfg', 'CONSTANT MaxSent = 1\n');
       assert.deepEqual(cplan(blunder(['model/blunders/loose.tla', 'model/blunders/maxsent_only.cfg'], { Inv_A1: 'violated' }, inductive)), []);
     });
 
@@ -572,15 +572,15 @@ TypeOK == state \\in {"Live", "Cut"} /\\ paid \\in 0..2 /\\ atcut \\in 0..2
 A1 == state = "Cut" => paid = atcut
 ====
 `;
-      const hdir = join(root, 'components', 'history');
-      write('components/history/model/History.tla', HISTORY);
-      write('components/history/model/History.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
-      write('components/history/model/blunders/A1.cfg', 'SPECIFICATION Spec\nINVARIANTS A1\n');
-      write('components/history/model/blunders/later.tla', HISTORY.replace("  /\\ atcut' = paid\n", "  /\\ atcut' = paid + 1\n"));
-      write('components/history/model/blunders/unmarked.tla', HISTORY.replace('  \\* history for A1\n', '').replace("  /\\ atcut' = paid\n", "  /\\ atcut' = paid + 1\n"));
-      write('components/history/model/blunders/early.tla', HISTORY.replace('  /\\ atcut = 0\n', '  /\\ atcut = 1\n'));
-      write('components/history/model/blunders/unguarded.tla', HISTORY.replace('  /\\ state = "Cut"\n  /\\ paid < 2\n', '  /\\ state = "Cut"\n'));
-      const hplan = (text: string) => { const c = call(text); assert.deepEqual(c.errors, [], c.errors.join('; ')); return planTrial({ call: c, dossierDir: hdir, kind: 'component', ir }).problems; };
+      const hdir = join(root, 'parts', 'history');
+      write('parts/history/model/History.tla', HISTORY);
+      write('parts/history/model/History.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
+      write('parts/history/model/blunders/A1.cfg', 'SPECIFICATION Spec\nINVARIANTS A1\n');
+      write('parts/history/model/blunders/later.tla', HISTORY.replace("  /\\ atcut' = paid\n", "  /\\ atcut' = paid + 1\n"));
+      write('parts/history/model/blunders/unmarked.tla', HISTORY.replace('  \\* history for A1\n', '').replace("  /\\ atcut' = paid\n", "  /\\ atcut' = paid + 1\n"));
+      write('parts/history/model/blunders/early.tla', HISTORY.replace('  /\\ atcut = 0\n', '  /\\ atcut = 1\n'));
+      write('parts/history/model/blunders/unguarded.tla', HISTORY.replace('  /\\ state = "Cut"\n  /\\ paid < 2\n', '  /\\ state = "Cut"\n'));
+      const hplan = (text: string) => { const c = call(text); assert.deepEqual(c.errors, [], c.errors.join('; ')); return planTrial({ call: c, dossierDir: hdir, kind: 'part', ir }).problems; };
       assert.deepEqual(hplan(blunder(['model/blunders/later.tla', 'model/blunders/A1.cfg'], { A1: 'violated' })), [`model/blunders/later.tla changes A1's history: M2_Cut updates atcut as model/History.tla never does; ${NEVER}`]);
       assert.deepEqual(hplan(blunder(['model/blunders/unmarked.tla', 'model/blunders/A1.cfg'], { A1: 'violated' })), [`model/blunders/unmarked.tla changes A1's history: M2_Cut updates atcut as model/History.tla never does; ${NEVER}`], 'the base\'s comment counts, whatever the copy says');
       assert.deepEqual(hplan(blunder(['model/blunders/early.tla', 'model/blunders/A1.cfg'], { A1: 'violated' })), [`model/blunders/early.tla changes A1's history: atcut starts otherwise than in model/History.tla; ${NEVER}`]);
@@ -599,18 +599,18 @@ A1 == state = "Cut" => paid = atcut
 
     // What the question reaches further: a counter's helpers, a constant's definition, an imported
     // or LOCAL definition, every overload of a pred. And where an update ends, as TLA+ reads it.
-    const plans = (component: string) => (text: string) => { const c = call(text); assert.deepEqual(c.errors, [], c.errors.join('; ')); return planTrial({ call: c, dossierDir: join(root, 'components', component), kind: 'component', ir }).problems; };
+    const plans = (part: string) => (text: string) => { const c = call(text); assert.deepEqual(c.errors, [], c.errors.join('; ')); return planTrial({ call: c, dossierDir: join(root, 'parts', part), kind: 'part', ir }).problems; };
 
     it('holds the definitions and constants a counter\'s start and updates reach to the base', () => {
       const BUMP = `---- MODULE Bump ----\nEXTENDS Naturals\nCONSTANT Limit\nVARIABLES x, n1_ticks\nInitial == 0\nBump(t) == IF t < Limit THEN t + 1 ELSE t\nInit == x = 0 /\\ n1_ticks = Initial\nMove == x < 1 /\\ x' = x + 1 /\\ n1_ticks' = Bump(n1_ticks)\nNext == Move\nSpec == Init /\\ [][Next]_<<x, n1_ticks>>\nN1 == n1_ticks <= 1\n====\n`;
       const limit = (n: number) => `SPECIFICATION Spec\nCONSTANT Limit = ${n}\nINVARIANT N1\n`;
-      write('components/bump/model/Bump.tla', BUMP);
-      write('components/bump/model/Bump.cfg', limit(1));
-      write('components/bump/model/blunders/N1.cfg', limit(1));
-      write('components/bump/model/blunders/limit_N1.cfg', limit(2));
-      write('components/bump/model/blunders/bump.tla', BUMP.replace('THEN t + 1', 'THEN t + 2'));
-      write('components/bump/model/blunders/initial.tla', BUMP.replace('Initial == 0', 'Initial == 2'));
-      write('components/bump/model/blunders/loose.tla', BUMP.replace('x < 1', 'x < 2'));
+      write('parts/bump/model/Bump.tla', BUMP);
+      write('parts/bump/model/Bump.cfg', limit(1));
+      write('parts/bump/model/blunders/N1.cfg', limit(1));
+      write('parts/bump/model/blunders/limit_N1.cfg', limit(2));
+      write('parts/bump/model/blunders/bump.tla', BUMP.replace('THEN t + 1', 'THEN t + 2'));
+      write('parts/bump/model/blunders/initial.tla', BUMP.replace('Initial == 0', 'Initial == 2'));
+      write('parts/bump/model/blunders/loose.tla', BUMP.replace('x < 1', 'x < 2'));
       const bplan = plans('bump');
       assert.deepEqual(bplan(blunder(['model/blunders/bump.tla', 'model/blunders/N1.cfg'], { N1: 'violated' })), [`model/blunders/bump.tla changes N1's tick counter: Bump differs from model/Bump.tla; ${NEVER}`], 'n1_ticks\' = Bump(n1_ticks) reads as before, and Bump counts otherwise');
       assert.deepEqual(bplan(blunder(['model/blunders/initial.tla', 'model/blunders/N1.cfg'], { N1: 'violated' })), [`model/blunders/initial.tla changes N1's tick counter: Initial differs from model/Bump.tla; ${NEVER}`], 'n1_ticks = Initial reads as before, and Initial starts it elsewhere');
@@ -621,12 +621,12 @@ A1 == state = "Cut" => paid = atcut
     it('holds what a cinit: right-hand side reaches, and the definition a TLC configuration binds with <-, to the base', () => {
       const ALIAS = `---- MODULE Alias ----\nEXTENDS Naturals\nCONSTANTS\n  \\* @type: Int;\n  Cap,\n  \\* @type: Int;\n  Seed\nVARIABLES\n  \\* @type: Int;\n  x\nBound == 1\nConstInit == Cap = Bound /\\ Seed = 0\nConstInit_seed == Seed = 0\nInit == x = 0\nNext == x < 1 /\\ x' = x + 1\nSpec == Init /\\ [][Next]_x\nA1 == x <= Cap\n====\n`;
       const bound = (cap: string) => `SPECIFICATION Spec\nCONSTANT Cap ${cap}\nCONSTANT Seed = 0\nINVARIANT A1\n`;
-      write('components/alias/model/Alias.tla', ALIAS);
-      write('components/alias/model/Alias.cfg', bound('<- Bound'));
-      write('components/alias/model/blunders/A1.cfg', bound('<- Bound'));
-      write('components/alias/model/blunders/model_value_A1.cfg', bound('= Bound'));
-      write('components/alias/model/blunders/bound.tla', ALIAS.replace('Bound == 1', 'Bound == 0'));
-      write('components/alias/model/blunders/loose.tla', ALIAS.replace('x < 1', 'x < 2'));
+      write('parts/alias/model/Alias.tla', ALIAS);
+      write('parts/alias/model/Alias.cfg', bound('<- Bound'));
+      write('parts/alias/model/blunders/A1.cfg', bound('<- Bound'));
+      write('parts/alias/model/blunders/model_value_A1.cfg', bound('= Bound'));
+      write('parts/alias/model/blunders/bound.tla', ALIAS.replace('Bound == 1', 'Bound == 0'));
+      write('parts/alias/model/blunders/loose.tla', ALIAS.replace('x < 1', 'x < 2'));
       const aplan = plans('alias'), bounded = 'mode: bounded\nlength: 1\ninv: A1\ncinit: ConstInit\n';
       assert.deepEqual(aplan(blunder(['model/blunders/bound.tla'], { A1: 'violated' }, bounded)), [`model/blunders/bound.tla changes the constants A1 reads: its ConstInit sets Cap otherwise than model/Alias.tla's; ${NEVER}`], 'Cap = Bound reads as before, and Bound is another value');
       assert.deepEqual(aplan(blunder(['model/blunders/loose.tla'], { A1: 'violated' }, bounded)), []);
@@ -636,10 +636,10 @@ A1 == state = "Cut" => paid = atcut
     });
 
     it('accepts an Apalache configuration that sets a constant as the base\'s cinit: does, through a definition too, and refuses one that cinit: leaves unset', () => {
-      write('components/count/model/blunders/cap2_only.cfg', 'CONSTANT Cap = 2\n');
+      write('parts/count/model/blunders/cap2_only.cfg', 'CONSTANT Cap = 2\n');
       assert.deepEqual(cplan(blunder(['model/blunders/loose.tla', 'model/blunders/cap2_only.cfg'], { Inv_A1: 'violated' }, 'mode: inductive\ninv: Inv_A1\ncinit: ConstInit\n')), []);
-      write('components/alias/model/blunders/cap1.cfg', 'CONSTANT Cap = 1\nCONSTANT Seed = 0\n');
-      write('components/alias/model/blunders/cap0.cfg', 'CONSTANT Cap = 0\nCONSTANT Seed = 0\n');
+      write('parts/alias/model/blunders/cap1.cfg', 'CONSTANT Cap = 1\nCONSTANT Seed = 0\n');
+      write('parts/alias/model/blunders/cap0.cfg', 'CONSTANT Cap = 0\nCONSTANT Seed = 0\n');
       const aplan = plans('alias'), bounded = (cinit: string) => `mode: bounded\nlength: 1\ninv: A1\ncinit: ${cinit}\n`;
       assert.deepEqual(aplan(blunder(['model/blunders/loose.tla', 'model/blunders/cap1.cfg'], { A1: 'violated' }, bounded('ConstInit'))), [], 'ConstInit sets Cap = Bound, and Bound == 1');
       assert.deepEqual(aplan(blunder(['model/blunders/loose.tla', 'model/blunders/cap0.cfg'], { A1: 'violated' }, bounded('ConstInit'))), [`model/blunders/cap0.cfg sets Cap, which A1 reads, otherwise than ConstInit in model/Alias.tla; ${NEVER}`]);
@@ -649,12 +649,12 @@ A1 == state = "Cut" => paid = atcut
     it('holds a definition the property reaches in a local module it imports to the base, found beside each module', () => {
       const IMPORTS = `---- MODULE Imports ----\nEXTENDS Naturals, Question\nVARIABLE x\nInit == x = 1\nNext == x < 2 /\\ x' = x + 1\nSpec == Init /\\ [][Next]_x\nA1 == Safe(x)\n====\n`;
       const QUESTION = (n: number) => `---- MODULE Question ----\nSafe(x) == x <= ${n}\n====\n`;
-      for (const [component, copied] of [['imported', 0], ['imported-alike', 1]] as const) {
-        write(`components/${component}/model/Imports.tla`, IMPORTS);
-        write(`components/${component}/model/Question.tla`, QUESTION(1));
-        write(`components/${component}/model/blunders/copy.tla`, IMPORTS.replace('x < 2', 'x < 3'));
-        write(`components/${component}/model/blunders/Question.tla`, QUESTION(copied));
-        write(`components/${component}/model/blunders/A1.cfg`, 'SPECIFICATION Spec\nINVARIANT A1\n');
+      for (const [part, copied] of [['imported', 0], ['imported-alike', 1]] as const) {
+        write(`parts/${part}/model/Imports.tla`, IMPORTS);
+        write(`parts/${part}/model/Question.tla`, QUESTION(1));
+        write(`parts/${part}/model/blunders/copy.tla`, IMPORTS.replace('x < 2', 'x < 3'));
+        write(`parts/${part}/model/blunders/Question.tla`, QUESTION(copied));
+        write(`parts/${part}/model/blunders/A1.cfg`, 'SPECIFICATION Spec\nINVARIANT A1\n');
       }
       const call = blunder(['model/blunders/copy.tla', 'model/blunders/A1.cfg'], { A1: 'violated' }, 'base: model/Imports.tla\n');
       assert.deepEqual(plans('imported')(call), [`model/blunders/copy.tla changes what A1 reads: Safe differs from model/Question.tla; ${NEVER}`]);
@@ -663,10 +663,10 @@ A1 == state = "Cut" => paid = atcut
 
     it('holds a LOCAL definition the property reaches to the base, while parseTla\'s readers still leave LOCAL ones out', () => {
       const LOCAL = (n: number, guard = 1) => `---- MODULE Local ----\nEXTENDS Naturals\nVARIABLE x\nLOCAL Safe == x <= ${n}\nInit == x = 0\nNext == x < ${guard} /\\ x' = x + 1\nSpec == Init /\\ [][Next]_x\nA1 == Safe\n====\n`;
-      write('components/local/model/Local.tla', LOCAL(1));
-      write('components/local/model/blunders/A1.cfg', 'SPECIFICATION Spec\nINVARIANT A1\n');
-      write('components/local/model/blunders/local.tla', LOCAL(0));
-      write('components/local/model/blunders/loose.tla', LOCAL(1, 2));
+      write('parts/local/model/Local.tla', LOCAL(1));
+      write('parts/local/model/blunders/A1.cfg', 'SPECIFICATION Spec\nINVARIANT A1\n');
+      write('parts/local/model/blunders/local.tla', LOCAL(0));
+      write('parts/local/model/blunders/loose.tla', LOCAL(1, 2));
       assert.deepEqual(plans('local')(blunder(['model/blunders/local.tla', 'model/blunders/A1.cfg'], { A1: 'violated' })), [`model/blunders/local.tla changes what A1 reads: Safe differs from model/Local.tla; ${NEVER}`]);
       assert.deepEqual(plans('local')(blunder(['model/blunders/loose.tla', 'model/blunders/A1.cfg'], { A1: 'violated' })), []);
       assert.equal(parseTla(LOCAL(1)).definitions.Safe, undefined);
@@ -675,9 +675,9 @@ A1 == state = "Cut" => paid = atcut
 
     it('holds every overload of a pred the assertion reaches to the base', () => {
       const OVERLOAD = (second: string) => `sig A {}\nsig B {}\nfact S1_some { some A }\npred okay[b: B] { b = b }\npred okay[a: A] { ${second} }\nassert A1_safe { all a: A | okay[a] }\ncheck A1_safe for 3\n`;
-      write('components/overload/model/Overload.als', OVERLOAD('a = a'));
-      write('components/overload/model/blunders/overload.als', OVERLOAD('no a'));
-      write('components/overload/model/blunders/factless.als', OVERLOAD('a = a').replace(/^fact [^\n]*\n/m, ''));
+      write('parts/overload/model/Overload.als', OVERLOAD('a = a'));
+      write('parts/overload/model/blunders/overload.als', OVERLOAD('no a'));
+      write('parts/overload/model/blunders/factless.als', OVERLOAD('a = a').replace(/^fact [^\n]*\n/m, ''));
       assert.deepEqual(plans('overload')(blunder(['model/blunders/overload.als'], { A1_safe: 'counterexample' })), [`model/blunders/overload.als changes what A1_safe reads: okay differs from model/Overload.als; ${NEVER}`], 'the second okay, not the first');
       assert.deepEqual(plans('overload')(blunder(['model/blunders/factless.als'], { A1_safe: 'counterexample' })), []);
     });
@@ -686,12 +686,12 @@ A1 == state = "Cut" => paid = atcut
       const BULLET = (bound: number) => `---- MODULE Bullet ----\nEXTENDS Naturals\nVARIABLE n1_ticks\nInit == n1_ticks = 0\nNext ==\n  /\\ n1_ticks' = n1_ticks + 1 /\\ n1_ticks < ${bound}\nSpec == Init /\\ [][Next]_n1_ticks\nN1 == n1_ticks <= 1\n====\n`;
       const BRANCH = (bound: number) => `---- MODULE Branch ----\nEXTENDS Naturals\nVARIABLE n1_ticks\nInit == n1_ticks = 0\nNext == n1_ticks' = IF n1_ticks > 5 THEN 0 ELSE n1_ticks + 1 /\\ n1_ticks < ${bound}\nSpec == Init /\\ [][Next]_n1_ticks\nN1 == n1_ticks <= 1\n====\n`;
       const N1 = 'SPECIFICATION Spec\nINVARIANT N1\nCHECK_DEADLOCK FALSE\n';
-      write('components/bullet/model/Bullet.tla', BULLET(1));
-      write('components/bullet/model/blunders/guard.tla', BULLET(2));
-      write('components/bullet/model/blunders/N1.cfg', N1);
-      write('components/branch/model/Branch.tla', BRANCH(1));
-      write('components/branch/model/blunders/guard.tla', BRANCH(2));
-      write('components/branch/model/blunders/N1.cfg', N1);
+      write('parts/bullet/model/Bullet.tla', BULLET(1));
+      write('parts/bullet/model/blunders/guard.tla', BULLET(2));
+      write('parts/bullet/model/blunders/N1.cfg', N1);
+      write('parts/branch/model/Branch.tla', BRANCH(1));
+      write('parts/branch/model/blunders/guard.tla', BRANCH(2));
+      write('parts/branch/model/blunders/N1.cfg', N1);
       const guard = blunder(['model/blunders/guard.tla', 'model/blunders/N1.cfg'], { N1: 'violated' });
       assert.deepEqual(plans('bullet')(guard), [], '= binds tighter than /\\: the guard is a conjunct of its own');
       assert.deepEqual(plans('branch')(guard), [`model/blunders/guard.tla changes N1's tick counter: Next updates n1_ticks as model/Branch.tla never does; ${NEVER}`], 'the ELSE branch runs to the end of the definition');
@@ -721,8 +721,8 @@ A1 == state = "Cut" => paid = atcut
 
   describe('paths', () => {
     it('refuses a path outside the dossier, written another way, or leading out through a link, before reading anything', () => {
-      write('components/two/model/Two.tla', MODULE('Two'));
-      symlinkSync(join(root, 'components', 'two', 'model', 'Two.tla'), join(dir, 'model', 'Linked.tla'));
+      write('parts/two/model/Two.tla', MODULE('Two'));
+      symlinkSync(join(root, 'parts', 'two', 'model', 'Two.tla'), join(dir, 'model', 'Linked.tla'));
       assert.deepEqual(plan(tlc(['../two/model/Two.tla', 'model/Timelock.cfg'], { TypeOK: 'holds', A1: 'holds' })).problems, ['executes names ../two/model/Two.tla, which is outside the dossier']);
       assert.deepEqual(plan(blunder(['model/blunders/../Timelock.tla', 'model/blunders/loose_A1.cfg'], { A1: 'violated' })).problems, ['executes names model/blunders/../Timelock.tla, which is outside the dossier']);
       assert.deepEqual(plan(tlc([join(dir, 'model', 'Timelock.tla'), 'model/Timelock.cfg'], { TypeOK: 'holds', A1: 'holds' })).problems, [`executes names ${join(dir, 'model', 'Timelock.tla')}, which is outside the dossier`]);
@@ -735,22 +735,22 @@ A1 == state = "Cut" => paid = atcut
     });
 
     it('compares a blunder with the one module under the model\'s folder, in order, and asks for base: when there are several', () => {
-      const twin = join(root, 'components', 'twin');
-      write('components/twin/model/Twin.tla', MODULE('Twin'));
-      write('components/twin/model/Aux.tla', MODULE('Aux'));
-      write('components/twin/model/blunders/loose.tla', MODULE('loose', 3));
-      write('components/twin/model/blunders/loose_A1.cfg', 'SPECIFICATION Spec\nINVARIANTS A1\n');
-      const many = planTrial({ call: call(blunder(['model/blunders/loose.tla', 'model/blunders/loose_A1.cfg'], { A1: 'violated' })), dossierDir: twin, kind: 'component', ir });
+      const twin = join(root, 'parts', 'twin');
+      write('parts/twin/model/Twin.tla', MODULE('Twin'));
+      write('parts/twin/model/Aux.tla', MODULE('Aux'));
+      write('parts/twin/model/blunders/loose.tla', MODULE('loose', 3));
+      write('parts/twin/model/blunders/loose_A1.cfg', 'SPECIFICATION Spec\nINVARIANTS A1\n');
+      const many = planTrial({ call: call(blunder(['model/blunders/loose.tla', 'model/blunders/loose_A1.cfg'], { A1: 'violated' })), dossierDir: twin, kind: 'part', ir });
       assert.deepEqual(many.problems, ['model/ holds Aux.tla, Twin.tla: name the module the blunder is a copy of under base:']);
-      const based = planTrial({ call: call(blunder(['model/blunders/loose.tla', 'model/blunders/loose_A1.cfg'], { A1: 'violated' }, 'base: model/Twin.tla\n')), dossierDir: twin, kind: 'component', ir });
+      const based = planTrial({ call: call(blunder(['model/blunders/loose.tla', 'model/blunders/loose_A1.cfg'], { A1: 'violated' }, 'base: model/Twin.tla\n')), dossierDir: twin, kind: 'part', ir });
       assert.deepEqual(based.problems, []);
       assert.match(based.plan.blunderDiff!, /^--- model\/Twin\.tla/m);
     });
 
-    it('refuses trace-data that names no variable of the module, and a system witness expecting a trace without trace-data', () => {
+    it('refuses trace-data that names no variable of the module, and a composition witness expecting a trace without trace-data', () => {
       assert.deepEqual(plan(tlc(['model/Timelock.tla', 'model/Timelock_W1.cfg'], { TypeOK: 'holds', NotW1: 'violated; trace: Idle/0 > Waiting/1' }, 'trace-data: remaining\n')).problems, []);
       assert.deepEqual(plan(tlc(['model/Timelock.tla', 'model/Timelock_W1.cfg'], { TypeOK: 'holds', NotW1: 'violated; trace: Idle/0 > Waiting/1' }, 'trace-data: remainng\n')).problems, ['trace-data names remainng, which model/Timelock.tla does not declare as a variable']);
-      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/W1_all_honest.cfg'], { TypeOK: 'holds', NotW1: 'violated; trace: Open/0 > Halted/1' }, 'walk: W1\nscenario: all-honest\n')).problems, ['a system witness that expects a trace names the variables of each step under trace-data:']);
+      assert.deepEqual(splan(tlc(['model/generated/Supply.tla', 'model/generated/W1_all_honest.cfg'], { TypeOK: 'holds', NotW1: 'violated; trace: Open/0 > Halted/1' }, 'walk: W1\nscenario: all-honest\n')).problems, ['a composition witness that expects a trace names the variables of each step under trace-data:']);
     });
   });
 

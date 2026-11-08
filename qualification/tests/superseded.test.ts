@@ -14,7 +14,7 @@ import { completed, holdsCounterexample } from '../../src/trials/answers.ts';
 import { conclusionsOf, groundOf, supersededAmong } from '../../src/verify/superseded.ts';
 import type { Ir } from '../../src/prose/ir.ts';
 import type { AnswerRead } from '../../src/trials/answers.ts';
-import type { ComponentAnalysis } from '../../src/verify/analyze.ts';
+import type { PartAnalysis } from '../../src/verify/analyze.ts';
 
 const plugin = fileURLToPath(new URL('../../', import.meta.url));
 const fixture = join(plugin, 'qualification/fixture');
@@ -40,22 +40,22 @@ const hashes = { S1: 's1', E1: 'e1', A1: 'a1', K1: 'k1', W1: 'w1' };
 
 test('the ground of an answer: the passages it touched, a blunder\'s targets, a cell, a walk, and a question\'s names for an aborted one', () => {
   const chart = stub({ id: '2026-11-07-1000-chart-aaaaaa', entry: 'chart-aaaaaa', kind: 'chart', more: { checks: [{ ids: ['S1', 'E1'], status: 'passed' }, { ids: ['A1'], status: 'failed' }] } });
-  assert.deepEqual(groundOf(chart, 'component', ir, hashes).sort(), ['chart', 'passage:A1', 'passage:E1', 'passage:S1'], 'a chart touches every passage it checked, passed or not, and explores');
+  assert.deepEqual(groundOf(chart, 'part', ir, hashes).sort(), ['chart', 'passage:A1', 'passage:E1', 'passage:S1'], 'a chart touches every passage it checked, passed or not, and explores');
   const external = stub({ id: '2026-11-07-1001-external-bbbbbb', entry: 'external-A1-bbbbbb', more: { covers: ['A1', 'K1', 'Z9'] } });
-  assert.deepEqual(groundOf(external, 'component', ir, hashes).sort(), ['passage:A1', 'passage:K1'], 'an external answer touches what it covers, among the passages that exist');
+  assert.deepEqual(groundOf(external, 'part', ir, hashes).sort(), ['passage:A1', 'passage:K1'], 'an external answer touches what it covers, among the passages that exist');
   const blunder = stub({ id: '2026-11-07-1002-blunder-cccccc', entry: 'blunder-A1-cccccc', kind: 'blunder', more: { checker: 'chart', checks: [{ ids: ['A1'], status: 'failed' }], failing: ['A1'], expect: { checks: { expect: 'fail', failing: ['A1'] } } } });
-  assert.deepEqual(groundOf(blunder, 'component', ir, hashes), ['blunder:A1'], 'a blunder\'s ground is its targets, apart from the passages');
+  assert.deepEqual(groundOf(blunder, 'part', ir, hashes), ['blunder:A1'], 'a blunder\'s ground is its targets, apart from the passages');
   const aborted = stub({ id: '2026-11-07-1003-external-dddddd', entry: 'external-A1-dddddd', completed: false, more: { expect: { A1: { expect: 'pass' }, check: { expect: 'pass' } } } });
-  assert.deepEqual(groundOf(aborted, 'component', ir, hashes), ['passage:A1'], 'an aborted answer answered nothing: its ground is what its question asked about');
+  assert.deepEqual(groundOf(aborted, 'part', ir, hashes), ['passage:A1'], 'an aborted answer answered nothing: its ground is what its question asked about');
   const abortedBlunder = stub({ id: '2026-11-07-1004-blunder-eeeeee', entry: 'blunder-A1-eeeeee', kind: 'blunder', completed: false, more: { expect: { checks: { expect: 'fail', failing: ['A1'] } } } });
-  assert.deepEqual(groundOf(abortedBlunder, 'component', ir, hashes), ['blunder:A1']);
+  assert.deepEqual(groundOf(abortedBlunder, 'part', ir, hashes), ['blunder:A1']);
   const cell = stub({ id: '2026-11-07-1005-tlc-ffffff', entry: 'tlc-A1-all-honest-ffffff', kind: 'tlc', more: { property: 'A1', scenario: 'all-honest' } });
-  assert.deepEqual(groundOf(cell, 'system', null, hashes), ['cell:A1|all-honest']);
+  assert.deepEqual(groundOf(cell, 'composition', null, hashes), ['cell:A1|all-honest']);
   const walk = stub({ id: '2026-11-07-1006-tlc-111111', entry: 'tlc-W1-111111', kind: 'tlc', more: { walk: 'W1' } });
-  assert.deepEqual(groundOf(walk, 'system', null, hashes), ['walk:W1|all-honest'], 'a walk under no scenario is under all-honest');
-  const systemBlunder = stub({ id: '2026-11-07-1007-blunder-222222', entry: 'blunder-A1-all-honest-222222', kind: 'blunder', more: { property: 'A1', scenario: 'all-honest' } });
-  assert.deepEqual(groundOf(systemBlunder, 'system', null, hashes), ['blunder:A1'], 'a system blunder\'s ground is its property, apart from the cells');
-  assert.deepEqual(groundOf({ ...cell, entry: null }, 'system', null, hashes), [], 'an entry that does not read has no ground');
+  assert.deepEqual(groundOf(walk, 'composition', null, hashes), ['walk:W1|all-honest'], 'a walk under no scenario is under all-honest');
+  const compositionBlunder = stub({ id: '2026-11-07-1007-blunder-222222', entry: 'blunder-A1-all-honest-222222', kind: 'blunder', more: { property: 'A1', scenario: 'all-honest' } });
+  assert.deepEqual(groundOf(compositionBlunder, 'composition', null, hashes), ['blunder:A1'], 'a composition blunder\'s ground is its property, apart from the cells');
+  assert.deepEqual(groundOf({ ...cell, entry: null }, 'composition', null, hashes), [], 'an entry that does not read has no ground');
 });
 
 // What the dossier concludes from a list of answers, for the rules: on each side, the answer that
@@ -131,7 +131,7 @@ test('the conclusions compared leave out the findings that are an entry\'s own',
     { name: 'narrowed', where: 'A1: evidence/y.json reaches less than evidence/x.json (delay 3→2)' },
     { name: 'blunder owed', where: 'A1' },
   ];
-  const a = { kind: 'component', marks: { A1: { mark: 'held' } }, backing: {}, chart: { gaps: ['g'] }, changedModelFiles: [], tripwires: [], flags, route: { pass: 'Encode', why: [], read: 'spec/models.md' } } as unknown as ComponentAnalysis;
+  const a = { kind: 'part', marks: { A1: { mark: 'held' } }, backing: {}, chart: { gaps: ['g'] }, changedModelFiles: [], tripwires: [], flags, route: { pass: 'Encode', why: [], read: 'spec/models.md' } } as unknown as PartAnalysis;
   const c = JSON.parse(conclusionsOf(a));
   assert.deepEqual(c.flags.map((f: { name: string }) => f.name), ['narrowed', 'blunder owed'], 'a reach narrowed against another question\'s answer is a finding on the pair, and stays');
   assert.deepEqual(Object.keys(c).sort(), ['backing', 'changed', 'flags', 'gaps', 'marks', 'route', 'tripwires']);
@@ -145,15 +145,15 @@ test('Harbor keeps no answer the next publication would remove; one planted on a
   const work = mkdtempSync(join(tmpdir(), 'dossier-superseded-'));
   t.after(() => rmSync(work, { recursive: true, force: true }));
   cpSync(fixture, work, { recursive: true });
-  const root = join(work, 'dossiers'), dir = join(root, 'components', 'token');
+  const root = join(work, 'dossiers'), dir = join(root, 'parts', 'token');
   const env = { ...process.env, DOSSIER_ROOT: '' };
   const dossier = (args: string[], extra: NodeJS.ProcessEnv = {}) => {
     const r = spawnSync(join(plugin, 'bin', 'dossier'), [args[0], '--root', root, ...args.slice(1)], { encoding: 'utf8', env: { ...env, ...extra } });
     assert.equal(r.status, 0, `dossier ${args.join(' ')}\n${r.stdout}${r.stderr}`);
     return r.stdout;
   };
-  const all = () => { const r = verifyAll({ root, version: '0.1.0' }); return [...r.components, ...r.systems]; };
-  const token = () => all().find(a => a.ref === 'components/token')!;
+  const all = () => { const r = verifyAll({ root, version: '0.1.0' }); return [...r.parts, ...r.compositions]; };
+  const token = () => all().find(a => a.ref === 'parts/token')!;
   const published = all();
   assert.deepEqual(published.flatMap(a => a.supersededRemovable.map(name => `${a.ref}/evidence/${name}.json`)), [], 'Harbor is published with the rule in force');
   assert.deepEqual(published.flatMap(a => Object.keys(a.superseded)), [], 'and flags no answer superseded, hence the plant');

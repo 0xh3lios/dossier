@@ -1,4 +1,4 @@
-// ledger.md for a component or a system, index.md for the root, and the verify lines. The ledgers
+// ledger.md for a part or a composition, index.md for the root, and the verify lines. The ledgers
 // and the index are views: render writes them, nothing reads them as a record, and deleting one
 // changes no conclusion.
 import { proseHash } from '../hash.ts';
@@ -7,17 +7,17 @@ import { forgets } from '../dossiers/decisions.ts';
 import type { Backing } from '../prose/prose.ts';
 import type { Snapshot } from '../trials/answers.ts';
 import type { OwnerState } from '../dossiers/decisions.ts';
-import type { Member, Wire } from '../dossiers/composition.ts';
+import type { Member, Wire } from '../dossiers/wiring.ts';
 import type { FreeSend, OutsideSender } from '../models/compose.ts';
-import type { Analysis, AnswerRow, ComponentAnalysis, SystemAnalysis } from './analyze.ts';
+import type { Analysis, AnswerRow, PartAnalysis, CompositionAnalysis } from './analyze.ts';
 import type { CellMark, WalkMarkName } from './cells.ts';
 import type { BackingState, Mark } from './marks.ts';
 import type { Route } from './route.ts';
 import type { Note } from './tripwires.ts';
 
-// The machine form a component's ledger ends with, as written.
-export interface ComponentLedgerForm {
-  kind: 'component';
+// The machine form a part's ledger ends with, as written.
+export interface PartLedgerForm {
+  kind: 'part';
   id: string;
   title: string;
   tier: string;
@@ -36,16 +36,16 @@ export interface ComponentLedgerForm {
   flags: Note[];
   route: Route;
 }
-// One cell as a system's machine form keeps it.
+// One cell as a composition's machine form keeps it.
 // A cell as verify's lines name it: its mark, and for a violation whether the owner accepted it or
 // the acceptance lapsed.
 export const cellWords = (c: { mark: string; accepted?: unknown; acceptanceLapsed?: string[] }): string => c.mark + (c.mark !== 'violated' ? '' : c.accepted ? ', accepted' : c.acceptanceLapsed && c.acceptanceLapsed.length ? ', acceptance lapsed' : '');
 export interface CellForm { property: string; scenario: string; mark: CellMark; trial: string | null; entry: string | null; reach: string | null; lapsed: string[]; accepted: boolean; acceptanceLapsed: string[]; open: boolean; impliedBy: string | null; held: string }
-// One Walk under its scenario as a system's machine form keeps it.
+// One Walk under its scenario as a composition's machine form keeps it.
 export interface WalkForm { id: string; scenario: string; mark: WalkMarkName; trial: string | null; entry: string | null }
-// The machine form a system's ledger ends with, as written.
-export interface SystemLedgerForm {
-  kind: 'system';
+// The machine form a composition's ledger ends with, as written.
+export interface CompositionLedgerForm {
+  kind: 'composition';
   id: string;
   title: string;
   concern: string | null;
@@ -128,7 +128,7 @@ const above = (counts: [string, number][]) => counts.filter(([, n]) => n > 0).ma
 
 export function summaryLine(a: Analysis): string {
   const s = a.summary;
-  if (a.kind === 'system') {
+  if (a.kind === 'composition') {
     const violated = s.violated ? [`violated ${s.violated}${s.accepted ? ` (accepted ${s.accepted})` : ''}`] : [];
     return [`${a.title}: ${counted(s.properties, 'property', 'properties')} × ${counted(s.scenarios, 'scenario', 'scenarios')}`, counted(s.cells, 'cell', 'cells'),
       ...above([['proved', s.proved], ['checked', s.checked], ['implied', s.implied]]), ...violated,
@@ -141,8 +141,8 @@ export function summaryLine(a: Analysis): string {
 // rootTrips: what is wrong at the root, outside every dossier: dossier.json, index.md.
 export function verifyLine(analyses: Analysis[], version: string, rootTrips: Note[] = []): string {
   const trips = [...rootTrips.map(t => `${t.name} (${t.where})`), ...analyses.flatMap(a => a.tripwires.map(t => `${t.name} (${a.title}: ${t.where})`))];
-  const comps = analyses.filter(a => a.kind === 'component').length, systems = analyses.filter(a => a.kind === 'system').length;
-  const scope = analyses.length === 0 ? 'no dossiers' : analyses.length === 1 ? analyses[0].title : `${comps} component${comps === 1 ? '' : 's'}, ${systems} system${systems === 1 ? '' : 's'}`;
+  const comps = analyses.filter(a => a.kind === 'part').length, compositions = analyses.filter(a => a.kind === 'composition').length;
+  const scope = analyses.length === 0 ? 'no dossiers' : analyses.length === 1 ? analyses[0].title : `${comps} part${comps === 1 ? '' : 's'}, ${compositions} composition${compositions === 1 ? '' : 's'}`;
   if (trips.length === 0) return `verify: ok · ${scope} · dossier ${version} · 0 tripwires`;
   return `verify: FAIL · ${scope} · dossier ${version} · ${trips.length} tripwire${trips.length === 1 ? '' : 's'}: ${trips.join('; ')}`;
 }
@@ -179,7 +179,7 @@ function serialize(form: Record<string, unknown>): string {
   const keys = Object.keys(form);
   for (const key of keys) {
     const last = key === keys[keys.length - 1] ? '' : ',';
-    // The long lists one item a line; walks too once there are any, so a system without them keeps "walks": [].
+    // The long lists one item a line; walks too once there are any, so a composition without them keeps "walks": [].
     if (key === 'marks' || key === 'cells' || key === 'answers' || (key === 'walks' && (form[key] as unknown[]).length)) {
       const isArray = Array.isArray(form[key]);
       lines.push(`  ${JSON.stringify(key)}: ${isArray ? '[' : '{'}`);
@@ -213,7 +213,7 @@ export function backingText(b: Backing | null | undefined): string {
   return (b as { kind: string }).kind;
 }
 
-export function renderComponentLedger(a: ComponentAnalysis, { version, now, previous }: RenderOptions): string {
+export function renderPartLedger(a: PartAnalysis, { version, now, previous }: RenderOptions): string {
   const out: string[] = [];
   out.push(`# Ledger: ${a.title}   rebuilt ${now}   prose@${proseHash(a.hashes)}   answers ${a.answerRows.length}   decisions ${a.decisions.length}`);
   out.push('Written by dossier render from the records. The JSON block at the end says the same for tools.');
@@ -240,16 +240,16 @@ export function renderComponentLedger(a: ComponentAnalysis, { version, now, prev
     }
   }
   out.push('');
-  out.push(`Used by: ${a.usedBy.length ? a.usedBy.join(', ') : 'no system yet'}`);
+  out.push(`Used by: ${a.usedBy.length ? a.usedBy.join(', ') : 'no composition yet'}`);
   out.push(...forgottenLines(a));
   out.push(`Summary: ${summaryLine(a).replace(/^[^:]+:\s*/, '')}`);
   out.push(`Flags: ${a.flags.length ? a.flags.map(x => `${x.name} (${x.where})`).join(' · ') : 'none'}`);
   if (a.route.pass === 'Fix') out.push(`Fix: ${a.route.why.join('; ')}`); else out.push(`Next: ${a.route.pass} — ${a.route.why.join('; ')}`);
-  const form = { kind: 'component', id: a.id, title: a.title, tier: a.tier, module: a.ir.module, rebuilt: now, plugin: version, summary: a.summary, marks: a.marks, owner: a.owner, backing: a.backing, pins: a.pins, usedBy: a.usedBy, answers: a.answerRows, removed: a.removed, tripwires: a.tripwires, flags: a.flags, route: a.route } satisfies ComponentLedgerForm;
+  const form = { kind: 'part', id: a.id, title: a.title, tier: a.tier, module: a.ir.module, rebuilt: now, plugin: version, summary: a.summary, marks: a.marks, owner: a.owner, backing: a.backing, pins: a.pins, usedBy: a.usedBy, answers: a.answerRows, removed: a.removed, tripwires: a.tripwires, flags: a.flags, route: a.route } satisfies PartLedgerForm;
   return finish(out, form, diffMarks(a, parseMachineForm(previous)), previous);
 }
 
-export function renderSystemLedger(a: SystemAnalysis, { version, now, previous }: RenderOptions): string {
+export function renderCompositionLedger(a: CompositionAnalysis, { version, now, previous }: RenderOptions): string {
   const out: string[] = [];
   out.push(`# Ledger: ${a.title}   rebuilt ${now}   prose@${proseHash(a.hashes)}   answers ${a.answerRows.length}   decisions ${a.decisions.length}`);
   out.push('Written by dossier render from the records. The JSON block at the end says the same for tools.');
@@ -257,10 +257,10 @@ export function renderSystemLedger(a: SystemAnalysis, { version, now, previous }
   out.push('');
   out.push('| member | role | module | pins |');
   out.push('| --- | --- | --- | --- |');
-  for (const m of a.composition.members) out.push(`| ${m.component} | ${m.role} | ${(a.members[m.component] && a.members[m.component].module) || ''} | ${m.pins.join(', ')} |`);
-  if (a.composition.wiring.length) { out.push(''); out.push(`Wiring: ${a.composition.wiring.map(w => `${w.effect.component}.${w.effect.name} → ${w.event.component}.${w.event.name}`).join(' · ')}`); }
+  for (const m of a.wiring.members) out.push(`| ${m.part} | ${m.role} | ${(a.members[m.part] && a.members[m.part].module) || ''} | ${m.pins.join(', ')} |`);
+  if (a.wiring.wiring.length) { out.push(''); out.push(`Wiring: ${a.wiring.wiring.map(w => `${w.effect.part}.${w.effect.name} → ${w.event.part}.${w.event.name}`).join(' · ')}`); }
   const free = a.composed.free || [], outside = a.composed.outside || [];
-  if ((free.length || outside.length) && !a.composition.wiring.length) out.push('');
+  if ((free.length || outside.length) && !a.wiring.wiring.length) out.push('');
   if (free.length) {
     const bySender = new Map<string, string[]>();
     for (const x of free) (bySender.get(x.from) || bySender.set(x.from, []).get(x.from)!).push(x.event);
@@ -309,28 +309,28 @@ export function renderSystemLedger(a: SystemAnalysis, { version, now, previous }
   out.push(`Summary: ${summaryLine(a).replace(/^[^:]+:\s*/, '')}`);
   out.push(`Flags: ${a.flags.length ? a.flags.map(x => `${x.name} (${x.where})`).join(' · ') : 'none'}`);
   if (a.route.pass === 'Fix') out.push(`Fix: ${a.route.why.join('; ')}`); else out.push(`Next: ${a.route.pass} — ${a.route.why.join('; ')}`);
-  const form = { kind: 'system', id: a.id, title: a.title, concern: a.prose.concern, rebuilt: now, plugin: version, summary: a.summary, members: a.composition.members, wiring: a.composition.wiring, free: a.composed.free || [], outside: a.composed.outside || [], closureMissing: a.closureMissing, cells: a.cells.map(c => ({ property: c.property, scenario: c.scenario, mark: c.mark, trial: c.trial, entry: c.entry, reach: c.reach ? c.reach.text : null, lapsed: c.lapsed, accepted: Boolean(c.accepted), acceptanceLapsed: c.acceptanceLapsed || [], open: Boolean(c.open), impliedBy: c.impliedBy || null, held: c.held })), walks: walks.map(w => ({ id: w.id, scenario: w.scenario, mark: w.mark, trial: w.trial, entry: w.entry })), owner: a.owner, propertyHeld: a.propertyHeld, answers: a.answerRows, removed: a.removed, tripwires: a.tripwires, flags: a.flags, route: a.route } satisfies SystemLedgerForm;
+  const form = { kind: 'composition', id: a.id, title: a.title, concern: a.prose.concern, rebuilt: now, plugin: version, summary: a.summary, members: a.wiring.members, wiring: a.wiring.wiring, free: a.composed.free || [], outside: a.composed.outside || [], closureMissing: a.closureMissing, cells: a.cells.map(c => ({ property: c.property, scenario: c.scenario, mark: c.mark, trial: c.trial, entry: c.entry, reach: c.reach ? c.reach.text : null, lapsed: c.lapsed, accepted: Boolean(c.accepted), acceptanceLapsed: c.acceptanceLapsed || [], open: Boolean(c.open), impliedBy: c.impliedBy || null, held: c.held })), walks: walks.map(w => ({ id: w.id, scenario: w.scenario, mark: w.mark, trial: w.trial, entry: w.entry })), owner: a.owner, propertyHeld: a.propertyHeld, answers: a.answerRows, removed: a.removed, tripwires: a.tripwires, flags: a.flags, route: a.route } satisfies CompositionLedgerForm;
   return finish(out, form, diffCells(a, parseMachineForm(previous)), previous);
 }
 
-export function renderIndex({ components, systems, version, now, route, previous = null, rootTrips = [] }: { components: ComponentAnalysis[]; systems: SystemAnalysis[]; version: string; now: string; route: Route; previous?: string | null; rootTrips?: Note[] }): string {
+export function renderIndex({ parts, compositions, version, now, route, previous = null, rootTrips = [] }: { parts: PartAnalysis[]; compositions: CompositionAnalysis[]; version: string; now: string; route: Route; previous?: string | null; rootTrips?: Note[] }): string {
   const out: string[] = [];
   out.push(`# Dossiers   rebuilt ${now}   dossier ${version}`);
-  out.push('Written by dossier render: components by systems, and every system at a glance.');
-  out.push(verifyLine([...components, ...systems], version, rootTrips));
+  out.push('Written by dossier render: parts by compositions, and every composition at a glance.');
+  out.push(verifyLine([...parts, ...compositions], version, rootTrips));
   out.push('');
-  const sysIds = systems.map(s => s.id);
-  out.push(`| component | module | tier | ${sysIds.join(' | ')}${sysIds.length ? ' |' : ''}`);
+  const sysIds = compositions.map(s => s.id);
+  out.push(`| part | module | tier | ${sysIds.join(' | ')}${sysIds.length ? ' |' : ''}`);
   out.push(`| --- | --- | --- |${sysIds.map(() => ' --- |').join('')}`);
-  for (const c of components) {
-    const cells = systems.map(s => { const m = s.composition.members.find(x => x.component === c.id); return m ? (m.role === 'member' ? 'member' : 'surroundings') : ''; });
+  for (const c of parts) {
+    const cells = compositions.map(s => { const m = s.wiring.members.find(x => x.part === c.id); return m ? (m.role === 'member' ? 'member' : 'surroundings') : ''; });
     out.push(`| ${c.id} | ${c.ir.module || ''} | ${c.tier} |${cells.map(x => ` ${x} |`).join('')}`);
   }
   out.push('');
-  for (const a of [...components, ...systems]) out.push(`- ${summaryLine(a)}`);
+  for (const a of [...parts, ...compositions]) out.push(`- ${summaryLine(a)}`);
   out.push('');
   out.push(route.pass === 'Fix' ? `Fix: ${route.why.join('; ')}` : `Next: ${route.pass}${route.target ? ` on ${route.target}` : ''} — ${route.why.join('; ')}`);
-  const form = { rebuilt: now, plugin: version, components: components.map(c => ({ id: c.id, module: c.ir.module, tier: c.tier, summary: c.summary, route: c.route, usedBy: c.usedBy })), systems: systems.map(s => ({ id: s.id, members: s.composition.members.map(m => m.component), summary: s.summary, route: s.route })), route };
+  const form = { rebuilt: now, plugin: version, parts: parts.map(c => ({ id: c.id, module: c.ir.module, tier: c.tier, summary: c.summary, route: c.route, usedBy: c.usedBy })), compositions: compositions.map(s => ({ id: s.id, members: s.wiring.members.map(m => m.part), summary: s.summary, route: s.route })), route };
   const next = joined([...out, '', '```json', JSON.stringify(form, null, 2), '```']);
   return previous != null && core(next) === core(previous) ? previous : next;
 }
@@ -343,7 +343,7 @@ function forgottenLines(a: Analysis): string[] {
 }
 
 // What moved since the ledger last changed: marks and owners, cells, the
-// guarantees' standing (as marks), who uses the component, the flags, the
+// guarantees' standing (as marks), who uses the part, the flags, the
 // closure, and the answers that arrived or whose entries went missing.
 const diffList = (label: string, before: string[] = [], after: string[] = []) => {
   const b = new Set(before), n = new Set(after), out: string[] = [];
@@ -361,7 +361,7 @@ const diffAnswers = (previous: LedgerForm, after: AnswerRow[], removed: string[]
   return [...(added.length ? [`answers new ${added.join(' ')}`] : []), ...(gone.length ? [`answers removed ${gone.join(' ')}`] : [])];
 };
 
-function diffMarks(a: ComponentAnalysis, previous: LedgerForm | null): string[] {
+function diffMarks(a: PartAnalysis, previous: LedgerForm | null): string[] {
   if (!previous || !previous.marks) return ['first rebuild'];
   const lines: string[] = [];
   for (const [id, m] of Object.entries(a.marks)) {
@@ -377,7 +377,7 @@ function diffMarks(a: ComponentAnalysis, previous: LedgerForm | null): string[] 
   return lines;
 }
 
-function diffCells(a: SystemAnalysis, previous: LedgerForm | null): string[] {
+function diffCells(a: CompositionAnalysis, previous: LedgerForm | null): string[] {
   if (!previous || !previous.cells) return ['first rebuild'];
   const lines: string[] = [];
   const key = (c: { property: string; scenario: string }) => `${c.property}×${c.scenario}`;

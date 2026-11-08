@@ -22,4 +22,4 @@ The Sink records the lots the Source sends. It holds received, a count from 0 to
 [X1] Seam with source: receive is reached by the Source's credit.
 
 ## Words only
-[T1] This component promises no eventual receipt.
+[T1] This part promises no eventual receipt.

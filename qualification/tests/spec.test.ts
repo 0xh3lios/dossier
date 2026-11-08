@@ -57,18 +57,18 @@ test('specification and skill routes resolve to portable contract files', () => 
   }
 });
 
-test('PROC-PREPARE / ART-VIEWS: system scaffold removes obsolete configurations and is idempotent', t => {
+test('PROC-PREPARE / ART-VIEWS: composition scaffold removes obsolete configurations and is idempotent', t => {
   const work = mkdtempSync(join(tmpdir(), 'dossier-materialize-'));
   t.after(() => rmSync(work, { recursive: true, force: true }));
   cpSync(join(plugin, 'qualification/fixture'), work, { recursive: true });
   const root = join(work, 'dossiers');
-  const obsolete = join(root, 'systems/control/model/generated/obsolete.cfg');
+  const obsolete = join(root, 'compositions/control/model/generated/obsolete.cfg');
   writeFileSync(obsolete, 'INVARIANT A1\n');
   const before = fingerprint(work);
   verify(root);
   assert.deepEqual(fingerprint(work), before, 'read-only verification does not clean up generated files');
   const scaffold = () => {
-    const r = spawnSync(join(plugin, 'bin/dossier'), ['scaffold', 'systems/control', '--root', root], { encoding: 'utf8' });
+    const r = spawnSync(join(plugin, 'bin/dossier'), ['scaffold', 'compositions/control', '--root', root], { encoding: 'utf8' });
     assert.equal(r.status, 0, r.stdout + r.stderr);
   };
   scaffold();
@@ -105,15 +105,15 @@ test('ART-EVIDENCE: CLI read-only verification preserves all bytes and mtimes on
   const first = verify(root);
   assert.equal(first.status, 0);
   assert.deepEqual(fingerprint(work), before);
-  for (const a of [...first.result.components, ...first.result.systems]) assert.ok(existsSync(join(plugin, a.route.read)), a.route.read);
+  for (const a of [...first.result.parts, ...first.result.compositions]) assert.ok(existsSync(join(plugin, a.route.read)), a.route.read);
   const index = join(root, 'index.md');
   writeFileSync(index, readFileSync(index, 'utf8') + 'edited\n');
   assert.deepEqual(verify(root), first, 'an edited view changes no conclusion');
-  rmSync(join(root, 'components/timelock/integrity.json'));
+  rmSync(join(root, 'parts/timelock/integrity.json'));
   const changed = fingerprint(work);
   const failed = verify(root);
   assert.equal(failed.status, 1);
-  assert.ok(failed.result.components.find(c => c.id === 'timelock')!.tripwires.some(x => x.name === 'integrity missing'));
+  assert.ok(failed.result.parts.find(c => c.id === 'timelock')!.tripwires.some(x => x.name === 'integrity missing'));
   assert.deepEqual(fingerprint(work), changed);
   assert.deepEqual(verify(root), failed);
   assert.deepEqual(fingerprint(work), changed);
@@ -124,18 +124,18 @@ test('ART-HISTORY: repeated read-only verification cannot forget a removed entry
   t.after(() => rmSync(work, { recursive: true, force: true }));
   cpSync(join(plugin, 'qualification/fixture'), work, { recursive: true });
   const root = join(work, 'dossiers');
-  const component = join(root, 'components/timelock');
+  const part = join(root, 'parts/timelock');
   // An answer leaves HEAD: its entry and its reading are gone, and integrity.json still binds it.
-  const entry = readdirSync(join(component, 'evidence')).find(n => n.endsWith('.json'))!.slice(0, -'.json'.length);
-  rmSync(join(component, 'evidence', `${entry}.json`));
-  rmSync(join(component, 'evidence', `${entry}.md`), { force: true });
-  const decisionPath = join(component, 'decisions.log');
+  const entry = readdirSync(join(part, 'evidence')).find(n => n.endsWith('.json'))!.slice(0, -'.json'.length);
+  rmSync(join(part, 'evidence', `${entry}.json`));
+  rmSync(join(part, 'evidence', `${entry}.md`), { force: true });
+  const decisionPath = join(part, 'decisions.log');
   const lines = readFileSync(decisionPath, 'utf8').trimEnd().split('\n');
   assert.ok(lines.length > 0);
   writeFileSync(decisionPath, lines.slice(0, -1).join('\n') + '\n');
   const findings = (r: ReturnType<typeof verify>) => {
     assert.equal(r.status, 1);
-    const trips = r.result.components.find(c => c.id === 'timelock')!.tripwires;
+    const trips = r.result.parts.find(c => c.id === 'timelock')!.tripwires;
     assert.ok(trips.some(x => x.name === 'answer removed' && x.where.startsWith(`evidence/${entry}.json`)), JSON.stringify(trips));
     assert.ok(trips.some(x => x.name === 'decisions chain broken'));
     return trips;
@@ -144,7 +144,7 @@ test('ART-HISTORY: repeated read-only verification cannot forget a removed entry
   const first = findings(verify(root));
   assert.deepEqual(fingerprint(work), before);
   // The views go too. Nothing reads them as a record, so the findings stay, verify after verify.
-  rmSync(join(component, 'ledger.md'));
+  rmSync(join(part, 'ledger.md'));
   rmSync(join(root, 'index.md'));
   before = fingerprint(work);
   for (let i = 0; i < 3; i++) {
@@ -165,7 +165,7 @@ test('ART-SCOPE: a retired actor kind needs an explicit choice, and an old snaps
   assert.deepEqual(readActors(work).errors, []);
   const then = JSON.parse(text('qualification/conformance/fixtures/snapshot-without-module.json')) as Snapshot;
   const basis = { snapshot: then, executed: {}, inputIdentity: { strategy: 'private-copy' as const, files: {}, shared: [], limitation: 'An older snapshot.' } };
-  const now: PresentState = { passages: then.passages, composition: then.composition!, module: () => 'current-module', scenario: () => then.scenario!, actors: then.actors!, extras: null, members: {}, records: {}, configs: {}, inputs: {} };
+  const now: PresentState = { passages: then.passages, wiring: then.wiring!, module: () => 'current-module', scenario: () => then.scenario!, actors: then.actors!, extras: null, members: {}, records: {}, configs: {}, inputs: {} };
   assert.deepEqual(lapsedParts(basis, now, 'A1', 'all-honest'), ['generated module']);
   assert.deepEqual(lapsedParts(basis, now, 'A1', 'all-honest'), ['generated module'], 'reading the old snapshot cannot refresh it');
 });
@@ -175,8 +175,8 @@ test('the agent grader checks the published answer and rejects proof promotion, 
   t.after(() => rmSync(work, { recursive: true, force: true }));
   const root = join(work, 'dossiers');
   mkdirSync(join(root, 'actors'), { recursive: true });
-  mkdirSync(join(root, 'components'));
-  mkdirSync(join(root, 'systems'));
+  mkdirSync(join(root, 'parts'));
+  mkdirSync(join(root, 'compositions'));
   writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }));
   writeFileSync(join(root, 'actors/actors.md'), '# Actors\n```yaml\nactors:\n  - id: operator\n    kind: user\n```\n');
   const run = (...args: string[]) => {
@@ -184,17 +184,17 @@ test('the agent grader checks the published answer and rejects proof promotion, 
     assert.equal(r.status, 0, r.stdout + r.stderr);
   };
   run('decide', 'budget', 'begin', 'charted');
-  const component = join(root, 'components/budget');
-  writeFileSync(join(component, 'prose.md'), text('qualification/conformance/fixtures/budget.md'));
+  const part = join(root, 'parts/budget');
+  writeFileSync(join(part, 'prose.md'), text('qualification/conformance/fixtures/budget.md'));
   run('draw', 'budget');
-  mkdirSync(join(component, 'calls'));
-  writeFileSync(join(component, 'calls/chart.md'), 'kind: chart\nexecutes:\n  - prose.md\nreach: capacity 0..2 and inventory 0..3\nexpect:\n  checks: pass\nbecause: Two payments consume capacity and the third is refused.\n');
+  mkdirSync(join(part, 'calls'));
+  writeFileSync(join(part, 'calls/chart.md'), 'kind: chart\nexecutes:\n  - prose.md\nreach: capacity 0..2 and inventory 0..3\nexpect:\n  checks: pass\nbecause: Two payments consume capacity and the third is refused.\n');
   run('trial', 'budget', 'chart.md');
-  const trial = listBundles(component)[0];
-  const published = answerOf(component, trial);
+  const trial = listBundles(part)[0];
+  const published = answerOf(part, trial);
   assert.ok(published, 'the trial established the chart question\'s entry');
-  writeFileSync(join(component, 'evidence', `${published.name}.md`), 'The published answer supports the finite chart; it gives no inductive or implementation proof.\n');
-  const answer = { component: 'budget', trial, checker: 'chart', proof: false, thirdPaymentAllowed: false, remainingCapacity: 0, remainingInventory: 1, limitations: ['Finite abstraction; owner review remains.'] };
+  writeFileSync(join(part, 'evidence', `${published.name}.md`), 'The published answer supports the finite chart; it gives no inductive or implementation proof.\n');
+  const answer = { part: 'budget', trial, checker: 'chart', proof: false, thirdPaymentAllowed: false, remainingCapacity: 0, remainingInventory: 1, limitations: ['Finite abstraction; owner review remains.'] };
   const answerPath = join(work, 'answer.json');
   writeFileSync(answerPath, JSON.stringify(answer));
   writeFileSync(join(work, 'answer.md'), 'Two payments consume the capacity. The third is refused within this finite abstraction.\n');
@@ -205,14 +205,14 @@ test('the agent grader checks the published answer and rejects proof promotion, 
   // STORE-BUNDLE: the trial's bundle stays local and is no record. Altering it, or deleting it, changes
   // no conclusion and no grade.
   const conclusions = verify(root);
-  const bundle = join(component, 'trials', trial);
+  const bundle = join(part, 'trials', trial);
   writeFileSync(join(bundle, 'output.txt'), readFileSync(join(bundle, 'output.txt'), 'utf8') + 'altered observation\n');
   assert.equal((await gradeBudget(work)).outcome, 'pass');
   rmSync(bundle, { recursive: true });
   assert.deepEqual(verify(root), conclusions);
   assert.equal((await gradeBudget(work)).outcome, 'pass');
   // ART-EVIDENCE: the entry is the record. One edited by hand, here to claim a wider reach, is refused.
-  const entry = join(component, 'evidence', `${published.name}.json`);
+  const entry = join(part, 'evidence', `${published.name}.json`);
   const original = readFileSync(entry, 'utf8');
   assert.ok(original.includes('capacity 0..2'));
   writeFileSync(entry, original.replaceAll('capacity 0..2', 'capacity 0..9'));
@@ -220,10 +220,10 @@ test('the agent grader checks the published answer and rejects proof promotion, 
   writeFileSync(entry, original);
   assert.equal((await gradeBudget(work)).outcome, 'pass');
   // ANSWER-SAME: a confirming rerun writes nothing, so its trial id names no answer to cite.
-  writeFileSync(join(component, 'calls/chart.md'), 'kind: chart\nexecutes:\n  - prose.md\nreach: capacity 0..2 and inventory 0..3\nexpect:\n  checks: pass\nbecause: Again, two payments consume capacity and the third is refused.\n');
+  writeFileSync(join(part, 'calls/chart.md'), 'kind: chart\nexecutes:\n  - prose.md\nreach: capacity 0..2 and inventory 0..3\nexpect:\n  checks: pass\nbecause: Again, two payments consume capacity and the third is refused.\n');
   run('trial', 'budget', 'chart.md');
   assert.equal(readFileSync(entry, 'utf8'), original);
-  const rerun = listBundles(component).find(id => id !== trial)!;
+  const rerun = listBundles(part).find(id => id !== trial)!;
   writeFileSync(answerPath, JSON.stringify({ ...answer, trial: rerun }));
   await assert.rejects(gradeBudget(work), /cite the trial that established a published answer/);
   writeFileSync(answerPath, JSON.stringify(answer));
@@ -238,7 +238,7 @@ test('the review grader rejects promoted cells and writes to existing evidence',
     cpSync(join(plugin, 'qualification/fixture'), work, { recursive: true });
     return { work, before: fingerprint(work) };
   };
-  const report = 'dossiers/systems/control/reviews/exercise.md';
+  const report = 'dossiers/compositions/control/reviews/exercise.md';
   const cells = [
     ['A1', 'all-honest', 'proved'], ['A1', 'governance-captured', 'checked'], ['A1', 'executor-offline', 'checked'],
     ['A2', 'all-honest', 'checked'], ['A2', 'governance-captured', 'checked'], ['O1', 'all-honest', 'checked'],
@@ -246,7 +246,7 @@ test('the review grader rejects promoted cells and writes to existing evidence',
   ].map(([property, scenario, mark]) => ({ property, scenario, mark, accepted: mark === 'violated', proof: mark === 'proved' }));
   const answer = { summarySupported: false, cells, limitations: ['Synthetic grader input, not an agent review.'] };
   // The review names the prose it read on its first line (REVIEW-OWED), the hash Harbor's Control has now.
-  const hash = proseHash(verifyAll({ root: join(plugin, 'qualification/fixture/dossiers'), version: '0.1.0' }).systems.find(s => s.id === 'control')!.hashes);
+  const hash = proseHash(verifyAll({ root: join(plugin, 'qualification/fixture/dossiers'), version: '0.1.0' }).compositions.find(s => s.id === 'control')!.hashes);
   const writeReport = (work: string, first = `prose@${hash}`) => { mkdirSync(dirname(join(work, report)), { recursive: true }); writeFileSync(join(work, report), `${first}\n\n# Review\n\n\`\`\`json\n${JSON.stringify(answer)}\n\`\`\`\n`); };
   const { work, before } = fixture();
   writeReport(work, '# Review');
@@ -258,13 +258,13 @@ test('the review grader rejects promoted cells and writes to existing evidence',
   writeReport(work);
   assert.throws(() => gradeReview(work, before, report), /current evidence/);
   checked.mark = 'checked';
-  const log = join(work, 'dossiers/systems/control/decisions.log');
+  const log = join(work, 'dossiers/compositions/control/decisions.log');
   writeFileSync(log, readFileSync(log, 'utf8') + '\n');
   assert.throws(() => gradeReview(work, before, report), /existing artifact changed/);
   // A reading beside a published answer is existing evidence too. A fresh copy keeps this case apart.
   const other = fixture();
   writeReport(other.work);
-  const reading = readdirSync(join(other.work, 'dossiers/systems/control/evidence')).find(n => n.endsWith('.md'))!;
-  writeFileSync(join(other.work, 'dossiers/systems/control/evidence', reading), 'A reviewer\'s retelling written over the keeper\'s.\n');
-  assert.throws(() => gradeReview(other.work, other.before, report), /existing artifact changed: dossiers\/systems\/control\/evidence\//);
+  const reading = readdirSync(join(other.work, 'dossiers/compositions/control/evidence')).find(n => n.endsWith('.md'))!;
+  writeFileSync(join(other.work, 'dossiers/compositions/control/evidence', reading), 'A reviewer\'s retelling written over the keeper\'s.\n');
+  assert.throws(() => gradeReview(other.work, other.before, report), /existing artifact changed: dossiers\/compositions\/control\/evidence\//);
 });

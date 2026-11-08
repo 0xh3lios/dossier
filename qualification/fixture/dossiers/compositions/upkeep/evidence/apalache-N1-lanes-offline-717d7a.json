@@ -1,0 +1,247 @@
+{
+  "schema": 1,
+  "dossier": "compositions/upkeep",
+  "question": {
+    "kind": "apalache",
+    "checker": "apalache",
+    "executes": [
+      "model/generated/Upkeep.tla"
+    ],
+    "expects": [
+      "N1"
+    ],
+    "property": "N1",
+    "scenario": "lanes-offline",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: apalache\nproperty: N1\nscenario: lanes-offline\nmode: bounded\nlength: 4\ninv: N1\ncinit: ConstInit_lanes_offline\nexecutes:\n  - model/generated/Upkeep.tla\nreach: 4 steps\nexpect:\n  N1: violated\nbecause: |\n  Three ticks suffice: the counter reaches 2.\n",
+    "reach": "4 steps",
+    "expect": {
+      "N1": {
+        "expect": "violated"
+      }
+    },
+    "because": "Three ticks suffice: the counter reaches 2."
+  },
+  "answer": {
+    "enabled": [
+      "N1"
+    ],
+    "outcomes": {
+      "N1": "violated"
+    },
+    "mode": "bounded",
+    "length": 4,
+    "runs": [
+      {
+        "label": "bounded",
+        "outcome": "Error",
+        "length": null,
+        "exitcode": 12,
+        "violatedInvariant": {
+          "state": 2,
+          "index": 0
+        },
+        "errors": []
+      }
+    ],
+    "trace": {
+      "vars": [
+        "oracle_last",
+        "oracle_stale",
+        "oracle_price",
+        "oracle_state",
+        "n1_ticks",
+        "clock"
+      ],
+      "states": [
+        {
+          "From_lane_a": {
+            "#bigint": "0"
+          },
+          "From_lane_b": {
+            "#bigint": "0"
+          },
+          "MaxSent": {
+            "#bigint": "4"
+          },
+          "Mode_chain": "honest",
+          "Mode_lane_a": "offline",
+          "Mode_lane_b": "offline",
+          "Start_oracle_stale": {
+            "#bigint": "0"
+          },
+          "Start_oracle_state": "Fresh",
+          "Until_lane_a": {
+            "#bigint": "0"
+          },
+          "Until_lane_b": {
+            "#bigint": "0"
+          },
+          "clock": {
+            "#bigint": "0"
+          },
+          "n1_ticks": {
+            "#bigint": "0"
+          },
+          "oracle_last": {
+            "#bigint": "2"
+          },
+          "oracle_price": {
+            "#bigint": "2"
+          },
+          "oracle_stale": {
+            "#bigint": "0"
+          },
+          "oracle_state": "Fresh"
+        },
+        {
+          "From_lane_a": {
+            "#bigint": "0"
+          },
+          "From_lane_b": {
+            "#bigint": "0"
+          },
+          "MaxSent": {
+            "#bigint": "4"
+          },
+          "Mode_chain": "honest",
+          "Mode_lane_a": "offline",
+          "Mode_lane_b": "offline",
+          "Start_oracle_stale": {
+            "#bigint": "0"
+          },
+          "Start_oracle_state": "Fresh",
+          "Until_lane_a": {
+            "#bigint": "0"
+          },
+          "Until_lane_b": {
+            "#bigint": "0"
+          },
+          "clock": {
+            "#bigint": "1"
+          },
+          "n1_ticks": {
+            "#bigint": "1"
+          },
+          "oracle_last": {
+            "#bigint": "2"
+          },
+          "oracle_price": {
+            "#bigint": "2"
+          },
+          "oracle_stale": {
+            "#bigint": "1"
+          },
+          "oracle_state": "Stale"
+        },
+        {
+          "From_lane_a": {
+            "#bigint": "0"
+          },
+          "From_lane_b": {
+            "#bigint": "0"
+          },
+          "MaxSent": {
+            "#bigint": "4"
+          },
+          "Mode_chain": "honest",
+          "Mode_lane_a": "offline",
+          "Mode_lane_b": "offline",
+          "Start_oracle_stale": {
+            "#bigint": "0"
+          },
+          "Start_oracle_state": "Fresh",
+          "Until_lane_a": {
+            "#bigint": "0"
+          },
+          "Until_lane_b": {
+            "#bigint": "0"
+          },
+          "clock": {
+            "#bigint": "2"
+          },
+          "n1_ticks": {
+            "#bigint": "2"
+          },
+          "oracle_last": {
+            "#bigint": "2"
+          },
+          "oracle_price": {
+            "#bigint": "2"
+          },
+          "oracle_stale": {
+            "#bigint": "2"
+          },
+          "oracle_state": "Stale"
+        }
+      ]
+    },
+    "properties": {
+      "N1": "a4ae7304"
+    },
+    "reach": {
+      "text": "4 steps",
+      "values": {
+        "length": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "266374aa",
+        "N1": "649b2ec4",
+        "G1": "155c7d2b",
+        "G2": "e0813f7f",
+        "G3": "9367edd6",
+        "G4": "416bbd6d",
+        "T1": "a25aba5c"
+      },
+      "records": {},
+      "backing": {},
+      "wiring": "bae35b592cdbc44f",
+      "module": "c83b328a0c20a92d",
+      "members": {
+        "oracle": {
+          "prose": "b7da5a952322a306",
+          "backing": {
+            "K1": "54717f13065bd868"
+          }
+        }
+      },
+      "scenario": "891da700492f1a10",
+      "actors": "064e352e3b207b1e",
+      "extras": null
+    },
+    "executed": {
+      "model/generated/Upkeep.tla": "fb86a84fdfea62cc5a770e44ea39b87d3804c739ff2a9fd11dc3a1cf675a35bb"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/generated/Upkeep.tla": "fb86a84fdfea62cc5a770e44ea39b87d3804c739ff2a9fd11dc3a1cf675a35bb"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2340-apalache-8258c3",
+    "at": "2026-11-08T23:40:16.444Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "apalache": "0.62.4"
+    },
+    "bundle": "473fd9cbf1f4cec5c517c8201a9b5aff82aece19764c967e0db3dfb9ec450d41"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

@@ -1,4 +1,4 @@
-// dossier draw <component> [--brief] [--json] [--limit <states>]
+// dossier draw <part> [--brief] [--json] [--limit <states>]
 import { findRoot, stripRootArgs, locate } from '../dossiers/root.ts';
 import { isRetired } from '../dossiers/decisions.ts';
 import { draw, summarize } from '../chart/draw.ts';
@@ -13,12 +13,12 @@ export async function main(command: string, args: string[], { root: pluginRoot }
   if (limitAt >= 0 && (written === undefined || !/^[1-9]\d*$/.test(written))) { console.error(`dossier draw: --limit takes a whole number of states, at least 1${written === undefined ? '' : `, not "${written}"`}`); return 2; }
   const limit = written === undefined ? 20000 : Number(written);
   const name = stripRootArgs(args).filter((a, i, all) => !a.startsWith('--') && all[i - 1] !== '--limit')[0];
-  if (!name) { console.error('usage: dossier draw <component>'); return 2; }
+  if (!name) { console.error('usage: dossier draw <part>'); return 2; }
   const where = locate(root, name);
-  if (!where || where.kind !== 'component') { console.error(`dossier draw: no component named ${name} under ${root}`); return 2; }
-  const ref = `components/${where.id}`;
+  if (!where || where.kind !== 'part') { console.error(`dossier draw: no part named ${name} under ${root}`); return 2; }
+  const ref = `parts/${where.id}`;
   if (isRetired(where.dir)) { console.error(`dossier draw: ${ref} is retired; dossier decide ${ref} begin reopens it`); return 2; }
-  const result = await draw({ root, component: where.id, limit });
+  const result = await draw({ root, part: where.id, limit });
   if (args.includes('--json')) { const { ir, ...rest } = result; console.log(JSON.stringify(rest, null, 2)); }
   // --brief: the summary's first line, the outcome and the counts.
   else if (args.includes('--brief')) console.log(summarize(result).split('\n')[0]);

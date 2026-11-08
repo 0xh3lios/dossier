@@ -1,13 +1,13 @@
-// A system's cells: one property under one scenario, each with the answer that decides it, what it
-// rested on, and whether it lapsed; and the system's walks, each under its scenario.
+// A composition's cells: one property under one scenario, each with the answer that decides it, what it
+// rested on, and whether it lapsed; and the composition's walks, each under its scenario.
 import { short } from '../hash.ts';
 import { propertyId } from './covers.ts';
 import { lapsedParts } from './lapse.ts';
 import { modeOf, windowOf } from '../dossiers/actors.ts';
 import { constInitOf } from '../models/compose.ts';
-import type { SystemProse } from '../prose/prose.ts';
+import type { CompositionProse } from '../prose/prose.ts';
 import type { Ir } from '../prose/ir.ts';
-import type { Composition } from '../dossiers/composition.ts';
+import type { Wiring } from '../dossiers/wiring.ts';
 import type { ActorsModel, Scenario } from '../dossiers/actors.ts';
 import type { AcceptedRisk } from '../dossiers/decisions.ts';
 import type { LoadedKnowledge } from '../dossiers/load.ts';
@@ -37,20 +37,20 @@ export interface Cell {
   impliedBy?: string;
 }
 export type WalkMarkName = 'pending' | 'checked' | 'miscalled' | 'lapsed';
-// A system Walk under its scenario: its mark, and the latest witness answer behind it, by its trial and its entry.
+// A composition Walk under its scenario: its mark, and the latest witness answer behind it, by its trial and its entry.
 export interface WalkMark { id: string; scenario: string; mark: WalkMarkName; trial: string | null; entry: string | null; lapsed: string[] }
 
 const latest = <T,>(list: T[]) => (list.length ? list[list.length - 1] : null);
 
-// The actors a composed system uses, hashed without their notes: a note, or an actor whose
+// The actors a composed composition uses, hashed without their notes: a note, or an actor whose
 // events reach no member, moves no cell. The runner's snapshot and the present use this alike.
 export function actorsHash(actors: Pick<ActorsModel, 'byId'>, used: readonly string[] = []): string {
   return short(JSON.stringify(used.filter(id => actors.byId[id]).map(id => ({ ...actors.byId[id], notes: undefined }))), 16);
 }
 
-// A scenario as the cells of one system rest on it: the mode and the window of each actor the system
+// A scenario as the cells of one composition rest on it: the mode and the window of each actor the composition
 // uses, and the start of each member, without its notes, its stronger_than, or what it says of
-// actors and components the system does not hear from. The runner's snapshot and the present use this alike.
+// actors and parts the composition does not hear from. The runner's snapshot and the present use this alike.
 export function scenarioHash(sc: Scenario | null | undefined, used: readonly string[] = [], members: readonly string[] = []): string | null {
   if (!sc) return null;
   const actors = [...new Set(used)].sort();
@@ -74,7 +74,7 @@ export function moduleHash(tla: string | null | undefined, scenarioId: string, e
   return short(lines.filter(line => { const name = (line.match(/^(ConstInit_\w+) ==/) || [])[1]; return !name || name === own || read(name); }).join('\n'), 16);
 }
 
-// A member's guarantees as a system snapshot holds them: each backing's hash, or its status
+// A member's guarantees as a composition snapshot holds them: each backing's hash, or its status
 // when it has none (assumed, external or unresolved).
 export function backingOf(ir: Pick<Ir, 'guarantees' | 'module'>, knowledge: LoadedKnowledge): Record<string, string> {
   const out: Record<string, string> = {};
@@ -90,9 +90,9 @@ export function backingOf(ir: Pick<Ir, 'guarantees' | 'module'>, knowledge: Load
 
 // `forgotten` says whether the owner's forget names an entry as it stands: a forgotten violation
 // decides a cell only when no other answer does.
-export function cellsOf({ system, completed, snapshotNow, risks, forgotten = () => false }: { system: { prose: SystemProse; composition: Composition; actors: ActorsModel }; completed: Readable[]; snapshotNow: PresentState; risks: Record<string, AcceptedRisk>; forgotten?: (entry: string) => boolean }): { cells: Cell[]; propertyHeld: Record<string, string> } {
-  const { prose, composition, actors } = system;
-  const defaults = composition.scenarios.length ? composition.scenarios : ['all-honest'];
+export function cellsOf({ composition, completed, snapshotNow, risks, forgotten = () => false }: { composition: { prose: CompositionProse; wiring: Wiring; actors: ActorsModel }; completed: Readable[]; snapshotNow: PresentState; risks: Record<string, AcceptedRisk>; forgotten?: (entry: string) => boolean }): { cells: Cell[]; propertyHeld: Record<string, string> } {
+  const { prose, wiring, actors } = composition;
+  const defaults = wiring.scenarios.length ? wiring.scenarios : ['all-honest'];
   const cells: Cell[] = [];
   const byProperty: Record<string, Readable[]> = {};
   const blunders: Record<string, Readable[]> = {};
@@ -116,7 +116,7 @@ export function cellsOf({ system, completed, snapshotNow, risks, forgotten = () 
   // under that answer, the property's words included. Any new answer lapses it, even on an unchanged
   // basis: the deciding entry then says what moved, by the answer it replaced or, when the shown answer
   // became its previous one, by that answer's basis against the present.
-  const acceptanceMoved = (risk: AcceptedRisk, p: SystemProse['properties'][number], sid: string, deciding: Readable): string[] => {
+  const acceptanceMoved = (risk: AcceptedRisk, p: CompositionProse['properties'][number], sid: string, deciding: Readable): string[] => {
     if (!risk.trial) return ['no trial named'];
     const entry = deciding.entry;
     if (entry.established.trial === risk.trial) {
@@ -206,10 +206,10 @@ export function cellsOf({ system, completed, snapshotNow, risks, forgotten = () 
   return { cells, propertyHeld };
 }
 
-// Each Walk of a system under the scenario it names, all-honest when it names none: checked
+// Each Walk of a composition under the scenario it names, all-honest when it names none: checked
 // when its latest witness answer found the walk's path (NotW<n> violated, the trace as called),
 // miscalled or lapsed as a cell is, and pending until a witness answer completes.
-export function walksOf({ prose, completed, snapshotNow }: { prose: Pick<SystemProse, 'walks'>; completed: Readable[]; snapshotNow: PresentState }): WalkMark[] {
+export function walksOf({ prose, completed, snapshotNow }: { prose: Pick<CompositionProse, 'walks'>; completed: Readable[]; snapshotNow: PresentState }): WalkMark[] {
   return (prose.walks || []).map(w => {
     const scenario = w.scenario || 'all-honest';
     const a = latest(completed.filter(x => x.entry.question.kind !== 'blunder' && x.entry.question.walk === w.id && (x.entry.question.scenario || 'all-honest') === scenario && x.entry.answer.result !== 'aborted'));

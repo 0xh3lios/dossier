@@ -1,12 +1,12 @@
 // dossier decide <dossier> begin|accept|reject|answer|risk|forget|retire ... -- "<words>"
 // Appends the owner's decision, in the owner's words, with the chain hash. A dossier
-// begins once; retire takes it out of verify, where and the systems until a begin reopens it.
+// begins once; retire takes it out of verify, where and the compositions until a begin reopens it.
 // forget lets go of a recorded answer: one whose entry is gone, a violation a new answer on an
 // unchanged basis would replace, or a superseded answer that holds a counterexample.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { dossierDirProblem, dossierName, findRoot, idProblem, locate, stripRootArgs } from '../dossiers/root.ts';
-import { parseProse, parseSystemProse } from '../prose/prose.ts';
+import { parseProse, parseCompositionProse } from '../prose/prose.ts';
 import { parseDoubts } from '../dossiers/doubts.ts';
 import { FORGET, forgets, parseDecisions, retiredBy, VERBS } from '../dossiers/decisions.ts';
 import { INTEGRITY, readIntegrity, requireCurrent } from '../dossiers/integrity.ts';
@@ -17,12 +17,12 @@ import { sha256 } from '../hash.ts';
 import { verifyAll } from './verify.ts';
 import { verifyLine } from '../verify/render.ts';
 import type { CommandContext } from '../cli.ts';
-import type { SystemAnalysis } from '../verify/analyze.ts';
+import type { CompositionAnalysis } from '../verify/analyze.ts';
 
-const COMPONENT = (title: string, tier: string, id: string) => `# ${title}\n\nTier: ${tier}\nModule: ${id}\n\nWhat the piece is, the data it holds with each datum's range, the events it receives and from whom, the effects it sends and to whom, and what it never knows.\n\n## States\n\n## Events\n\n## Moves\n\n## Always\n\n## Once\n\n## Within\n\n## Given\n\n## Walks\n\n## Seams\n\n## Guarantees\n\n## Words only\n\n## Retired\n`;
-const SYSTEM = (title: string, id: string) => `# ${title}\n\nConcern: ${id}\n\nWhat this composition is for, in a paragraph.\n\n## Always\n\n## Once\n\n## Within\n\n## Given\n\n## Walks\n\n## Words only\n\n## Retired\n`;
-const COMPOSITION = '# Composition\n\n```yaml\nmembers: []\nwiring: []\nfree: []\nclosure: []\nscenarios: [all-honest]\n```\n';
-const USAGE = 'usage: dossier decide <dossier> <verb> ... -- "<words>", where <verb> is begin [charted|modeled|system] | accept <ids> | reject <id> | answer D<n> a|b | risk <property> <scenario> | forget <entry>@<digest> | retire';
+const PART = (title: string, tier: string, id: string) => `# ${title}\n\nTier: ${tier}\nModule: ${id}\n\nWhat the piece is, the data it holds with each datum's range, the events it receives and from whom, the effects it sends and to whom, and what it never knows.\n\n## States\n\n## Events\n\n## Moves\n\n## Always\n\n## Once\n\n## Within\n\n## Given\n\n## Walks\n\n## Seams\n\n## Guarantees\n\n## Words only\n\n## Retired\n`;
+const COMPOSITION = (title: string, id: string) => `# ${title}\n\nConcern: ${id}\n\nWhat this composition is for, in a paragraph.\n\n## Always\n\n## Once\n\n## Within\n\n## Given\n\n## Walks\n\n## Words only\n\n## Retired\n`;
+const WIRING = '# Wiring\n\n```yaml\nmembers: []\nwiring: []\nfree: []\nclosure: []\nscenarios: [all-honest]\n```\n';
+const USAGE = 'usage: dossier decide <dossier> <verb> ... -- "<words>", where <verb> is begin [charted|modeled|composition] | accept <ids> | reject <id> | answer D<n> a|b | risk <property> <scenario> | forget <entry>@<digest> | retire';
 // The tripwires of actors.md and scenarios.md, which one dossier reports for the whole root.
 const ACTORS_FILES = new Set(['malformed actors', 'scenario names unknown actor', 'stronger_than unsound']);
 // The tripwire forget answers: an entry integrity.json binds whose file is gone.
@@ -52,19 +52,19 @@ export async function main(command: string, args: string[], { version }: Command
     const { kind, id } = dossierName(name);
     const problem = idProblem(id);
     if (problem) return refuse(problem);
-    if (more.length > 1 || more.some(a => !['charted', 'modeled', 'system'].includes(a))) return refuse('begin takes one of charted, modeled or system');
-    if (kind === 'components' && more.includes('system')) return refuse(`components/${id} names a component; begin system begins systems/${id}`);
-    if (kind === 'systems' && more.some(a => a !== 'system')) return refuse(`systems/${id} names a system, which has no tier`);
-    const asSystem = kind === 'systems' || more.includes('system');
-    const dir = join(root, asSystem ? 'systems' : 'components', id);
+    if (more.length > 1 || more.some(a => !['charted', 'modeled', 'composition'].includes(a))) return refuse('begin takes one of charted, modeled or composition');
+    if (kind === 'parts' && more.includes('composition')) return refuse(`parts/${id} names a part; begin composition begins compositions/${id}`);
+    if (kind === 'compositions' && more.some(a => a !== 'composition')) return refuse(`compositions/${id} names a composition, which has no tier`);
+    const asComposition = kind === 'compositions' || more.includes('composition');
+    const dir = join(root, asComposition ? 'compositions' : 'parts', id);
     const title = id.split('-').filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join('');
     const releaseRoot = acquirePublicationLock(root);
     try {
     requireCurrent(root);
     const tier = more.find(a => /^(charted|modeled)$/.test(a)) || 'modeled';
     if (!dossierPathExists(dir)) {
-      const inputs = asSystem ? { 'prose.md': SYSTEM(title, id), 'composition.md': COMPOSITION } : { 'prose.md': COMPONENT(title, tier, id) };
-      const initialized = initializeDossierLocked(root, asSystem ? 'systems' : 'components', id, inputs, { time: now, verb, args: [asSystem ? 'system' : tier], words });
+      const inputs = asComposition ? { 'prose.md': COMPOSITION(title, id), 'wiring.md': WIRING } : { 'prose.md': PART(title, tier, id) };
+      const initialized = initializeDossierLocked(root, asComposition ? 'compositions' : 'parts', id, inputs, { time: now, verb, args: [asComposition ? 'composition' : tier], words });
       console.log(initialized.decision);
       return 0;
     }
@@ -77,39 +77,39 @@ export async function main(command: string, args: string[], { version }: Command
     // history is left; integrity.json is restored from version control instead.
     if (!dossierPathExists(join(dir, INTEGRITY))) {
       const records = recordsIn(dir);
-      if (records.length) return refuse(`${asSystem ? 'systems' : 'components'}/${id} holds ${records.join(' and ')} but no ${INTEGRITY}; restore ${INTEGRITY} from version control, since a begin cannot vouch for records it did not publish`);
+      if (records.length) return refuse(`${asComposition ? 'compositions' : 'parts'}/${id} holds ${records.join(' and ')} but no ${INTEGRITY}; restore ${INTEGRITY} from version control, since a begin cannot vouch for records it did not publish`);
       writeIntegrity(dir, { schema: 1, evidence: {}, decisionHead: null });
     }
     currentManifest(dir);
     // A begin opens a dossier with no decision yet, or reopens a retired one; a second begin appends nothing.
     const decisions = decisionsIn(dir);
     const begun = decisions.some(d => !d.malformed) && !retiredBy(decisions);
-    if (asSystem) {
-      if (!existsSync(join(dir, 'composition.md'))) writeFileSync(join(dir, 'composition.md'), COMPOSITION);
-      if (!existsSync(join(dir, 'prose.md'))) writeFileSync(join(dir, 'prose.md'), SYSTEM(title, id));
-      if (!begun) console.log(publishDecisionLocked(dir, { time: now, verb, args: ['system'], words }));
+    if (asComposition) {
+      if (!existsSync(join(dir, 'wiring.md'))) writeFileSync(join(dir, 'wiring.md'), WIRING);
+      if (!existsSync(join(dir, 'prose.md'))) writeFileSync(join(dir, 'prose.md'), COMPOSITION(title, id));
+      if (!begun) console.log(publishDecisionLocked(dir, { time: now, verb, args: ['composition'], words }));
     } else {
-      if (!existsSync(join(dir, 'prose.md'))) writeFileSync(join(dir, 'prose.md'), COMPONENT(title, tier, id));
+      if (!existsSync(join(dir, 'prose.md'))) writeFileSync(join(dir, 'prose.md'), PART(title, tier, id));
       if (!begun) console.log(publishDecisionLocked(dir, { time: now, verb, args: [tier], words }));
     }
-    if (begun) console.log(`${asSystem ? 'systems' : 'components'}/${id} has begun already; nothing appended`);
+    if (begun) console.log(`${asComposition ? 'compositions' : 'parts'}/${id} has begun already; nothing appended`);
     return 0;
     } finally { release(); }
     } finally { releaseRoot(); }
   }
   const where = locate(root, name);
-  if (!where) return refuse(`no component or system named ${name} under ${root}`);
-  const ref = where.kind === 'component' ? `components/${where.id}` : `systems/${where.id}`;
+  if (!where) return refuse(`no part or composition named ${name} under ${root}`);
+  const ref = where.kind === 'part' ? `parts/${where.id}` : `compositions/${where.id}`;
   const release = acquirePublicationLock(where.dir);
   try {
   currentManifest(where.dir);
-  // The ref names the kind, so the begin it suggests reopens this dossier and not a new component.
+  // The ref names the kind, so the begin it suggests reopens this dossier and not a new part.
   if (retiredBy(decisionsIn(where.dir))) return refuse(`${ref} is retired; dossier decide ${ref} begin reopens it`);
 
   // The arguments first, from the files alone; then the record must be clean, except that a
   // dossier with a tripwire can still be retired, and forget clears the answer removed it names.
   const proseText = readFileSync(join(where.dir, 'prose.md'), 'utf8');
-  const prose = where.kind === 'component' ? parseProse(proseText) : parseSystemProse(proseText);
+  const prose = where.kind === 'part' ? parseProse(proseText) : parseCompositionProse(proseText);
   const resolve = (id: string) => { const p = prose.byId[id]; if (!p || p.retired) throw new Error(`${id} is not a passage of ${where.id}`); return `${id}@${p.hash}`; };
   let lineArgs: string[] = [];
   try {
@@ -129,7 +129,7 @@ export async function main(command: string, args: string[], { version }: Command
       lineArgs = [`${doubt}@${d.hash}`, reading];
     } else if (verb === 'risk') {
       const [prop, scenario] = more;
-      if (where.kind !== 'system') throw new Error('risk is accepted on a system cell: risk <Property> <scenario>');
+      if (where.kind !== 'composition') throw new Error('risk is accepted on a composition cell: risk <Property> <scenario>');
       if (more.length !== 2) throw new Error('risk names a property and a scenario: risk A1 governance-captured');
       if (!words.trim()) throw new Error("risk carries the owner's words after --");
       lineArgs = [resolve(prop), scenario];
@@ -159,7 +159,7 @@ export async function main(command: string, args: string[], { version }: Command
 
   if (verb !== 'retire') {
     const r = verifyAll({ root, version, write: false });
-    const all = [...r.components, ...r.systems];
+    const all = [...r.parts, ...r.compositions];
     const a = all.find(x => x.ref === ref);
     const blocking = a ? a.tripwires.filter(t => verb !== 'forget' || t.name !== REMOVED) : [];
     // The actors files belong to the root. One dossier reports them, and they hold back every owner's
@@ -170,7 +170,7 @@ export async function main(command: string, args: string[], { version }: Command
       // A risk accepts the violation a trial has shown: the cell is violated now, and the decision
       // names the trial that established its deciding answer, so the acceptance holds only while that
       // answer decides the cell and nothing moved under it. Any new answer to the cell lapses it.
-      const cell = a ? (a as SystemAnalysis).cells.find(c => c.property === more[0] && c.scenario === more[1]) : undefined;
+      const cell = a ? (a as CompositionAnalysis).cells.find(c => c.property === more[0] && c.scenario === more[1]) : undefined;
       if (!cell) return refuse(`${more[0]} × ${more[1]} is not a cell of ${where.id}`);
       if (cell.mark !== 'violated' || !cell.trial) return refuse(`${more[0]} × ${more[1]} is ${cell.mark}, not violated: a risk accepts the violation a trial has shown${cell.mark === 'lapsed' ? '; rerun the cell first' : ''}`);
       lineArgs.push(cell.trial);

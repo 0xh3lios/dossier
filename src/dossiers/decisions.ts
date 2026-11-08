@@ -110,7 +110,7 @@ export function retiredBy(decisions: DecisionLine[]): Decision | null {
   return latest && latest.verb === 'retire' ? latest : null;
 }
 
-// Whether the dossier in this folder is retired: verify, where and the systems leave it out.
+// Whether the dossier in this folder is retired: verify, where and the compositions leave it out.
 export function isRetired(dir: string): boolean {
   return retiredBy(parseDecisions(readIntegrity(dir).decisions).decisions) !== null;
 }

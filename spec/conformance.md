@@ -7,7 +7,7 @@ Conformance means that the accepted artifacts, tool transformations and agent cl
 | Contract | Observable obligation |
 | --- | --- |
 | `PROC-OBSERVE` | Agent starts from current findings and targets the requested scope |
-| `PROC-PREPARE` | Produced prose, composition and models satisfy their parsers and preserve the requested meaning |
+| `PROC-PREPARE` | Produced prose, wiring and models satisfy their parsers and preserve the requested meaning |
 | `PROC-CALL` | Prediction exists before execution and names exactly the enabled property/scenario |
 | `PROC-EXECUTE` | Only a completed answer in an intact entry contributes its permitted evidence |
 | `PROC-INTERPRET` | A reading follows the entry's answer and classifies a miscall with one of the five classifications, without adding cover |
@@ -36,7 +36,7 @@ Conformance means that the accepted artifacts, tool transformations and agent cl
 | `ANSWER-RECHECK` | Recheck writes nothing, agrees with every current answer it reruns, reports a planted difference, and runs nothing it lists as not run |
 | `MARK-DECIDING` | Each side of a passage and each cell takes its mark from one answer, the strongest that has not lapsed and the latest among equals. A miscall that is the latest answer decides, and a counterexample that has not lapsed and is not forgotten decides before any later proof or check, on a cell and on a passage alike. A forgotten violation and an answer that looked at nothing rank below every proof and check |
 | `REVIEW-OWED` | A dossier with marks a reviewer judges and no review naming its current prose hash on its first line is flagged `review owed` and, once nothing earlier is owed, routed to Review. A review whose first line names the hash clears both, and the flag names a review of an earlier wording |
-| `REVIEW-STATUS` | Each finding states its claim and carries `verified`, `not verified` or `retracted` for the support behind that claim, never for whether the system passes; a retraction keeps the claim and gives the correction |
+| `REVIEW-STATUS` | Each finding states its claim and carries `verified`, `not verified` or `retracted` for the support behind that claim, never for whether the composition passes; a retraction keeps the claim and gives the correction |
 
 ## Examples and fixtures
 

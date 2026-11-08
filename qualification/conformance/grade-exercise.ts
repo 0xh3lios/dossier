@@ -28,7 +28,7 @@ export async function gradeExercise(evaluation: string) {
   }
   else if (manifest.exercise === 'review') {
     const { gradeReview } = await import('./grade-review.ts');
-    const dir = 'dossiers/systems/control/reviews';
+    const dir = 'dossiers/compositions/control/reviews';
     const reports = readdirSync(join(manifest.workspace, dir)).filter(n => n.endsWith('.md'));
     assert.equal(reports.length, 1);
     result = gradeReview(manifest.workspace, manifest.workspaceBefore, `${dir}/${reports[0]}`);

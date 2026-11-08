@@ -61,7 +61,7 @@ if (!['budget', 'review', 'compose-probe', 'refresh-decision'].includes(exercise
   // The starting entries are kept whole: a grader tells a fresh answer from an old one, and a
   // replaced entry from an edited one, by the trials they name.
   const initialTexts = Object.fromEntries(Object.keys(workspaceBefore)
-    .filter(name => name.endsWith('/decisions.log') || name === 'dossiers/dossier.json' || name === 'dossiers/systems/control/calls/continuation.md' || /^dossiers\/(?:components|systems)\/[^/]+\/evidence\/[^/]+\.json$/.test(name))
+    .filter(name => name.endsWith('/decisions.log') || name === 'dossiers/dossier.json' || name === 'dossiers/compositions/control/calls/continuation.md' || /^dossiers\/(?:parts|compositions)\/[^/]+\/evidence\/[^/]+\.json$/.test(name))
     .map(name => [name, readFileSync(join(workspace, name), 'utf8')]));
   const manifest = {
     schema: 1, exercise, created: new Date().toISOString(), node: process.version,

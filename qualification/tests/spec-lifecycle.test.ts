@@ -4,14 +4,14 @@ import { getShortestPaths } from '@xstate/graph';
 import { assign, createActor, setup } from 'xstate';
 import { cellsOf } from '../../src/verify/cells.ts';
 import { acceptedRisks, forgottenAnswers, formatDecision, parseDecisions } from '../../src/dossiers/decisions.ts';
-import { parseSystemProse } from '../../src/prose/prose.ts';
+import { parseCompositionProse } from '../../src/prose/prose.ts';
 import { sha256 } from '../../src/hash.ts';
 import { byEstablished, completed as answered, entryName, entryOf, entryText, holdsCounterexample, rule } from '../../src/trials/answers.ts';
 import { basisMoved, basisNow } from '../../src/verify/lapse.ts';
 import { groundOf, supersededAmong } from '../../src/verify/superseded.ts';
 import type { AnswerRead, Entry, Snapshot } from '../../src/trials/answers.ts';
 import type { ActorsModel } from '../../src/dossiers/actors.ts';
-import type { Composition } from '../../src/dossiers/composition.ts';
+import type { Wiring } from '../../src/dossiers/wiring.ts';
 import type { TrialResult } from '../../src/trials/trials.ts';
 import type { PresentState } from '../../src/verify/lapse.ts';
 
@@ -164,10 +164,10 @@ function adapter() {
   let log = '';
   const entries: Record<string, Entry> = {};
   const hash = () => revision.toString(16).padStart(8, '0');
-  const snapshot = (): Snapshot => ({ passages: { A1: hash() }, records: {}, backing: {}, composition: 'composition', module: 'module', scenario: `scenario-${shift}`, actors: 'actors', extras: null, members: {} });
-  const system = {
-    prose: parseSystemProse('# System\n\n## Always\n[A1] Always, {budget.paid <= 2}. Scenarios: all-honest.\n'),
-    composition: { scenarios: [] } as unknown as Composition,
+  const snapshot = (): Snapshot => ({ passages: { A1: hash() }, records: {}, backing: {}, wiring: 'wiring', module: 'module', scenario: `scenario-${shift}`, actors: 'actors', extras: null, members: {} });
+  const composition = {
+    prose: parseCompositionProse('# Composition\n\n## Always\n[A1] Always, {budget.paid <= 2}. Scenarios: all-honest.\n'),
+    wiring: { scenarios: [] } as unknown as Wiring,
     actors: { scenarioById: { 'all-honest': { id: 'all-honest', strongerThan: [] } } } as unknown as ActorsModel,
   };
   const decide = (verb: string, args: string[], words: string) => {
@@ -185,15 +185,15 @@ function adapter() {
   // The present: the property's words and the scenario as they stand, and the second configuration's file unchanged.
   function cellOf(list: AnswerRead[]) {
     const s = snapshot();
-    const now: PresentState = { passages: s.passages, composition: s.composition!, module: () => s.module ?? null, scenario: () => s.scenario!, actors: s.actors!, extras: null, members: {}, records: {}, configs: {}, inputs: { 'model/A1_other.cfg': OTHER_CONFIG } };
-    return cellsOf({ system, completed: list.filter(answered), snapshotNow: now, risks: acceptedRisks(parseDecisions(log).decisions), forgotten: name => forgiven(name) }).cells[0];
+    const now: PresentState = { passages: s.passages, wiring: s.wiring!, module: () => s.module ?? null, scenario: () => s.scenario!, actors: s.actors!, extras: null, members: {}, records: {}, configs: {}, inputs: { 'model/A1_other.cfg': OTHER_CONFIG } };
+    return cellsOf({ composition, completed: list.filter(answered), snapshotNow: now, risks: acceptedRisks(parseDecisions(log).decisions), forgotten: name => forgiven(name) }).cells[0];
   }
   const current = () => cellOf(answers());
   // As a publication removes the superseded answers (ANSWER-DROP), asking the production rule
   // with what the cell concludes from a list of answers, the forget as the manifest would bind it. The
   // entry of the question that ran stays, written or kept: its own publication never removes it.
   function supersede(written: string) {
-    const s = supersededAmong({ answers: answers(), gone: {}, ground: a => groundOf(a, 'system', null, snapshot().passages), conclusions: list => JSON.stringify(cellOf(list)), forgiven, bound });
+    const s = supersededAmong({ answers: answers(), gone: {}, ground: a => groundOf(a, 'composition', null, snapshot().passages), conclusions: list => JSON.stringify(cellOf(list)), forgiven, bound });
     for (const name of s.removable) if (name !== written) delete entries[name];
   }
   // Whether the publication went through, a write or a rerun that wrote nothing, and the entry it is of.
@@ -211,7 +211,7 @@ function adapter() {
     const executed: Record<string, string> = type === 'OTHER' ? { 'model/A1_other.cfg': OTHER_CONFIG } : {};
     const result: TrialResult = {
       kind, checker: kind, id: `2026-11-04-0000-${kind}-${serial.toString(16).padStart(6, '0')}`, at: new Date(Date.UTC(2026, 10, 4, 0, 0, serial)).toISOString(),
-      dossier: 'systems/budget', versions: {}, command: [], cwd: '.', exit: 0, seconds: 0,
+      dossier: 'compositions/budget', versions: {}, command: [], cwd: '.', exit: 0, seconds: 0,
       enabled: Object.keys(expect), expect, property: 'A1', scenario: 'all-honest', mode: prove ? 'inductive' : 'bounded',
       result: type === 'ABORT' ? 'aborted' : 'as-called', outcomes, partial: type === 'PARTIAL' ? ['A1'] : [],
       snapshot: snapshot(), executed, inputIdentity: { strategy: 'private-copy', files: { ...executed }, shared: [], limitation: 'The adapter executes nothing.' }, reach: { text: reach },

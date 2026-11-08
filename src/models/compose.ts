@@ -1,13 +1,13 @@
-// The system module: member IRs composed by wiring, actors as mode constants,
-// the system's properties and walks, and one configuration per cell and per walk.
+// The composition module: member IRs composed by wiring, actors as mode constants,
+// the composition's properties and walks, and one configuration per cell and per walk.
 import { toTla } from '../prose/expr.ts';
 import { actorId, findActor, modeOf, windowOf } from '../dossiers/actors.ts';
 import { cap, ident, walkPlan } from './tla.ts';
 import type { Value } from '../prose/expr.ts';
 import type { Domain, Ir, IrEvent, IrField, IrGiven, IrTransition } from '../prose/ir.ts';
-import type { Children, GivenForm, SystemProse, SystemStep, SystemWalkForm, Trigger } from '../prose/prose.ts';
+import type { Children, GivenForm, CompositionProse, CompositionStep, CompositionWalkForm, Trigger } from '../prose/prose.ts';
 import type { ActorsModel, Scenario } from '../dossiers/actors.ts';
-import type { Composition } from '../dossiers/composition.ts';
+import type { Wiring } from '../dossiers/wiring.ts';
 
 // The operator that sets a scenario's constants for Apalache, one line of the module each:
 // ConstInit_<scenario>, with the scenario's hyphens as underscores.
@@ -18,24 +18,24 @@ export interface CellCfg { property: string; scenario: string; cfg: string; kind
 // One walk's witness configuration: the walk, the scenario it runs under and the cfg file.
 export interface WalkCfg { id: string; scenario: string; cfg: string }
 // An event a member sends into another member that no wiring reaches: a free action in the module,
-// declared when composition.md lists it under free:.
+// declared when wiring.md lists it under free:.
 export interface FreeSend { event: string; from: string; declared: boolean }
-// A component outside the composition whose sends reach a member: free actions, named for the readers.
+// A part outside the wiring whose sends reach a member: free actions, named for the readers.
 export interface OutsideSender { from: string; events: string[] }
-// The tripwire each problem of a composition trips, named where the problem is found.
-export type ComposerTripwire = 'composition cites unknown component' | 'wiring names unknown effect or event' | 'sender is not declared' | 'Given names a component' | 'misnamed' | 'property claims unknown scenario' | 'malformed composition' | 'malformed actors' | 'composition does not compose';
+// The tripwire each problem of a wiring trips, named where the problem is found.
+export type ComposerTripwire = 'wiring names unknown part' | 'wiring names unknown effect or event' | 'sender is not declared' | 'Given names a part' | 'misnamed' | 'property claims unknown scenario' | 'malformed wiring' | 'malformed actors' | 'wiring does not compose';
 export interface ComposerProblem { name: ComposerTripwire; message: string }
-// Who an event comes from: an actor with modes, or a component with none.
-type Source = { kind: 'actor' | 'component'; id: string };
+// Who an event comes from: an actor with modes, or a part with none.
+type Source = { kind: 'actor' | 'part'; id: string };
 // errors: the problems' messages, for everything that reads them alone.
-export interface ComposedSystem { module: string; tla: string; cfgs: Record<string, string>; cells: CellCfg[]; walks: WalkCfg[]; errors: string[]; problems: ComposerProblem[]; actors: string[]; components: string[]; free: FreeSend[]; outside: OutsideSender[]; vars: string[] }
+export interface Composed { module: string; tla: string; cfgs: Record<string, string>; cells: CellCfg[]; walks: WalkCfg[]; errors: string[]; problems: ComposerProblem[]; actors: string[]; parts: string[]; free: FreeSend[]; outside: OutsideSender[]; vars: string[] }
 // A composite step: its conjuncts, the variables it determines and the fields it quantifies.
 interface Step { conj: string[]; changed: Set<string>; quantify: IrField[] }
 // A walk step taken, as its observer watches it: the member, the event, whether the chain's
 // tick takes it, and the conditions under which the step taken is this one.
 interface Watched { c: string; e: string; tick: boolean; when: string[] }
 interface WalkWatch { taken: Watched[]; refusedAfter: string[] }
-type ReadWalk = SystemWalkForm & { name: string; from: string; ends: string };
+type ReadWalk = CompositionWalkForm & { name: string; from: string; ends: string };
 // A constant of the module, with its value under a scenario for the ConstInit and the cfgs.
 interface Constant { name: string; type: string; value: (sc: Scenario) => string }
 
@@ -51,7 +51,7 @@ function leaves(ir: Pick<Ir, 'states'>, key: string | null | undefined): string[
 function entryLeaf(ir: Pick<Ir, 'states'>, key: string | null): string {
   let s = ir.states.find(x => x.key === key);
   while (s && s.children) {
-    if (s.children.kind === 'parallel') throw new Error(`${s.key} has parallel regions, which composition does not write`);
+    if (s.children.kind === 'parallel') throw new Error(`${s.key} has parallel regions, which wiring does not write`);
     s = ir.states.find(x => x.key === `${s!.key}.${(s!.children as Extract<Children, { kind: 'compound' }>).initial}`);
   }
   return s!.key;
@@ -75,15 +75,15 @@ function readStart(ir: Ir, c: string, n: string, written: unknown): { value: Val
 // A side of a Once or a Within the prose could read: a state, or a condition that parsed.
 const readSide = (s: Trigger | null) => Boolean(s && (s.state || s.cond));
 
-// components: every open component id under the root, so a sender outside the composition still
+// parts: every open part id under the root, so a sender outside the wiring still
 // resolves to its dossier; retired: the retired ones, named as such where a member or a sender is one.
-export function composeSystem({ name, prose, composition, members, actors, components = [], retired = [] }: { name: string; prose: SystemProse; composition: Composition; members: Record<string, Ir | null | undefined>; actors: ActorsModel; components?: string[]; retired?: string[] }): ComposedSystem {
+export function composeMembers({ name, prose, wiring, members, actors, parts = [], retired = [] }: { name: string; prose: CompositionProse; wiring: Wiring; members: Record<string, Ir | null | undefined>; actors: ActorsModel; parts?: string[]; retired?: string[] }): Composed {
   const problems: ComposerProblem[] = [];
   // A problem met on more than one path through the wiring is reported once.
   const fail = (tripwire: ComposerTripwire, message: string) => { if (!problems.some(p => p.message === message)) problems.push({ name: tripwire, message }); };
   const concern = ident(cap(name));
-  const memberIds = composition.members.map(m => m.component);
-  for (const id of memberIds) if (!members[id]) fail('composition cites unknown component', `composition names component ${id}, which ${retired.includes(id) ? 'is retired' : 'has no dossier or does not compile'}`);
+  const memberIds = wiring.members.map(m => m.part);
+  for (const id of memberIds) if (!members[id]) fail('wiring names unknown part', `wiring names part ${id}, which ${retired.includes(id) ? 'is retired' : 'has no dossier or does not compile'}`);
   const ids = memberIds.filter(id => members[id]);
   const irs: Record<string, Ir> = Object.fromEntries(ids.map(id => [id, members[id]!]));
   // A member listed but not compiled is reported once, above; nothing that names it is reported again.
@@ -111,36 +111,36 @@ export function composeSystem({ name, prose, composition, members, actors, compo
   const sentVars = ids.flatMap(c => irs[c].effects.map(e => `${pre(c)}_${sentOf(e.name)}`));
   const varType = (v: string) => typed.get(v) || 'Int';
 
-  // Senders: a component by its id first, then an actor by id or name. A member that does not
-  // compile is still a component.
-  const componentIds = new Set([...memberIds, ...components]);
+  // Senders: a part by its id first, then an actor by id or name. A member that does not
+  // compile is still a part.
+  const partIds = new Set([...memberIds, ...parts]);
   const sourceOf = (sender: string | null | undefined): Source | null => {
     const key = actorId(sender);
-    if (key && componentIds.has(key)) return { kind: 'component', id: key };
+    if (key && partIds.has(key)) return { kind: 'part', id: key };
     const a = findActor(actors, sender);
     return a ? { kind: 'actor', id: a.id } : null;
   };
   const sourceOfEvent: Record<string, Source> = {};
-  const usedActors = new Set<string>(), usedComponents = new Set<string>();
+  const usedActors = new Set<string>(), usedParts = new Set<string>();
   for (const c of ids) for (const ev of irs[c].events) {
     const s = sourceOf(ev.sender);
-    if (!s) { fail('sender is not declared', `${c}: event ${ev.name} comes from "${ev.sender}", which is ${retired.includes(actorId(ev.sender) || '') ? 'a retired component' : 'neither an actor in actors.md nor a component'}`); continue; }
+    if (!s) { fail('sender is not declared', `${c}: event ${ev.name} comes from "${ev.sender}", which is ${retired.includes(actorId(ev.sender) || '') ? 'a retired part' : 'neither an actor in actors.md nor a part'}`); continue; }
     sourceOfEvent[`${c}.${ev.name}`] = s;
-    (s.kind === 'actor' ? usedActors : usedComponents).add(s.id);
+    (s.kind === 'actor' ? usedActors : usedParts).add(s.id);
   }
   const actorIds = [...usedActors].sort();
-  const componentSenders = [...usedComponents].sort();
+  const partSenders = [...usedParts].sort();
   // The actor senders alone: they are the ones with modes and Givens.
   const actorOfEvent: Record<string, string> = {};
   for (const [key, s] of Object.entries(sourceOfEvent)) if (s.kind === 'actor') actorOfEvent[key] = s.id;
-  // An event is the chain's tick when its sender is an actor of kind chain; a component's send never is.
+  // An event is the chain's tick when its sender is an actor of kind chain; a part's send never is.
   const chainActors = new Set(actors.actors.filter(a => a.kind === 'chain').map(a => a.id));
   const tickOf = (c: string, e: string | null) => { const s = sourceOfEvent[`${c}.${e}`]; return Boolean(s && s.kind === 'actor' && chainActors.has(s.id)); };
   const takesTick = ids.some(c => irs[c].transitions.some(t => tickOf(c, t.event)));
 
-  // The scenarios claimed: each property's own or the composition's defaults, and each walk's,
+  // The scenarios claimed: each property's own or the wiring's defaults, and each walk's,
   // all-honest when it names none.
-  const defaults = composition.scenarios.length ? composition.scenarios : ['all-honest'];
+  const defaults = wiring.scenarios.length ? wiring.scenarios : ['all-honest'];
   const walkScenario = (w: ReadWalk) => w.scenario || 'all-honest';
   const claimedIds = new Set([...properties.flatMap(p => p.scenarios || defaults), ...walks.map(walkScenario)]);
   const claimed = actors.scenarios.filter(sc => claimedIds.has(sc.id));
@@ -149,14 +149,14 @@ export function composeSystem({ name, prose, composition, members, actors, compo
   // mode in force. modeRef is the mode wherever the module tests one. A window needs the tick:
   // with no member taking it, the clock never moves.
   const windowed = actorIds.filter(a => claimed.some(sc => windowOf(sc, a)));
-  if (!takesTick) for (const sc of claimed) for (const a of windowed) if (windowOf(sc, a)) fail('composition does not compose', `${sc.id} gives ${a} a window, but no member of ${name} takes the chain's tick, so the clock that opens and closes the window never moves`);
+  if (!takesTick) for (const sc of claimed) for (const a of windowed) if (windowOf(sc, a)) fail('wiring does not compose', `${sc.id} gives ${a} a window, but no member of ${name} takes the chain's tick, so the clock that opens and closes the window never moves`);
   const maxClock = Math.max(0, ...claimed.flatMap(sc => windowed.flatMap(a => { const w = windowOf(sc, a); return w ? [w.from, ...(w.until === null ? [] : [w.until])] : []; })));
   if (windowed.length) vars.push('clock');
   const modeRef = (a: string) => `${windowed.includes(a) ? 'ModeNow' : 'Mode'}_${ident(a)}`;
 
   // Starts: the values a scenario's cells begin from, keyed <member>.<datum> or <member>.state.
   // Every declared scenario's entries are read against the members, claimed or not. An entry
-  // for a component outside the system is another system's; one that does not read is reported
+  // for a part outside the composition is another composition's; one that does not read is reported
   // and left out, so its cells begin from the boundary's values. Only a claimed scenario's
   // starts become constants.
   const startsOf = new Map<string, Map<string, Value>>();
@@ -166,7 +166,7 @@ export function composeSystem({ name, prose, composition, members, actors, compo
     for (const [key, written] of Object.entries(sc.start || {})) {
       const dot = key.indexOf('.');
       const c = dot < 0 ? key : key.slice(0, dot), n = dot < 0 ? '' : key.slice(dot + 1);
-      if (!componentIds.has(c)) { fail('malformed actors', `start: ${sc.id} starts ${key}, which names no component`); continue; }
+      if (!partIds.has(c)) { fail('malformed actors', `start: ${sc.id} starts ${key}, which names no part`); continue; }
       if (!ids.includes(c)) continue;
       const read = readStart(irs[c], c, n, written);
       if (!read) fail('malformed actors', `start: ${sc.id} starts ${key}, which ${c} does not hold`);
@@ -197,49 +197,49 @@ export function composeSystem({ name, prose, composition, members, actors, compo
 
   // Wiring: an effect of one member is an event of another in the same step. A member takes one
   // move in a step, so an effect delivered to one member twice does not compose.
-  const wired: Record<string, { component: string; event: string }[]> = {};
-  for (const w of composition.wiring) {
-    const src = irs[w.effect.component], dst = irs[w.event.component];
+  const wired: Record<string, { part: string; event: string }[]> = {};
+  for (const w of wiring.wiring) {
+    const src = irs[w.effect.part], dst = irs[w.event.part];
     if (!src || !dst) {
-      const absent = [w.effect.component, w.event.component].find(c => !irs[c] && !broken.has(c));
-      if (absent) fail('composition cites unknown component', `wiring names ${absent}, which is not a member`);
+      const absent = [w.effect.part, w.event.part].find(c => !irs[c] && !broken.has(c));
+      if (absent) fail('wiring names unknown part', `wiring names ${absent}, which is not a member`);
       continue;
     }
-    if (!src.effects.some(e => e.name === w.effect.name)) fail('wiring names unknown effect or event', `wiring names effect ${w.effect.component}.${w.effect.name}, which ${w.effect.component} does not send`);
-    if (!dst.events.some(e => e.name === w.event.name)) fail('wiring names unknown effect or event', `wiring names event ${w.event.component}.${w.event.name}, which ${w.event.component} does not receive`);
-    const key = `${w.effect.component}.${w.effect.name}`;
-    if ((wired[key] || []).some(x => x.component === w.event.component)) { fail('composition does not compose', `wiring delivers ${key} to ${w.event.component} twice; a member takes one move in a step`); continue; }
-    (wired[key] ||= []).push({ component: w.event.component, event: w.event.name });
+    if (!src.effects.some(e => e.name === w.effect.name)) fail('wiring names unknown effect or event', `wiring names effect ${w.effect.part}.${w.effect.name}, which ${w.effect.part} does not send`);
+    if (!dst.events.some(e => e.name === w.event.name)) fail('wiring names unknown effect or event', `wiring names event ${w.event.part}.${w.event.name}, which ${w.event.part} does not receive`);
+    const key = `${w.effect.part}.${w.effect.name}`;
+    if ((wired[key] || []).some(x => x.part === w.event.part)) { fail('wiring does not compose', `wiring delivers ${key} to ${w.event.part} twice; a member takes one move in a step`); continue; }
+    (wired[key] ||= []).push({ part: w.event.part, event: w.event.name });
   }
-  const internal = new Set(Object.values(wired).flat().map(w => `${w.component}.${w.event}`));
+  const internal = new Set(Object.values(wired).flat().map(w => `${w.part}.${w.event}`));
 
   // A member's sends that no wiring reaches are free actions, printed and acknowledged under
-  // free:; a component outside the composition sends freely and is named for the readers.
-  const declaredFree = new Set(composition.free);
+  // free:; a part outside the wiring sends freely and is named for the readers.
+  const declaredFree = new Set(wiring.free);
   const free: FreeSend[] = [];
   const outsideEvents = new Map<string, string[]>();
   for (const c of ids) for (const ev of irs[c].events) {
     const key = `${c}.${ev.name}`, s = sourceOfEvent[key];
-    if (!s || s.kind !== 'component') continue;
+    if (!s || s.kind !== 'part') continue;
     if (!ids.includes(s.id)) { (outsideEvents.get(s.id) || outsideEvents.set(s.id, []).get(s.id)!).push(key); continue; }
     if (!internal.has(key)) free.push({ event: key, from: s.id, declared: declaredFree.has(key) });
   }
   const outside: OutsideSender[] = [...outsideEvents].sort(([a], [b]) => (a < b ? -1 : 1)).map(([from, events]) => ({ from, events }));
-  for (const x of composition.free) {
+  for (const x of wiring.free) {
     const [c, e] = x.split('.');
     const s = sourceOfEvent[x];
-    if (broken.has(c) || (s && s.kind === 'component' && broken.has(s.id))) continue;
-    if (!irs[c] || !irs[c].events.some(ev => ev.name === e)) fail('malformed composition', `free: names ${x}, which no member receives`);
-    else if (internal.has(x)) fail('malformed composition', `free: names ${x}, which is wired`);
-    else if (!s || s.kind !== 'component' || !ids.includes(s.id)) fail('malformed composition', `free: names ${x}, which no member sends`);
+    if (broken.has(c) || (s && s.kind === 'part' && broken.has(s.id))) continue;
+    if (!irs[c] || !irs[c].events.some(ev => ev.name === e)) fail('malformed wiring', `free: names ${x}, which no member receives`);
+    else if (internal.has(x)) fail('malformed wiring', `free: names ${x}, which is wired`);
+    else if (!s || s.kind !== 'part' || !ids.includes(s.id)) fail('malformed wiring', `free: names ${x}, which no member sends`);
   }
 
-  // References inside system conditions: member data or member states.
+  // References inside composition conditions: member data or member states.
   const mapRef = (ref: string): string => {
     const m = ref.match(/^([a-z][\w-]*)\.(\w+)$/);
-    if (!m) { fail('misnamed', `"${ref}" must read <component>.<data> or <component>.<State>`); return ref; }
+    if (!m) { fail('misnamed', `"${ref}" must read <part>.<data> or <part>.<State>`); return ref; }
     const [, c, n] = m;
-    if (!irs[c]) { if (!broken.has(c)) fail('composition cites unknown component', `"${ref}" names ${c}, which is not a member`); return ref; }
+    if (!irs[c]) { if (!broken.has(c)) fail('wiring names unknown part', `"${ref}" names ${c}, which is not a member`); return ref; }
     if (irs[c].context.some(d => d.name === n)) return `${pre(c)}_${n}`;
     if (irs[c].effects.some(e => sentOf(e.name) === n)) return `${pre(c)}_${n}`;
     if (irs[c].states.some(s => s.key === n)) return `(${statePred(irs[c], c, n)})`;
@@ -249,7 +249,7 @@ export function composeSystem({ name, prose, composition, members, actors, compo
   const sideTla = (side: Trigger | null) => (side!.state ? `(${mapRef(side!.state)})` : toTla(side!.cond!, mapRef));
   const prime = (text: string) => text.replace(/\b([a-z][\w]*_[\w]+|[a-z]\d*_ticks)\b/g, (m) => (vars.includes(m) ? `${m}'` : m));
 
-  // Givens with actors, from the system and from the members, collected before the actions
+  // Givens with actors, from the composition and from the members, collected before the actions
   // since "only when" restricts them. While the actor is honest: fairness, scoped to the event
   // when the Given has "on"; prompt holds the tick back; "only when" restricts the event's moves.
   interface EventGivens { ids: string[]; fairIds: string[]; prompt: boolean; whens: { id: string; tla: string }[] }
@@ -257,8 +257,8 @@ export function composeSystem({ name, prose, composition, members, actors, compo
   const givenActors = new Map<string, ActorGivens>();
   const noteGiven = (g: GivenForm | IrGiven, from: string, event: string | null, whenTla: (ev: IrEvent) => string) => {
     if (!g.actor) return;
-    // A component first: a Given that names one is a rely on it, even where an actor has the same id.
-    if (componentIds.has(actorId(g.actor))) { fail('Given names a component', `${from} ${g.id}: names "${g.actor}", which is a component; a rely on a component is a Guarantee or a wiring`); return; }
+    // A part first: a Given that names one is a rely on it, even where an actor has the same id.
+    if (partIds.has(actorId(g.actor))) { fail('Given names a part', `${from} ${g.id}: names "${g.actor}", which is a part; a rely on a part is a Guarantee or a wiring`); return; }
     const a = findActor(actors, g.actor);
     if (!a) { fail('sender is not declared', `${from} ${g.id}: actor "${g.actor}" is not declared in actors.md`); return; }
     let ev: IrEvent | undefined;
@@ -323,10 +323,10 @@ export function composeSystem({ name, prose, composition, members, actors, compo
     const ref = (n: string) => (bound.has(n) ? bound.get(n)! : ir.context.some(d => d.name === n) ? `${pre(c)}_${n}` : n);
     const parts = [statePred(ir, c, t.from), ...(t.guard ? [toTla(t.guard, ref)] : [])];
     for (const e of t.effects) for (const target of wired[`${c}.${e}`] || []) {
-      if (seen.has(target.component)) continue;
-      const moves = irs[target.component].transitions.filter(x => x.event === target.event);
+      if (seen.has(target.part)) continue;
+      const moves = irs[target.part].transitions.filter(x => x.event === target.event);
       const carried = carriedOf(c, t, e, bound);
-      if (moves.length) parts.push(`(${moves.map(tm => { const sub = enabled(target.component, tm, carried, new Set([...seen, target.component])); return `(${quantified(sub.free, sub.parts)})`; }).join(' \\/ ')})`);
+      if (moves.length) parts.push(`(${moves.map(tm => { const sub = enabled(target.part, tm, carried, new Set([...seen, target.part])); return `(${quantified(sub.free, sub.parts)})`; }).join(' \\/ ')})`);
     }
     return { free: eventOf(c, t).fields.filter(f => !bound.has(f.name)), parts };
   };
@@ -339,12 +339,12 @@ export function composeSystem({ name, prose, composition, members, actors, compo
     const changed = new Set(me.changed);
     for (const e of t.effects) {
       for (const target of wired[`${c}.${e}`] || []) {
-        if (seen.has(target.component)) { fail('composition does not compose', `wiring loops through ${target.component}`); continue; }
-        const targetMoves = irs[target.component].transitions.filter(x => x.event === target.event);
-        if (!targetMoves.length) { fail('composition does not compose', `${target.component} has no Move for ${target.event}, wired from ${c}.${e}`); continue; }
+        if (seen.has(target.part)) { fail('wiring does not compose', `wiring loops through ${target.part}`); continue; }
+        const targetMoves = irs[target.part].transitions.filter(x => x.event === target.event);
+        if (!targetMoves.length) { fail('wiring does not compose', `${target.part} has no Move for ${target.event}, wired from ${c}.${e}`); continue; }
         const carried = carriedOf(c, t, e, bound);
-        const subs = targetMoves.map(tm => compositeConj(target.component, tm, carried, new Set([...seen, target.component])));
-        const reach = new Set([...varsOf(target.component), ...subs.flatMap(sub => [...sub.changed])]);
+        const subs = targetMoves.map(tm => compositeConj(target.part, tm, carried, new Set([...seen, target.part])));
+        const reach = new Set([...varsOf(target.part), ...subs.flatMap(sub => [...sub.changed])]);
         const disjuncts = subs.map(sub => {
           const unchanged = vars.filter(v => reach.has(v) && !sub.changed.has(v));
           const parts = [...sub.conj, ...(unchanged.length ? [`UNCHANGED <<${unchanged.join(', ')}>>`] : [])];
@@ -377,14 +377,14 @@ export function composeSystem({ name, prose, composition, members, actors, compo
   const refusedDefs: [string, string][] = [];
   for (const w of walks) {
     mapRef(w.from);
-    const read: (SystemStep & { args2: [string, string][]; at: number })[] = [];
+    const read: (CompositionStep & { args2: [string, string][]; at: number })[] = [];
     for (const [i, st] of w.steps.entries()) {
-      const c = st.component, e = st.event, step = `${c}.${e}`;
+      const c = st.part, e = st.event, step = `${c}.${e}`;
       if (broken.has(c)) continue;
-      if (!irs[c]) { fail('composition cites unknown component', `${w.id} steps on ${step}, but ${c} is not a member`); continue; }
+      if (!irs[c]) { fail('wiring names unknown part', `${w.id} steps on ${step}, but ${c} is not a member`); continue; }
       const ev = irs[c].events.find(x => x.name === e);
       if (!ev) { fail('misnamed', `${w.id} steps on ${step}, which ${c} does not receive`); continue; }
-      if (internal.has(step)) { fail('composition does not compose', `${w.id} steps on ${step}, which is reached through wiring`); continue; }
+      if (internal.has(step)) { fail('wiring does not compose', `${w.id} steps on ${step}, which is reached through wiring`); continue; }
       const args: [string, string][] = [];
       for (const [k, v] of Object.entries(st.args)) {
         const f = ev.fields.find(x => x.name === k);
@@ -395,20 +395,20 @@ export function composeSystem({ name, prose, composition, members, actors, compo
     }
     const plan = walkPlan(read);
     for (const st of read.filter(x => x.refused)) {
-      const moves = irs[st.component].transitions.filter(t => t.event === st.event);
+      const moves = irs[st.part].transitions.filter(t => t.event === st.event);
       if (!moves.length) continue;
       refusedDefs.push([`${w.id}_Refused${st.at}`, `~(${moves.map(t => {
-        if (!st.args2.length) return `Can_${actionOf(st.component, t)}`;
-        const { free, parts } = enabled(st.component, t, new Map(), new Set([st.component]));
-        return `(${quantified(free, [...st.args2.map(([k, v]) => `${k} = ${v}`), ...parts, ...whensOn(`${st.component}.${t.event}`).map(x => x.conj)])})`;
+        if (!st.args2.length) return `Can_${actionOf(st.part, t)}`;
+        const { free, parts } = enabled(st.part, t, new Map(), new Set([st.part]));
+        return `(${quantified(free, [...st.args2.map(([k, v]) => `${k} = ${v}`), ...parts, ...whensOn(`${st.part}.${t.event}`).map(x => x.conj)])})`;
       }).join(' \\/ ')})`]);
     }
     const refusedOf = (st: { at: number }) => refusedDefs.filter(([n]) => n === `${w.id}_Refused${st.at}`).map(([n]) => n);
     watchOf.set(w.id, {
       taken: plan.taken.map(({ step: st, refusedBefore }, k) => {
-        const tick = tickOf(st.component, st.event);
-        const took = tick ? [`(${irs[st.component].transitions.filter(t => t.event === st.event).map(t => `Can_${actionOf(st.component, t)}`).join(' \\/ ') || 'FALSE'})`] : [];
-        return { c: st.component, e: st.event, tick, when: [...(k === 0 ? [mapRef(w.from)] : []), ...refusedBefore.flatMap(refusedOf), ...took, ...st.args2.map(([key, v]) => `${key} = ${v}`)] };
+        const tick = tickOf(st.part, st.event);
+        const took = tick ? [`(${irs[st.part].transitions.filter(t => t.event === st.event).map(t => `Can_${actionOf(st.part, t)}`).join(' \\/ ') || 'FALSE'})`] : [];
+        return { c: st.part, e: st.event, tick, when: [...(k === 0 ? [mapRef(w.from)] : []), ...refusedBefore.flatMap(refusedOf), ...took, ...st.args2.map(([key, v]) => `${key} = ${v}`)] };
       }),
       refusedAfter: plan.refusedAfter.flatMap(refusedOf),
     });
@@ -426,10 +426,10 @@ export function composeSystem({ name, prose, composition, members, actors, compo
   const L: string[] = [];
   const line = (s = '') => L.push(s);
   // Two names that read alike once a hyphen is an underscore would be one variable declared twice.
-  for (const v of new Set(vars.filter((x, i) => vars.indexOf(x) !== i))) fail('composition does not compose', `the module would declare ${v} twice; a hyphen in a component id reads as an underscore, so rename the component or the datum`);
+  for (const v of new Set(vars.filter((x, i) => vars.indexOf(x) !== i))) fail('wiring does not compose', `the module would declare ${v} twice; a hyphen in a part id reads as an underscore, so rename the part or the datum`);
   line(`${'-'.repeat(26)} MODULE ${concern} ${'-'.repeat(26)}`);
   line(`\\* Composed by dossier from ${ids.join(', ')}: their moves, wired where one's effect is another's event,`);
-  line(`\\* with every actor's mode a constant. Properties are the system's passages.`);
+  line(`\\* with every actor's mode a constant. Properties are the composition's passages.`);
   line('EXTENDS Naturals');
   line('');
   line('CONSTANTS');
@@ -477,7 +477,7 @@ export function composeSystem({ name, prose, composition, members, actors, compo
   line('');
 
   const byActor: Record<string, string[]> = Object.fromEntries(actorIds.map(a => [a, []]));
-  const byComponent: Record<string, string[]> = Object.fromEntries(componentSenders.map(c => [c, []]));
+  const byPart: Record<string, string[]> = Object.fromEntries(partSenders.map(c => [c, []]));
   const tickParts: string[] = [];
   // The variables each member's tick determines: its own and those its tick moves reach by wiring.
   const tickReach = new Map<string, Set<string>>();
@@ -502,7 +502,7 @@ export function composeSystem({ name, prose, composition, members, actors, compo
       for (const gconj of ghostConj(false)) line(`${pad}/\\ ${gconj}`);
       for (const wconj of walkConj(o => !o.tick && o.c === c && o.e === t.event)) line(`${pad}/\\ ${wconj}`);
       line('');
-      (source.kind === 'actor' ? byActor : byComponent)[source.id].push(an);
+      (source.kind === 'actor' ? byActor : byPart)[source.id].push(an);
       (movesOf[`${c}.${t.event}`] ||= []).push(an);
     }
     if (tickMoves.length) {
@@ -531,7 +531,7 @@ export function composeSystem({ name, prose, composition, members, actors, compo
   const ticking = [...tickReach.keys()];
   for (const m of ids) {
     const via = ticking.filter(c => varsOf(m).some(v => tickReach.get(c)!.has(v)));
-    if (via.length > 1) fail('composition does not compose', `the chain's tick reaches ${m} through ${oneOf(via).replace(' or ', ' and ')}; a member takes one move in a step`);
+    if (via.length > 1) fail('wiring does not compose', `the chain's tick reaches ${m} through ${oneOf(via).replace(' or ', ' and ')}; a member takes one move in a step`);
   }
   const chainActor = actorIds.find(a => chainActors.has(a));
   if (tickParts.length) {
@@ -559,9 +559,9 @@ export function composeSystem({ name, prose, composition, members, actors, compo
       line(`Due_${id} == (${modeRef(a)} = "honest") /\\ (${cans.join(' \\/ ') || 'FALSE'})   \\* ${g.promptIds.join(' ')}: acts before the next tick`);
     }
   }
-  // A component's sends have no mode: a member's free sends, or a component outside the composition.
-  const sending = componentSenders.filter(c => byComponent[c].length);
-  for (const c of sending) line(`${cap(ident(c))} == ${byComponent[c].join(' \\/ ')}   \\* ${ids.includes(c) ? 'sends left free' : 'outside the composition'}`);
+  // A part's sends have no mode: a member's free sends, or a part outside the wiring.
+  const sending = partSenders.filter(c => byPart[c].length);
+  for (const c of sending) line(`${cap(ident(c))} == ${byPart[c].join(' \\/ ')}   \\* ${ids.includes(c) ? 'sends left free' : 'outside the wiring'}`);
   const promptActors = acting.filter(a => givenActors.get(a) && givenActors.get(a)!.promptIds.length);
   if (tickParts.length) {
     line(`TickStep == ${chainActor ? `(${modeRef(chainActor)} /= "offline") /\\ ` : ''}Tick${promptActors.map(a => ` /\\ ~Due_${ident(a)}`).join('')}`);
@@ -632,5 +632,5 @@ export function composeSystem({ name, prose, composition, members, actors, compo
     cfgs[cfgName] = cfgOf(sc, `INVARIANTS TypeOK Not${w.id}`);
     walkCfgs.push({ id: w.id, scenario: sid, cfg: cfgName });
   }
-  return { module: concern, tla, cfgs, cells, walks: walkCfgs, errors: problems.map(p => p.message), problems, actors: actorIds, components: componentSenders, free, outside, vars };
+  return { module: concern, tla, cfgs, cells, walks: walkCfgs, errors: problems.map(p => p.message), problems, actors: actorIds, parts: partSenders, free, outside, vars };
 }

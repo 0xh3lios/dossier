@@ -1,0 +1,291 @@
+{
+  "schema": 1,
+  "dossier": "parts/timelock",
+  "question": {
+    "kind": "blunder",
+    "checker": "tlc",
+    "executes": [
+      "model/blunders/impatient.tla",
+      "model/blunders/impatient_N1.cfg"
+    ],
+    "expects": [
+      "N1"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: blunder\nblunder: the chain ticks even while an execute is due\nexecutes:\n  - model/blunders/impatient.tla\n  - model/blunders/impatient_N1.cfg\nreach: one plan; delay 2\nexpect:\n  N1: violated\nbecause: |\n  With the wrong in place the property fails on a short path; the property is not hollow.\n",
+    "reach": "one plan; delay 2",
+    "expect": {
+      "N1": {
+        "expect": "violated"
+      }
+    },
+    "because": "With the wrong in place the property fails on a short path; the property is not hollow."
+  },
+  "answer": {
+    "enabled": [
+      "N1"
+    ],
+    "outcomes": {
+      "N1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "N1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "state": "\"Idle\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "0",
+          "w2_at": "0",
+          "w1_at": "0",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "M4_Schedule",
+        "values": {
+          "state": "\"Scheduled\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "2",
+          "w2_at": "1",
+          "w1_at": "1",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "0"
+        }
+      },
+      {
+        "index": 3,
+        "action": "M2_Tick",
+        "values": {
+          "state": "\"Scheduled\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "1",
+          "w2_at": "2",
+          "w1_at": "2",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "1"
+        }
+      },
+      {
+        "index": 4,
+        "action": "M2_Tick",
+        "values": {
+          "state": "\"Scheduled\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "0",
+          "w2_at": "0",
+          "w1_at": "3",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "2"
+        }
+      },
+      {
+        "index": 5,
+        "action": "M3_Tick",
+        "values": {
+          "state": "\"Scheduled\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "0",
+          "w2_at": "0",
+          "w1_at": "0",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "3"
+        }
+      },
+      {
+        "index": 6,
+        "action": "M3_Tick",
+        "values": {
+          "state": "\"Scheduled\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "0",
+          "w2_at": "0",
+          "w1_at": "0",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "4"
+        }
+      }
+    ],
+    "states": {
+      "generated": 15,
+      "distinct": 10,
+      "queued": 2,
+      "depth": 6
+    },
+    "actions": {
+      "M1_Tick": {
+        "move": "M1",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 1,
+        "generated": 4
+      },
+      "M2_Tick": {
+        "move": "M2",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 2,
+        "generated": 4
+      },
+      "M3_Tick": {
+        "move": "M3",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 2,
+        "generated": 4
+      },
+      "M4_Schedule": {
+        "move": "M4",
+        "event": "schedule",
+        "targets": [
+          "Scheduled"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 4
+      },
+      "M5_Execute": {
+        "move": "M5",
+        "event": "execute",
+        "targets": [
+          "Idle"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 1
+      },
+      "M6_Cancel": {
+        "move": "M6",
+        "event": "cancel",
+        "targets": [
+          "Idle"
+        ],
+        "stays": false,
+        "distinct": 2,
+        "generated": 3
+      }
+    },
+    "init": {
+      "accepted": 2,
+      "generated": 2
+    },
+    "partial": [],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "N1": "83f3fcd1"
+    },
+    "reach": {
+      "text": "one plan; delay 2",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "e6a4c8b8",
+        "S2": "e39d3f70",
+        "E1": "5961722a",
+        "E2": "7f3e3029",
+        "E3": "17dd6db9",
+        "E4": "7348a8bc",
+        "M1": "402263d7",
+        "M2": "60fe8786",
+        "M3": "44d75429",
+        "M4": "87eca7f0",
+        "M5": "672a5cf3",
+        "M6": "cb6d8f36",
+        "R1": "c696f898",
+        "R2": "f17a4f63",
+        "R3": "18152481",
+        "A1": "b2a70598",
+        "O1": "ab9479de",
+        "N1": "55a58264",
+        "G1": "6a2a5abb",
+        "G2": "5e917103",
+        "W1": "bd05768e",
+        "W2": "ac96edaf",
+        "X1": "586d1988",
+        "K1": "6f727c67",
+        "K2": "ca30cbc8",
+        "T1": "f65d11b0"
+      },
+      "records": {
+        "timelock#observation:delay-check-2026-11-01": "d33b3049427305ab"
+      },
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "6d688aa061b03fd3",
+          "path": "modules/timelock/behavior/invariants.md"
+        },
+        "K2": {
+          "status": "assumed"
+        }
+      },
+      "ir": "80790d57e4171c41"
+    },
+    "executed": {
+      "model/blunders/impatient.tla": "007e3c91a740fb2f6405e13e6ff043916aaa83c6c0b8bbf2215e10575c423f6e",
+      "model/blunders/impatient_N1.cfg": "6c89ecffad8c2715c5fe249136f6a25d166d3dd75a38f005c5dea19fd1491631"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/blunders/impatient.tla": "007e3c91a740fb2f6405e13e6ff043916aaa83c6c0b8bbf2215e10575c423f6e",
+        "model/blunders/impatient_N1.cfg": "6c89ecffad8c2715c5fe249136f6a25d166d3dd75a38f005c5dea19fd1491631"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2337-blunder-3f38ed",
+    "at": "2026-11-08T23:37:31.716Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "af241053041e131baecc1c4a04c4086bae0009c3692c85d5edb0062877f45e36"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

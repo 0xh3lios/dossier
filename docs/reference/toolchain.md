@@ -42,7 +42,7 @@ It unpacks Apalache beside its archive and writes `env.sh` in the folder it inst
 
 ## Where the solvers work
 
-Planning and execution read private input copies, including generated system models. A trial runs in its dossier's `.running/<id>/`, and its [bundle](files.md#trial-bundles) then moves to `trials/<id>/`. TLC's state folder and Apalache's output folder are removed once the checker's output is parsed. Alloy's receipt and instances stay under the bundle's `alloy/`, because the instances are the only copy of what the Analyzer found. Toolchain binaries and shared libraries are outside the copied-file identity, as [Execution identity](../../spec/models.md#execution-identity) explains.
+Planning and execution read private input copies, including generated composition models. A trial runs in its dossier's `.running/<id>/`, and its [bundle](files.md#trial-bundles) then moves to `trials/<id>/`. TLC's state folder and Apalache's output folder are removed once the checker's output is parsed. Alloy's receipt and instances stay under the bundle's `alloy/`, because the instances are the only copy of what the Analyzer found. Toolchain binaries and shared libraries are outside the copied-file identity, as [Execution identity](../../spec/models.md#execution-identity) explains.
 
 TLC exports a Java RMI object when it starts model checking, which opens a local network socket. A sandbox that forbids network access makes every TLC trial abort with `Listen failed on port: 0` and `Operation not permitted` in `output.txt`. Allow local network access where an agent runs trials, as with `sandbox_workspace_write.network_access` in Codex.
 

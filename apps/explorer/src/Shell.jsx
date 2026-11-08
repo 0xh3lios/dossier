@@ -10,7 +10,7 @@ import { Badge } from './bits.jsx';
 export function Header_({ crumbs, live, theme, setTheme, onPalette, onHelp }) {
   return (
     <header className="top">
-      <strong className="brand">Dossier explorer</strong>
+      <strong className="brand">Dossier Explorer</strong>
       <Breadcrumbs className="crumbs">
         {crumbs.map((c, i) => <Breadcrumb key={i}>{c.href ? <Link href={c.href}>{c.label}</Link> : <span>{c.label}</span>}</Breadcrumb>)}
       </Breadcrumbs>
@@ -39,7 +39,7 @@ export function Ribbon({ changes, files, since, onDismiss }) {
           <span aria-hidden="true">▸</span> {changes.length} mark change{changes.length === 1 ? '' : 's'}{files.length ? ` · ${files.length} file${files.length === 1 ? '' : 's'}` : ''} <span className="muted">{since}</span>
         </Button>
         <span className="ribbon-inline">
-          {changes.slice(0, 6).map((c, i) => <a key={i} className="chg" href={c.kind === 'system' ? `#/s/${c.dossier}?cell=${c.key.replace('/', ':')}` : `#/c/${c.dossier}?sel=${c.key}`}><span className="mono">{c.dossier} {c.key}</span> {c.before} → <Badge word={c.after} small /></a>)}
+          {changes.slice(0, 6).map((c, i) => <a key={i} className="chg" href={c.kind === 'composition' ? `#/composition/${c.dossier}?cell=${c.key.replace('/', ':')}` : `#/part/${c.dossier}?sel=${c.key}`}><span className="mono">{c.dossier} {c.key}</span> {c.before} → <Badge word={c.after} small /></a>)}
           {changes.length > 6 && <span className="muted">+{changes.length - 6}</span>}
         </span>
         <Button className="btn is-tiny" onPress={onDismiss}>Dismiss</Button>
@@ -109,14 +109,14 @@ export function Help({ isOpen, onOpenChange }) {
     <ModalOverlay className="overlay" isOpen={isOpen} onOpenChange={onOpenChange} isDismissable>
       <Modal className="modal is-help">
         <Dialog className="dialog help">
-          <div className="help-head"><Heading slot="title">Dossier explorer</Heading><Button slot="close" className="btn">Close</Button></div>
+          <div className="help-head"><Heading slot="title">Dossier Explorer</Heading><Button slot="close" className="btn">Close</Button></div>
           <div className="help-cols">
             <section>
               <h3>Levels</h3>
               <p><b>Board.</b> Every dossier, grouped by its next step as verify routes it.</p>
-              <p><b>System.</b> The largest graph: the members, the wiring between them, the actors that send into them, and stubs for anything outside. Properties under scenarios, with each cell's trace.</p>
-              <p><b>Component.</b> The prose beside its statechart, the grid of states by events, and the walks as lanes. Moves that stay in their state are lines inside the state's box.</p>
-              <p>A graph over 25 boxes is refused rather than drawn. Nothing draws components together that no system composes.</p>
+              <p><b>Composition.</b> The largest graph: the members, the wiring between them, the actors that send into them, and stubs for anything outside. Properties under scenarios, with each cell's trace.</p>
+              <p><b>Part.</b> The prose beside its statechart, the grid of states by events, and the walks as lanes. Moves that stay in their state are lines inside the state's box.</p>
+              <p>A graph over 25 boxes is refused rather than drawn. Nothing draws parts together that no composition composes.</p>
               <h3>Players</h3>
               <p><b>Walk</b> and <b>doubt</b> replay over the graph the chart explored. <b>Trace</b> plays a trial's counterexample or witness, step by step, with the actor who moved. <b>Simulate</b> fires any event from any explored state and shows each condition evaluated. <b>Find a path</b> searches the explored graph for a state.</p>
               <h3>Decisions</h3>

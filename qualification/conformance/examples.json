@@ -4,7 +4,7 @@
     "ordinal": 1,
     "kind": "call",
     "id": "chart-call",
-    "setup": "components/timelock",
+    "setup": "parts/timelock",
     "description": "Complete call form; plan against Harbor Timelock without running the chart."
   },
   {
@@ -12,7 +12,7 @@
     "ordinal": 1,
     "kind": "call",
     "id": "alloy-call",
-    "setup": "components/breaker",
+    "setup": "parts/breaker",
     "description": "Complete call form; plan against Harbor Breaker. The scope is not unbounded proof."
   },
   {
@@ -20,7 +20,7 @@
     "ordinal": 1,
     "kind": "call",
     "id": "inductive-call",
-    "setup": "components/vault",
+    "setup": "parts/vault",
     "description": "Complete call form; plan against Harbor Vault. This test does not execute induction."
   },
   {
@@ -36,16 +36,16 @@
     "ordinal": 2,
     "kind": "call",
     "id": "external-call",
-    "setup": "components/token",
+    "setup": "parts/token",
     "description": "Complete call form; plan against Harbor Token with its declared replay runner."
   },
   {
     "path": "spec/composition.md",
     "ordinal": 1,
-    "kind": "composition",
-    "id": "composition-shape",
+    "kind": "wiring",
+    "id": "wiring-shape",
     "setup": null,
-    "description": "Composition syntax example; its member and knowledge dependencies are not a complete system."
+    "description": "Wiring syntax example; its member and knowledge dependencies are not a complete composition."
   },
   {
     "path": "spec/composition.md",
@@ -58,17 +58,17 @@
   {
     "path": "spec/composition.md",
     "ordinal": 3,
-    "kind": "system",
+    "kind": "composition",
     "id": "control-prose",
-    "setup": "systems/control",
-    "description": "Complete system prose; compose using Harbor Control members, actors and wiring."
+    "setup": "compositions/control",
+    "description": "Complete composition prose; compose using Harbor Control members, actors and wiring."
   },
   {
     "path": "spec/composition.md",
     "ordinal": 4,
     "kind": "call",
-    "id": "system-call",
-    "setup": "systems/supply",
+    "id": "composition-call",
+    "setup": "compositions/supply",
     "description": "Complete cell call; plan against Harbor Supply and its all-honest scenario."
   },
   {
@@ -83,9 +83,9 @@
     "path": "spec/language.md",
     "ordinal": 1,
     "kind": "template",
-    "id": "component-shape",
+    "id": "part-shape",
     "setup": null,
-    "description": "Grammar template with placeholders; not a complete component."
+    "description": "Grammar template with placeholders; not a complete part."
   },
   {
     "path": "spec/language.md",
@@ -101,7 +101,7 @@
     "kind": "givens",
     "id": "given-fragments",
     "setup": null,
-    "description": "Two independent excerpts; each must match its cited Harbor passage and compile in its own component."
+    "description": "Two independent excerpts; each must match its cited Harbor passage and compile in its own part."
   },
   {
     "path": "spec/language.md",
@@ -124,7 +124,7 @@
     "ordinal": 2,
     "kind": "call",
     "id": "tlc-call",
-    "setup": "components/timelock",
+    "setup": "parts/timelock",
     "description": "Complete call; plan against Harbor Timelock and its ordinary configuration."
   }
 ]

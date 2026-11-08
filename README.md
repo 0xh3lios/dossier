@@ -2,12 +2,12 @@
 
 Dossier is a toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the sentences and the models, runs the checks, and reruns a check when anything it rested on changes. The checkers, not the agent, decide whether each property holds. You review the sentences, which are the specification, and you decide what a counterexample means: a mistake in the specification, a flaw in the design, or a risk you accept.
 
-- **Components and systems** say what the code does. A component is a contract or a procedure, written as sentences about its states, events and moves, which become models in TLA+, or in Alloy for structure. A system wires components together around one concern, such as governance control.
+- **Parts and compositions** say what the code does. A part is a contract or a procedure, written as sentences about its states, events and moves, which become models in TLA+, or in Alloy for structure. A composition wires parts together around one concern, such as governance control.
 - **Properties** say what must hold. An Always says a bad state is never reached, a Once that an outcome eventually follows, and a Within that it follows within so many blocks. TLC, Apalache and Alloy check them within stated bounds, and Apalache can also prove an Always or a Within by induction, with no bound on steps.
 - **Actors, Givens and scenarios** describe the surroundings. Actors send events from outside the model: a governance key, a keeper, the public, the chain. A Given is a written assumption about how an honest actor behaves, such as a keeper acting within a block. A scenario makes chosen actors malicious or offline, which drops their Givens, and a property is checked under each scenario it claims.
 - **Guarantees, walks and words-only sentences** tie the model to the code. A guarantee is a fact about the deployed code that the model relies on, backed by a Certora rule or a record, or listed as assumed. A walk is an example run that a checker confirms the model can take, and that can be replayed against a deployment. A words-only sentence says what no tool here can check, and why.
 
-[Components, systems and scenarios](docs/explanation/components-systems-scenarios.md) explains each part of a model.
+[Parts, compositions and scenarios](docs/explanation/parts-compositions-scenarios.md) explains each of them.
 
 ## Install
 
@@ -43,11 +43,11 @@ To work from a checkout instead, load it with `claude --plugin-dir /path/to/doss
 
 ### What it needs
 
-You need Node 24.3 or later, or 22.18 or later on the 22 line. Dossier draws each component as an XState statechart, which needs the `xstate` and `@xstate/graph` packages, and the agent offers to install them when it sets up your repository. Solver checks also need a JDK 17 or later and the TLC, Apalache and Alloy distributions. [Install the solvers](docs/how-to/install-the-solvers.md) covers them, and `dossier doctor` reports what is missing. The explorer, a page that shows the dossiers in your browser, is optional. It is built once, from packages downloaded from the npm registry. The skills run the `dossier` command for you. To run it in your own terminal, put it on your PATH as [Commands and skills](docs/reference/commands.md#the-command) shows.
+You need Node 24.3 or later, or 22.18 or later on the 22 line. Dossier draws each part as an XState statechart, which needs the `xstate` and `@xstate/graph` packages, and the agent offers to install them when it sets up your repository. Solver checks also need a JDK 17 or later and the TLC, Apalache and Alloy distributions. [Install the solvers](docs/how-to/install-the-solvers.md) covers them, and `dossier doctor` reports what is missing. The explorer, a page that shows the dossiers in your browser, is optional. It is built once, from packages downloaded from the npm registry. The skills run the `dossier` command for you. To run it in your own terminal, put it on your PATH as [Commands and skills](docs/reference/commands.md#the-command) shows.
 
 ## Use
 
-In your repository, ask the agent to set it up for dossiers, which runs the setup skill. A dossier is the folder that holds one component or one system: its specification, its models, the answers behind its results and a ledger of those results. Setup looks for a [knowledge base](docs/how-to/set-up-a-repository.md), a folder of records about the system's modules, and works without one. With one, the agent can draft a component from its records. Without one, it drafts from your code and what you tell it. Setup also offers to let the agent run the `dossier` command without asking each time. Then ask for what you want:
+In your repository, ask the agent to set it up for dossiers, which runs the setup skill. A dossier is the folder that holds one part or one composition: its specification, its models, the answers behind its results and a ledger of those results. Setup looks for a [knowledge base](docs/how-to/set-up-a-repository.md), a folder of records about the system's modules, and works without one. With one, the agent can draft a part from its records. Without one, it drafts from your code and what you tell it. Setup also offers to let the agent run the `dossier` command without asking each time. Then ask for what you want:
 
 - "start a dossier for the timelock module"
 - "check that nothing executes before the delay"
@@ -79,7 +79,7 @@ Dossier is packaged as a plugin with five skills and the `dossier` command. The 
 ## What it is for
 
 - **The whole composition.** Whether a change can reach a vault before a timelock's delay has passed depends on the timelock, the vault, the emergency module that bypasses the delay, and who holds which keys. The model holds all of them, and the checkers try every order of events the bounds allow, including orders no test was written for. Alloy checks the structure as well, such as which signers sit on which multisig.
-- **Procedures and actors.** A multisig's procedure or a governance process is described in the same sentences as a contract and takes part in the same checks. Keepers, signers, markets, the chain and the public are actors, each a source of events that fails as a unit. Every assumption about an actor, such as a keeper acting within a block, is written down as a sentence.
+- **Procedures and actors.** A multisig's procedure or a governance process is described in the same sentences as a contract and joins the same checks. Keepers, signers, markets, the chain and the public are actors, each a source of events that fails as a unit. Every assumption about an actor, such as a keeper acting within a block, is written down as a sentence.
 - **Scenarios.** Under a scenario each actor is honest, malicious or offline, for the whole run or for a window of blocks. A property is checked under each scenario it claims.
 - **Counterexamples.** A failed check comes with the trace that reaches the bad state, retold as who acted, in which block, and what changed. The retelling shows which actor a fix has to address.
 - **Designs and changes.** A design can be checked before its code exists. A proposed change, such as a shorter delay or a new emergency path, can be checked under the same scenarios before it is made.
@@ -98,9 +98,9 @@ Dossier is packaged as a plugin with five skills and the `dossier` command. The 
 
 ## Example
 
-Harbor is a small invented system that ships with the plugin, and its model checks ran through the real solvers. Its control system has four components. The Timelock holds one governance plan at a time and lets anyone execute it once its delay has run out. The Vault is the ledger the plan changes. The Adapter turns the Vault's credit into tokens and back. The Breaker is an emergency module that halts the Adapter without waiting. Governance is the key that schedules and cancels plans, and the public stands for anyone at all.
+Harbor is a small invented system that ships with the plugin, and its model checks ran through the real solvers. Its control composition has four parts. The Timelock holds one governance plan at a time and lets anyone execute it once its delay has run out. The Vault is the ledger the plan changes. The Adapter turns the Vault's credit into tokens and back. The Breaker is an emergency module that halts the Adapter without waiting. Governance is the key that schedules and cancels plans, and the public stands for anyone at all.
 
-Part of the Timelock's specification:
+An excerpt of the Timelock's specification:
 
 ```
 [S1] Idle: no plan waits.
@@ -134,7 +134,7 @@ A row shows which of these scenarios a property survives. A column shows everyth
 
 In the ledger, each result links to the file that keeps its answer: the outcome expected before the check ran, the outcome the checker returned, the hashes of the model and configuration it ran on, and the trace.
 
-A property also has to fail on a copy of the model with a deliberate bug before its result counts, which catches a property that holds vacuously. Until then its row shows `held`. Each component and each system in Harbor has a dossier. [Harbor](docs/reference/harbor.md) describes the rest of the fixture.
+A property also has to fail on a copy of the model with a deliberate bug before its result counts, which catches a property that holds vacuously. Until then its row shows `held`. Each part and each composition in Harbor has a dossier. [Harbor](docs/reference/harbor.md) describes the rest of the fixture.
 
 ## License
 

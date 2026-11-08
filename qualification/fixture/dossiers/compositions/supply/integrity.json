@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "evidence": {
+    "apalache-A1-all-honest-b80ec4": "34a86fbae09c9d5d844be004f1d38d0db606059a5681b6e9ca01573c45f7a496",
+    "apalache-A2-all-honest-829e26": "0230c41f003feec50c4655a82036240e28eedd4ae82195194eb9ca26bf9cfbd2",
+    "apalache-A3-all-honest-089212": "aa14f10f49bf726a00f5df6c7cfee3c7e476edab3be32694fa2a5ab93463cdee",
+    "tlc-A1-user-malicious-55c163": "3accfe42850e4160253a2395596b203a503c59a97cc2cf4b0eb0dd91598ab0cf",
+    "tlc-A2-user-malicious-3bd827": "82fb7ec0d9000575fe2b3aaa4f83c113b210a30659d6600b6be044948d09ec55",
+    "tlc-A3-user-malicious-58334f": "402358ab6c9c64ce258a56cb09845f9224a539768a8995bbd44fad7198a0d39e",
+    "blunder-A2-all-honest-345531": "985e3e21b13df6d150dfa71f8b254a291f3cdf86211dc5e8d17a369e43d52fc2",
+    "blunder-A1-all-honest-4c6824": "957b8bffe1f4b6ee841eb2d3a0375594afb8203af7c27a962feab1abec43d952",
+    "blunder-A3-all-honest-2de1da": "ddeaf84399932ba3ffcabf4e34bdc1e929e62a01fe8c9a8c3e3015b1dd189be5",
+    "tlc-W1-all-honest-2cdc8e": "490afbe2e94db936bee035d99d29dd6b28f590217931cd5b5659074c0598d2d4"
+  },
+  "decisionHead": {
+    "algorithm": "sha256-prefix",
+    "bytes": 122,
+    "digest": "3cb70f6a3bcf5e677e9d1eb79e20daa2581eee1d4dc25bcd0f09a0a2f17cd15a"
+  }
+}

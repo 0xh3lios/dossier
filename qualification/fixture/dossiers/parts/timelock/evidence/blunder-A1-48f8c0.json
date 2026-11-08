@@ -1,0 +1,246 @@
+{
+  "schema": 1,
+  "dossier": "parts/timelock",
+  "question": {
+    "kind": "blunder",
+    "checker": "tlc",
+    "executes": [
+      "model/blunders/early.tla",
+      "model/blunders/early_A1.cfg"
+    ],
+    "expects": [
+      "A1"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: blunder\nblunder: execute no longer waits for the delay\nexecutes:\n  - model/blunders/early.tla\n  - model/blunders/early_A1.cfg\nreach: one plan; delay 2\nexpect:\n  A1: violated\nbecause: |\n  With the wrong in place the property fails on a short path; the property is not hollow.\n",
+    "reach": "one plan; delay 2",
+    "expect": {
+      "A1": {
+        "expect": "violated"
+      }
+    },
+    "because": "With the wrong in place the property fails on a short path; the property is not hollow."
+  },
+  "answer": {
+    "enabled": [
+      "A1"
+    ],
+    "outcomes": {
+      "A1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "A1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "state": "\"Idle\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "0",
+          "w2_at": "0",
+          "w1_at": "0",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "M4_Schedule",
+        "values": {
+          "state": "\"Scheduled\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "2",
+          "w2_at": "1",
+          "w1_at": "1",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "0"
+        }
+      },
+      {
+        "index": 3,
+        "action": "M5_Execute",
+        "values": {
+          "state": "\"Idle\"",
+          "early": "TRUE",
+          "w1_armed_sent_change": "0",
+          "remaining": "2",
+          "w2_at": "0",
+          "w1_at": "0",
+          "w2_armed_sent_change": "0",
+          "sent_change": "1",
+          "n1_ticks": "0"
+        }
+      }
+    ],
+    "states": {
+      "generated": 6,
+      "distinct": 5,
+      "queued": 2,
+      "depth": 3
+    },
+    "actions": {
+      "M1_Tick": {
+        "move": "M1",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 0,
+        "generated": 2
+      },
+      "M2_Tick": {
+        "move": "M2",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 1,
+        "generated": 2
+      },
+      "M3_Tick": {
+        "move": "M3",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 0,
+        "generated": 0
+      },
+      "M4_Schedule": {
+        "move": "M4",
+        "event": "schedule",
+        "targets": [
+          "Scheduled"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 2
+      },
+      "M5_Execute": {
+        "move": "M5",
+        "event": "execute",
+        "targets": [
+          "Idle"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 2
+      },
+      "M6_Cancel": {
+        "move": "M6",
+        "event": "cancel",
+        "targets": [
+          "Idle"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 2
+      }
+    },
+    "init": {
+      "accepted": 2,
+      "generated": 2
+    },
+    "partial": [],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "A1": "845a783a"
+    },
+    "reach": {
+      "text": "one plan; delay 2",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "e6a4c8b8",
+        "S2": "e39d3f70",
+        "E1": "5961722a",
+        "E2": "7f3e3029",
+        "E3": "17dd6db9",
+        "E4": "7348a8bc",
+        "M1": "402263d7",
+        "M2": "60fe8786",
+        "M3": "44d75429",
+        "M4": "87eca7f0",
+        "M5": "672a5cf3",
+        "M6": "cb6d8f36",
+        "R1": "c696f898",
+        "R2": "f17a4f63",
+        "R3": "18152481",
+        "A1": "b2a70598",
+        "O1": "ab9479de",
+        "N1": "55a58264",
+        "G1": "6a2a5abb",
+        "G2": "5e917103",
+        "W1": "bd05768e",
+        "W2": "ac96edaf",
+        "X1": "586d1988",
+        "K1": "6f727c67",
+        "K2": "ca30cbc8",
+        "T1": "f65d11b0"
+      },
+      "records": {
+        "timelock#observation:delay-check-2026-11-01": "d33b3049427305ab"
+      },
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "6d688aa061b03fd3",
+          "path": "modules/timelock/behavior/invariants.md"
+        },
+        "K2": {
+          "status": "assumed"
+        }
+      },
+      "ir": "80790d57e4171c41"
+    },
+    "executed": {
+      "model/blunders/early.tla": "f3d8d9a4a4616b123e8e951d01a39dfedde7aa6765bded125ffb08f5d1afae0b",
+      "model/blunders/early_A1.cfg": "dd72eab7f7e31820881501ef896686222ccd6a43c353761d827971cb790d8e73"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/blunders/early.tla": "f3d8d9a4a4616b123e8e951d01a39dfedde7aa6765bded125ffb08f5d1afae0b",
+        "model/blunders/early_A1.cfg": "dd72eab7f7e31820881501ef896686222ccd6a43c353761d827971cb790d8e73"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2337-blunder-3dbc67",
+    "at": "2026-11-08T23:37:30.475Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "86c0483b996b71134d9b02035a8660cdea663141c0cdb6ff6c742a3a4898fb0e"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

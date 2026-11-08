@@ -1,10 +1,10 @@
 # Prose language
 
-Component prose defines the behavior its chart and models encode. A system also has authored composition and actor inputs, defined in [Composition](composition.md). The compiler reads the forms below. An unreadable form is a compile error, reported with the line and expected form.
+Part prose defines the behavior its chart and models encode. A composition also has authored wiring and actor inputs, defined in [Composition](composition.md). The compiler reads the forms below. An unreadable form is a compile error, reported with the line and expected form.
 
 ## Shape
 
-Example `component-shape`. Grammar template with placeholders; not a complete component.
+Example `part-shape`. Grammar template with placeholders; not a complete part.
 
 ```
 # <Name>
@@ -29,9 +29,9 @@ Pins: <module#observation:name>, <module#contract:id>
 ## Retired
 ```
 
-The `# <Name>` line is required in a component, and the name holds at least one letter, because it names the component's TLA+ module. A system's title is optional, since its module is named from its id.
+The `# <Name>` line is required in a part. It names the part in words, for its readers, and can say anything. A part's TLA+ module is named from its id, as a composition's is, so a composition's title is optional.
 
-`Module:` names the module the component abstracts in the knowledge base. `dossier decide <id> begin` writes the component's own id there; `dossier import` writes the imported module's id.
+`Module:` names the module the part abstracts in the knowledge base. `dossier decide <id> begin` writes the part's own id there; `dossier import` writes the imported module's id.
 
 A passage is one paragraph that begins with its id in square brackets. Its hash is the hash of its text after the id, whitespace collapsed. A decision names a passage as `id@hash`, and an answer's basis records the hash of each passage. A changed passage keeps its id and gets a new hash. A removed one keeps its id under Retired with the date and the reason. An id is never reused.
 
@@ -56,7 +56,7 @@ Data names are lower case letters, digits and underscores. A count starts at its
 
 **S, States.** `Name: what is true while the piece is in it.` A final state ends with `Final.` The first S passage is the initial state. A compound state adds `Within it, it is either A or B; it starts A.` and its children are passages named `Parent.Child`. A parallel state adds `Within it, it is both X and Y.` and each region is a compound child. A State's cover says the state is reached. What is true in it goes in an Always.
 
-**E, Events.** `name, from <Sender>: what it means.[ Carries <field>, <type phrase>[; <field>, <type phrase>].][ Refusal only.]` A name starts with a lower case letter and may hold digits, underscores and hyphens. A sender is a component or an actor. The sender resolves first to a component by its id, so `the Adapter` names the component `adapter`, and otherwise to an actor declared in `actors/actors.md` by id or name. A component sender has no mode. Its sends happen when its moves allow them. An event whose sender is an actor of kind `chain` is a tick, whatever its name, and the name `tick` decides only when no actors file resolves the sender. `the public` is the actor that stands for anyone at all.
+**E, Events.** `name, from <Sender>: what it means.[ Carries <field>, <type phrase>[; <field>, <type phrase>].][ Refusal only.]` A name starts with a lower case letter and may hold digits, underscores and hyphens. A sender is a part or an actor. The sender resolves first to a part by its id, so `the Adapter` names the part `adapter`, and otherwise to an actor declared in `actors/actors.md` by id or name. A part sender has no mode. Its sends happen when its moves allow them. An event whose sender is an actor of kind `chain` is a tick, whatever its name, and the name `tick` decides only when no actors file resolves the sender. `the public` is the actor that stands for anyone at all.
 
 An Event that ends with `Refusal only.` is an input that must never succeed, such as a collection by someone who does not own the token. No Move may accept it. Exactly one Refusal must cover it in every reachable state for every value of its fields, and a passing Walk must attempt it as refused. A state with no move for the event is silence, not a refusal, so the chart asks for both. This is checked over the declared ranges and says nothing of how the deployed code authorizes a call.
 
@@ -74,7 +74,7 @@ A sender id is its name lower-cased, with a leading `the` dropped and each run o
 
 For the implemented Within counter, the initial value is 0. A transition resets it to 0 when its resulting state satisfies the goal or no longer satisfies the trigger. Otherwise a chain tick increments it, saturating at `k + 1`; another event leaves it unchanged. The property requires the counter to be at most `k`. For `Within 3`, remaining unresolved after three counted ticks is still within the bound; a fourth such tick violates it. This convention is distinct from requiring completion in the state immediately after tick three. If the owner intends that stricter deadline, record the ambiguity before changing the passage or model.
 
-**G, Given.** `Given that <text>. If this is false, <text>.[ Actor: <Actor>[, on <event>][, prompt][, only when <condition>].]` The clauses come in that order. The actor is declared in `actors/actors.md`. A Given that names a component, in a component's prose or a system's, is the tripwire `Given names a component`, since a rely on a component is a Guarantee or a wiring. `on <event>` names one event the actor sends, `component.event` in a system. `prompt` and `only when` each require `on`. `only when` is a condition over the component's data and the event's fields, `component.data` in a system. While the actor is honest:
+**G, Given.** `Given that <text>. If this is false, <text>.[ Actor: <Actor>[, on <event>][, prompt][, only when <condition>].]` The clauses come in that order. The actor is declared in `actors/actors.md`. A Given that names a part, in a part's prose or a composition's, is the tripwire `Given names a part`, since a rely on a part is a Guarantee or a wiring. `on <event>` names one event the actor sends, `part.event` in a composition. `prompt` and `only when` each require `on`. `only when` is a condition over the part's data and the event's fields, `part.data` in a composition. While the actor is honest:
 
 - A Given without `only when` is fairness on its moves, scoped to the event when `on` is present.
 - `prompt` also keeps the chain from ticking while a move of that event is enabled.
@@ -82,16 +82,16 @@ For the implemented Within counter, the initial value is 0. A transition resets 
 
 A malicious actor drops all of it, and an offline one sends nothing. A Given that names an event its actor does not send, or that no Event passage declares, is `misnamed`. Harbor's Timelock has a prompt Given, and its Oracle an `only when` Given:
 
-Example `given-fragments`. Two independent excerpts; each must match its cited Harbor passage and compile in its own component.
+Example `given-fragments`. Two independent excerpts; each must match its cited Harbor passage and compile in its own part.
 
 ```
 [G1] Given that someone executes the plan as soon as its delay is out. If this is false, N1 and O1 are void. Actor: the public, on execute, prompt.
 [G3] Given that lane A moves the price by at most one step per post. If this is false, A2 is void. Actor: lane A, on post-a, only when {value + 1 >= price and value <= price + 1}.
 ```
 
-**W, Walks.** `Walk <Name>: from <State>[ with <name> <value>], <event>[ <field> <value>], <event> refused, ...; ends <State>[ with <name> <value>, <name> <value>][; <effect> sent <n> times][; <effect> sent once][; <effect> not sent][; sends <effect>, <effect>].` The clauses after `ends <State>` are separated by semicolons. `sent <n> times` and `sent once` say how often the walk sends an effect, `not sent` says it never does, and `sends <effect>, <effect>` counts one send of each effect it names. A component's walk names no scenario. A system's walk names members' states and events as `component.State` and `component.event`, and the scenario it runs under, as `Walk <Name>[ under <scenario>]: from <component>.<State>, <component>.<event>, ...; ends <component>.<State>.` Nothing may follow its end state. [compose.md](composition.md) says how it is tried.
+**W, Walks.** `Walk <Name>: from <State>[ with <name> <value>], <event>[ <field> <value>], <event> refused, ...; ends <State>[ with <name> <value>, <name> <value>][; <effect> sent <n> times][; <effect> sent once][; <effect> not sent][; sends <effect>, <effect>].` The clauses after `ends <State>` are separated by semicolons. `sent <n> times` and `sent once` say how often the walk sends an effect, `not sent` says it never does, and `sends <effect>, <effect>` counts one send of each effect it names. A part's walk names no scenario. A composition's walk names members' states and events as `part.State` and `part.event`, and the scenario it runs under, as `Walk <Name>[ under <scenario>]: from <part>.<State>, <part>.<event>, ...; ends <part>.<State>.` Nothing may follow its end state. [Composition](composition.md) says how it is tried.
 
-**X, Seams.** `Seam with <component>: <text>.` The other dossier holds the same text after the colon under its own `Seam with`, or the seam is owed.
+**X, Seams.** `Seam with <part>: <text>.` The other dossier holds the same text after the colon under its own `Seam with`, or the seam is owed.
 
 **K, Guarantees.** `<claim>. Backing: certora <spec path>#<rule> at <commit>.` | `Backing: record <module#type:id>.` | `Backing: file <path>#<rule>.` | `Backing: external <runner>.` | `Backing: none.` The spec path is relative to a commit cache the module records in `codebases.md`. The commit is the full hash or its first and last four hex characters, and an abbreviation must select a single cache. A record is a typed reference into the knowledge base, such as a recorded invariant. A file path is relative to the knowledge root, and the rule is a line or a heading in it.
 
@@ -104,13 +104,13 @@ A condition is atoms joined by `and`: `<name> is <value>`, `is not`, `is below`,
 ## Writing rules
 
 - One claim per passage. If `and` joins two claims that could be checked apart, split them.
-- One spelling across prose, chart, model and composition. The compiler reports a name no passage declares.
+- One spelling across prose, chart, model and wiring. The compiler reports a name no passage declares.
 - No `should`, `usually`, `typically`. Say what is, under what condition.
 - Bounds are numbers. No clock time. Blocks are ticks from the chain, and durations are counts of them.
 - Every event names its sender. Actors send what they like, whenever they like, unless a Given says otherwise. The scenarios decide which Givens hold.
 - A Given names the event it is about with `on` whenever its fairness or promptness belongs to one event.
 - A bound on what an actor sends, such as a price step, is an `only when` Given, cited by the Always that needs it.
-- When a model or a composition needs something the prose lacks, the prose gets a passage first.
+- When a model or the wiring needs something the prose lacks, the prose gets a passage first.
 
 ## Doubts
 

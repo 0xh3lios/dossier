@@ -23,8 +23,8 @@ export async function main(command: string, args: string[]): Promise<number> {
   const [name, given, ...extra] = positional;
   if (!name || !given || extra.length) { console.error(usage); return 2; }
   const where = locate(root, name);
-  if (!where) { console.error(`dossier show: no component or system named ${name} under ${root}`); return 2; }
-  const ref = `${where.kind === 'component' ? 'components' : 'systems'}/${where.id}`;
+  if (!where) { console.error(`dossier show: no part or composition named ${name} under ${root}`); return 2; }
+  const ref = `${where.kind === 'part' ? 'parts' : 'compositions'}/${where.id}`;
   const entry = given.replace(/^evidence\//, '').replace(/\.(json|md)$/, '');
   const path = join(where.dir, EVIDENCE, `${entry}.json`);
   if (!ENTRY_NAME.test(entry) || !existsSync(path)) {

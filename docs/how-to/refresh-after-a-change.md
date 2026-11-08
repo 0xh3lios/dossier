@@ -6,16 +6,16 @@ Bring the dossiers back up to date when something they depend on moves: a passag
 
 1. **Say what happened.** "The parameter change went through" or "there is a new checkpoint" is enough. `dossier verify` already lists what lapsed.
 
-2. **Read what moved.** Each lapsed cell names its moved parts, such as `passage A1`, `passage G1`, `member vault`, `member vault backing`, `generated module` or `record vault#observation:checkpoint-2026-11-01`. A component's next step names them for its lapsed passages, such as `lapsed: A1 M1 (executed model/Timelock.tla)`. To see how far a change reaches, run:
+2. **Read what moved.** Each lapsed cell names what moved, such as `passage A1`, `passage G1`, `member vault`, `member vault backing`, `generated module` or `record vault#observation:checkpoint-2026-11-01`. A part's next step names them for its lapsed passages, such as `lapsed: A1 M1 (executed model/Timelock.tla)`. To see how far a change reaches, run:
 
    ```bash
    dossier where vault
    dossier where vault#observation:checkpoint-2026-11-01
    ```
 
-3. **Decide what the change means.** A parameter change may change a range in a component's boundary. Re-pin the members to the new checkpoint, and revise the prose where ranges or moves changed. A Certora spec on a new commit changes only the guarantee's backing sentence, which then names the new commit. Verify looks for the rule at that commit, and the marks that rest on the guarantee lapse until rerun.
+3. **Decide what the change means.** A parameter change may change a range in a part's boundary. Re-pin the members to the new checkpoint, and revise the prose where ranges or moves changed. A Certora spec on a new commit changes only the guarantee's backing sentence, which then names the new commit. Verify looks for the rule at that commit, and the marks that rest on the guarantee lapse until rerun.
 
-4. **Rerun in order.** Components first, systems after, because a system's module is composed from its members' prose. The agent writes new calls and never reuses a consumed one.
+4. **Rerun in order.** Parts first, compositions after, because a composition's module is composed from its members' prose. The agent writes new calls and never reuses a consumed one.
 
 ## Check
 

@@ -5,18 +5,18 @@ import { join } from 'node:path';
 export function prepareWorkflow(exercise: string, plugin: string, workspace: string) {
   if (exercise === 'compose-probe') {
     const root = join(workspace, 'dossiers');
-    for (const name of ['actors', 'components/source', 'components/sink', 'systems']) mkdirSync(join(root, name), { recursive: true });
+    for (const name of ['actors', 'parts/source', 'parts/sink', 'compositions']) mkdirSync(join(root, name), { recursive: true });
     writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }, null, 2) + '\n');
     writeFileSync(join(root, 'actors/actors.md'), '# Actors\n\n```yaml\nactors:\n  - id: operator\n    kind: user\n```\n');
     writeFileSync(join(root, 'actors/scenarios.md'), '# Scenarios\n\n```yaml\nscenarios:\n  - id: all-honest\n    modes: {}\n```\n');
     for (const id of ['source', 'sink']) {
-      cpSync(join(plugin, `qualification/conformance/fixtures/transfer-${id}.md`), join(root, `components/${id}/prose.md`));
+      cpSync(join(plugin, `qualification/conformance/fixtures/transfer-${id}.md`), join(root, `parts/${id}/prose.md`));
       // A new exercise root with no published answers or decisions: each dossier
       // starts with an empty integrity.json, as dossier decide begin would leave it.
-      writeFileSync(join(root, `components/${id}/integrity.json`), JSON.stringify({ schema: 1, evidence: {}, decisionHead: null }, null, 2) + '\n');
+      writeFileSync(join(root, `parts/${id}/integrity.json`), JSON.stringify({ schema: 1, evidence: {}, decisionHead: null }, null, 2) + '\n');
     }
   } else if (exercise === 'refresh-decision') {
-    const dir = join(workspace, 'dossiers/systems/control');
+    const dir = join(workspace, 'dossiers/compositions/control');
     const prose = readFileSync(join(dir, 'prose.md'), 'utf8');
     if (!prose.includes('[N1] Within 3 ticks')) throw new Error('the refresh exercise starts from Harbor\'s three-tick N1');
     writeFileSync(join(dir, 'prose.md'), prose.replace('[N1] Within 3 ticks', '[N1] Within 2 ticks'));

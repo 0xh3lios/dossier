@@ -1,4 +1,4 @@
-// A component's chart as the explorer shows it: the chart's checks as draw runs them, the explored
+// A part's chart as the explorer shows it: the chart's checks as draw runs them, the explored
 // snapshots and the steps between them, the passages that decide each step, every walk and each
 // doubt's two walks replayed, and what each event case does at a chosen snapshot. Everything comes
 // from the chart's own code: the machine, the exploration, moveApplies, refusalApplies and
@@ -15,7 +15,7 @@ import type { Ir, IrWalk } from '../prose/ir.ts';
 import type { ChartCheck, ChartGap } from '../chart/checks.ts';
 import type { ChartContext, ChartEvent, Machine, Snapshot, XState } from '../chart/machine.ts';
 import type { Explored } from '../chart/explore.ts';
-import type { ComponentAnalysis } from '../verify/analyze.ts';
+import type { PartAnalysis } from '../verify/analyze.ts';
 
 // The limit on explored states, as draw and the chart trial take it by default.
 export const LIMIT = 20000;
@@ -95,7 +95,7 @@ export function compileWalkText(proseText: string, name: string, text: string): 
   } catch (e) { return { error: (e as Error).message }; }
 }
 
-export async function chartRun(root: string, a: ComponentAnalysis, limit = LIMIT): Promise<Run> {
+export async function chartRun(root: string, a: PartAnalysis, limit = LIMIT): Promise<Run> {
   const ir = a.ir;
   const empty = (error: string, extra: Partial<RunView> = {}): Run => ({ view: { checks: [], gaps: [], explored: 0, limit, limitHit: false, error, initial: 0, snapshots: [], edges: [], walks: [], doubts: [], ...extra }, ir, explored: null, keys: [], index: new Map() });
   if (!ir.ok) return empty(`the prose does not compile: ${ir.errors[0] || 'dossier draw names why'}`, { outcome: 'fail' });

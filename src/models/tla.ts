@@ -1,4 +1,4 @@
-// TLA+ for a component: the scaffold generated from the IR, and the reader of
+// TLA+ for a part: the scaffold generated from the IR, and the reader of
 // the module as it stands after hand refinement.
 import { normalize, short } from '../hash.ts';
 import { toTla } from '../prose/expr.ts';
@@ -57,12 +57,12 @@ export function walkPlan<S extends { refused: boolean }>(steps: S[]): WalkPlan<S
   for (const s of steps) { if (s.refused) pending.push(s); else { taken.push({ step: s, refusedBefore: pending }); pending = []; } }
   return { taken, refusedAfter: pending };
 }
-// Whether an event is the chain's tick. A sender resolves to a component by its id first, as a
-// system resolves it, and a component's send is never the tick; then to an actor in actors.md,
+// Whether an event is the chain's tick. A sender resolves to a part by its id first, as a
+// composition resolves it, and a part's send is never the tick; then to an actor in actors.md,
 // and the event is the tick when that actor is of kind chain. Only a sender neither resolves to
 // is read by the event's name, tick.
-export function isChainTick(ev: Pick<IrEvent, 'name' | 'sender'>, { actors, components = [] }: { actors?: Pick<ActorsModel, 'actors' | 'byId'> | null; components?: string[] } = {}): boolean {
-  if (components.includes(actorId(ev.sender))) return false;
+export function isChainTick(ev: Pick<IrEvent, 'name' | 'sender'>, { actors, parts = [] }: { actors?: Pick<ActorsModel, 'actors' | 'byId'> | null; parts?: string[] } = {}): boolean {
+  if (parts.includes(actorId(ev.sender))) return false;
   const a = actors ? findActor(actors, ev.sender) : null;
   return a ? a.kind === 'chain' : ev.name === 'tick';
 }
@@ -99,9 +99,9 @@ export function domainTla(d: Domain): string {
   return `${d.min}..${d.max}`;
 }
 
-// actors and components: what the root declares, so that its senders resolve as a system
+// actors and parts: what the root declares, so that its senders resolve as a composition
 // resolves them; without them an event is the chain's tick when it is named tick.
-export function scaffoldTla(ir: Ir, { moduleName, actors, components }: { moduleName?: string; actors?: Pick<ActorsModel, 'actors' | 'byId'> | null; components?: string[] } = {}): string {
+export function scaffoldTla(ir: Ir, { moduleName, actors, parts }: { moduleName?: string; actors?: Pick<ActorsModel, 'actors' | 'byId'> | null; parts?: string[] } = {}): string {
   const name = moduleName || cap(ir.name!);
   const data = ir.context.map(d => d.name);
   const sentVars = ir.effects.map(e => sentOf(e.name));
@@ -118,7 +118,7 @@ export function scaffoldTla(ir: Ir, { moduleName, actors, components }: { module
   const line = (s = '') => L.push(s);
   const stateLeaves = ir.states.filter(s => !s.children).map(s => s.key);
   const eventOf = (t: IrTransition) => ir.events.find(e => e.name === t.event)!;
-  const tickEvents = new Set(ir.events.filter(e => isChainTick(e, { actors, components })).map(e => e.name));
+  const tickEvents = new Set(ir.events.filter(e => isChainTick(e, { actors, parts })).map(e => e.name));
   const isTickEvent = (ev: string | null) => tickEvents.has(ev);
 
   line(`${'-'.repeat(28)} MODULE ${name} ${'-'.repeat(28)}`);
@@ -329,7 +329,7 @@ export function targetsOf(text: unknown): string[] {
   return [...out];
 }
 
-// events: the component's event names, when the caller has its prose. An action's event is the
+// events: the part's event names, when the caller has its prose. An action's event is the
 // one whose name ends the action's name as the scaffold writes it (post-a ends M4_PostA); without
 // the names, it is the event the scaffold's comment on the action names, "\* M4 on post-a", and
 // failing both, the end of the action's name with its first letter lowered.

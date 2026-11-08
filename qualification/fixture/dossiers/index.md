@@ -1,8 +1,8 @@
-# Dossiers   rebuilt 2026-11-07T23:24:48Z   dossier 0.1.0
-Written by dossier render: components by systems, and every system at a glance.
-verify: ok · 6 components, 3 systems · dossier 0.1.0 · 0 tripwires
+# Dossiers   rebuilt 2026-11-08T23:40:32Z   dossier 0.1.1
+Written by dossier render: parts by compositions, and every composition at a glance.
+verify: ok · 6 parts, 3 compositions · dossier 0.1.1 · 0 tripwires
 
-| component | module | tier | control | supply | upkeep |
+| part | module | tier | control | supply | upkeep |
 | --- | --- | --- | --- | --- | --- |
 | adapter | adapter | modeled | member | member |  |
 | breaker | breaker | modeled | member |  |  |
@@ -21,13 +21,13 @@ verify: ok · 6 components, 3 systems · dossier 0.1.0 · 0 tripwires
 - Supply: 3 properties × 2 scenarios · 6 cells · proved 3 · checked 3 · prose@720a6e
 - Upkeep: 2 properties × 7 scenarios · 8 cells · checked 5 · violated 3 (accepted 3) · prose@7c3f26
 
-Next: Encode on components/oracle — Oracle: not tried on the model side: M2 M3; Timelock: not tried on the model side: M3; Token: not tried on the model side: W1
+Next: Encode on parts/oracle — Oracle: not tried on the model side: M2 M3; Timelock: not tried on the model side: M3; Token: not tried on the model side: W1
 
 ```json
 {
-  "rebuilt": "2026-11-07T23:24:48Z",
-  "plugin": "0.1.0",
-  "components": [
+  "rebuilt": "2026-11-08T23:40:32Z",
+  "plugin": "0.1.1",
+  "parts": [
     {
       "id": "adapter",
       "module": "adapter",
@@ -253,7 +253,7 @@ Next: Encode on components/oracle — Oracle: not tried on the model side: M2 M3
       ]
     }
   ],
-  "systems": [
+  "compositions": [
     {
       "id": "control",
       "members": [
@@ -358,7 +358,7 @@ Next: Encode on components/oracle — Oracle: not tried on the model side: M2 M3
       "Token: not tried on the model side: W1"
     ],
     "read": "spec/models.md",
-    "target": "components/oracle"
+    "target": "parts/oracle"
   }
 }
 ```

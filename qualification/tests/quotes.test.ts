@@ -16,7 +16,7 @@ const pages = (dir: string): string[] => readdirSync(dir).flatMap(name => {
   return statSync(path).isDirectory() ? pages(path) : name.endsWith('.md') ? [path] : [];
 });
 const quoting = [join(plugin, 'README.md'), join(plugin, 'qualification', 'README.md'), ...['docs', 'skills'].flatMap(dir => pages(join(plugin, dir)))];
-const dossiers = ['components', 'systems'].flatMap(kind => readdirSync(join(harbor, kind)).map(id => join(harbor, kind, id)));
+const dossiers = ['parts', 'compositions'].flatMap(kind => readdirSync(join(harbor, kind)).map(id => join(harbor, kind, id)));
 const TRIAL = /\b\d{4}-\d{2}-\d{2}-\d{4}-(?:chart|blunder|tlc|apalache|alloy|external)-[0-9a-f]{6}\b/g;
 const DECISION = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z (?:begin|accept|reject|answer|risk|forget|retire)\b.* [0-9a-f]{8}$/gm;
 

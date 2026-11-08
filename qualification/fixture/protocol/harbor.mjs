@@ -14,11 +14,11 @@ export class Harbor {
   }
   send(name) { this.sent[name] = (this.sent[name] || 0) + 1; }
   // Every call either applies or reverts; a revert leaves state untouched.
-  call(component, method, args = {}) {
+  call(contract, method, args = {}) {
     const a = Number(args.amount ?? 0);
     const v = this.vault, j = this.adapter, t = this.token, p = this.timelock, m = this.breaker, o = this.oracle;
     const revert = (why) => { const e = new Error(why); e.reverted = true; throw e; };
-    switch (`${component}.${method}`) {
+    switch (`${contract}.${method}`) {
       case 'vault.borrow': if (v.debt + a > v.ceiling) revert('ceiling'); v.debt += a; v.free += a; return;
       case 'vault.repay': if (a > v.free || a > v.debt) revert('insufficient'); v.debt -= a; v.free -= a; return;
       case 'vault.move': if (a > v.free) revert('insufficient free'); v.free -= a; v.issued += a; return;
@@ -37,12 +37,12 @@ export class Harbor {
       case 'breaker.stop': if (m.halted) revert('spent'); m.halted = true; this.send('halt'); this.call('adapter', 'halt'); return;
       case 'oracle.tick': if (o.stale < 3) o.stale += 1; return;
       case 'oracle.post-a': case 'oracle.post-b': if (o.stale === 0) revert('fresh'); o.stale = 0; return;
-      default: revert(`unknown call ${component}.${method}`);
+      default: revert(`unknown call ${contract}.${method}`);
     }
   }
   // The abstract state the dossiers speak of.
-  snapshot(component) {
-    switch (component) {
+  snapshot(contract) {
+    switch (contract) {
       case 'vault': return { state: 'Open', ...this.vault };
       case 'adapter': return { state: this.adapter.halted ? 'Halted' : 'Open', held: this.adapter.held, live: this.adapter.live };
       case 'token': return { state: 'Live', supply: this.token.supply };

@@ -4,9 +4,9 @@ Harbor is an invented stablecoin system, small enough to read in a sitting. It s
 
 `node qualification/rebuild-fixture.mjs --out <isolated dir> [--install]`, which you run from the plugin's folder with the solvers installed, regenerates it. The rebuild seeds a new root in the isolated folder, which must be new or empty, from the fixture's authored inputs. It runs every trial with the real solvers, renders the views, verifies, and writes `observed-marks.json` in the output. With `--install`, the output's dossiers replace `qualification/fixture/dossiers`, but only when verify passes on the rebuild and the observed marks equal `qualification/fixture/expected-marks.json`. That file is the reviewed golden, which a rebuild never writes, and the tests compare the fixture against it. Nothing else writes to the fixture. Trial ids, timestamps and decision hashes change with every rebuild.
 
-## Components
+## Parts
 
-| Component | Stands for | Shows |
+| Part | Stands for | Shows |
 | --- | --- | --- |
 | `vault` | the core ledger | conservation proved by induction; a debt ceiling whose first proof is miscalled and then strengthened with a lemma; Certora-backed guarantees; a rejected guarantee; walks replayed on the stand-in |
 | `adapter` | the adapter between credit and the token | effects that carry amounts; a halt from the Breaker; a guarantee backed by a record |
@@ -15,16 +15,16 @@ Harbor is an invented stablecoin system, small enough to read in a sitting. It s
 | `breaker` | a circuit breaker that skips the delay | a final state; a structural Always checked in Alloy, with a blunder |
 | `oracle` | a price feed posted by keeper lanes | two prompt lanes; a bounded response; a price that an honest lane moves one step per post, with an Always that rests on the two `only when` Givens and a blunder that drops them; an open doubt |
 
-## Systems
+## Compositions
 
-| System | Members | Shows |
+| Composition | Members | Shows |
 | --- | --- | --- |
-| `supply` | vault, adapter, token | effects wired to events; closure over the asset; three conservation invariants proved under all-honest with lemmas in `extras.tla`, and checked with a malicious user; three system blunders; a walk checked by a witness under all-honest |
+| `supply` | vault, adapter, token | effects wired to events; closure over the asset; three conservation invariants proved under all-honest with lemmas in `extras.tla`, and checked with a malicious user; three composition blunders; a walk checked by a witness under all-honest |
 | `control` | timelock, vault, breaker, adapter | malicious Governance that cannot execute early; a halt that lands at once; liveness under fairness; the Adapter's supply sends declared free; a cell violated by design with the executor offline, accepted as a risk; a walk checked by a witness under `governance-captured`; an inductive call that was wrong, classified, and let go by the owner's `forget` once a proof with the lemma decided the cell |
 | `upkeep` | oracle | redundant keeper lanes: holds with one lane offline, violated with both, and accepted as a risk; windows that take both lanes down for the first block, where it holds, and for the first two, where it is violated and accepted as a risk; a start with the Oracle already three blocks stale, where it holds; a band on the price that holds with honest lanes and is violated with lane A malicious, accepted as a risk |
 
 ## Reading it
 
-Open `qualification/fixture/dossiers/index.md`, which Harbor keeps in git so you can read it without running anything, then a system's `ledger.md` for its matrix and a component's for its table. Follow a cell's trial id to its entry, a file under the dossier's `evidence/`. The entry holds the call's prediction and the answer, and the agent's reading sits beside it. `dossier show <dossier> <entry> --root qualification/fixture/dossiers`, which you or the agent can run from the plugin's folder, prints an entry with its trace as a table.
+Open `qualification/fixture/dossiers/index.md`, which Harbor keeps in git so you can read it without running anything, then a composition's `ledger.md` for its matrix and a part's for its table. Follow a cell's trial id to its entry, a file under the dossier's `evidence/`. The entry holds the call's prediction and the answer, and the agent's reading sits beside it. `dossier show <dossier> <entry> --root qualification/fixture/dossiers`, which you or the agent can run from the plugin's folder, prints an entry with its trace as a table.
 
 Where the solvers are installed, you or the agent can recheck Harbor with `dossier recheck --root qualification/fixture/dossiers` from the plugin's folder, as [Commands](commands.md#the-command) describes.

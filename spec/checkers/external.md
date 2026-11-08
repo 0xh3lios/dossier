@@ -12,7 +12,7 @@ Example `external-config`. Fragment of dossier.json; wrap in an object before JS
 }
 ```
 
-The command runs with `cwd` relative to the dossiers root. It receives one JSON object on stdin: `dossier` (the kind, the id, and the dossier's folder as `dir`), `call` (kind, executes, expect, reach), `ir` (the component's compiled prose, with every walk's steps and expected end), `root`, and `files` (each executed path mapped to its absolute path). Its environment also holds `DOSSIER_ROOT`, the dossiers root. It prints one JSON object on its last line: `outcomes` as `{ "W1": "pass" | "fail" }`, `covers` listing the ids its evidence covers, `evidence` of any shape, and optionally `reach`.
+The command runs with `cwd` relative to the dossiers root. It receives one JSON object on stdin: `dossier` (the kind, the id, and the dossier's folder as `dir`), `call` (kind, executes, expect, reach), `ir` (the part's compiled prose, with every walk's steps and expected end), `root`, and `files` (each executed path mapped to its absolute path). Its environment also holds `DOSSIER_ROOT`, the dossiers root. It prints one JSON object on its last line: `outcomes` as `{ "W1": "pass" | "fail" }`, `covers` listing the ids its evidence covers, `evidence` of any shape, and optionally `reach`.
 
 ## The call
 

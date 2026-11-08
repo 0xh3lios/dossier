@@ -11,7 +11,7 @@ import type { InitialInputs } from '../../src/dossiers/initialize.ts';
 import { rewriteSetupMarker } from '../../src/commands/setup.ts';
 import { readIntegrity, STORAGE } from '../../src/dossiers/integrity.ts';
 import { parseDecisions } from '../../src/dossiers/decisions.ts';
-import { listComponents, listSystems } from '../../src/dossiers/root.ts';
+import { listParts, listCompositions } from '../../src/dossiers/root.ts';
 import { acquirePublicationLock, durableWrite, inspectPublicationLock, recoverPublicationLock, withPublicationLock } from '../../src/dossiers/publication.ts';
 import { fingerprint } from '../conformance/files.ts';
 
@@ -40,10 +40,10 @@ function complete(dir: string, inputs: InitialInputs, decision: boolean): void {
 }
 
 test('every initialization write boundary leaves either no visible dossier or complete authority; retry cannot duplicate it', t => {
-  const cases: { kind: 'components' | 'systems'; inputs: InitialInputs; decision: boolean }[] = [
-    { kind: 'components', inputs: { 'prose.md': '# Gate\n\nTier: modeled\n' }, decision: true },
-    { kind: 'systems', inputs: { 'prose.md': '# Control\n', 'composition.md': '# Composition\n' }, decision: true },
-    { kind: 'components', inputs: { 'prose.md': '# Imported\n', 'margin.md': 'Observed records, awaiting interpretation.\n' }, decision: false },
+  const cases: { kind: 'parts' | 'compositions'; inputs: InitialInputs; decision: boolean }[] = [
+    { kind: 'parts', inputs: { 'prose.md': '# Gate\n\nTier: modeled\n' }, decision: true },
+    { kind: 'compositions', inputs: { 'prose.md': '# Control\n', 'wiring.md': '# Wiring\n' }, decision: true },
+    { kind: 'parts', inputs: { 'prose.md': '# Imported\n', 'margin.md': 'Observed records, awaiting interpretation.\n' }, decision: false },
   ];
   for (const scenario of cases) {
     const baseline = rootFor(t), boundaries: string[] = [];
@@ -55,8 +55,8 @@ test('every initialization write boundary leaves either no visible dossier or co
         boundary: () => { if (seen++ === stop) throw new Error(`interrupted at ${name}`); },
       })), /interrupted/);
       if (!existsSync(dir)) {
-        assert.deepEqual(listComponents(root), []);
-        assert.deepEqual(listSystems(root), []);
+        assert.deepEqual(listParts(root), []);
+        assert.deepEqual(listCompositions(root), []);
         assert.ok(readdirSync(join(root, scenario.kind)).every(entry => entry.startsWith('.initializing-')));
         withPublicationLock(root, () => initializeDossierLocked(root, scenario.kind, 'sample', scenario.inputs, scenario.decision ? begin : undefined));
       } else {
@@ -71,12 +71,12 @@ test('every initialization write boundary leaves either no visible dossier or co
 
 test('a killed initializer leaves a recoverable root lock and a retry begins exactly once', t => {
   for (const stop of ['initialization:staged', 'initialization:sealed', 'initialization:renamed']) {
-    const root = rootFor(t), dir = join(root, 'components/gate');
+    const root = rootFor(t), dir = join(root, 'parts/gate');
     const inputs = { 'prose.md': '# Gate\n\nTier: modeled\n' };
     const script = `
       import { initializeDossierLocked } from ${JSON.stringify(new URL('../../src/dossiers/initialize.ts', import.meta.url).href)};
       import { withPublicationLock } from ${JSON.stringify(new URL('../../src/dossiers/publication.ts', import.meta.url).href)};
-      withPublicationLock(${JSON.stringify(root)}, () => initializeDossierLocked(${JSON.stringify(root)}, 'components', 'gate', ${JSON.stringify(inputs)}, ${JSON.stringify(begin)}, { boundary(name) { if (name === ${JSON.stringify(stop)}) process.kill(process.pid, 'SIGKILL'); } }));
+      withPublicationLock(${JSON.stringify(root)}, () => initializeDossierLocked(${JSON.stringify(root)}, 'parts', 'gate', ${JSON.stringify(inputs)}, ${JSON.stringify(begin)}, { boundary(name) { if (name === ${JSON.stringify(stop)}) process.kill(process.pid, 'SIGKILL'); } }));
     `;
     const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8' });
     assert.equal(child.signal, 'SIGKILL', child.stderr);
@@ -95,16 +95,16 @@ test('a killed initializer leaves a recoverable root lock and a retry begins exa
   }
 });
 
-test('begin and import publish complete component and system records without replacing existing inputs', t => {
+test('begin and import publish complete part and composition records without replacing existing inputs', t => {
   const root = rootFor(t, { storage: STORAGE, plugin: '0.1.0', knowledge: { root: join(plugin, 'qualification/fixture/knowledge') } });
-  for (const args of [['decide', 'gate', 'begin', 'charted'], ['decide', 'systems/control', 'begin'], ['import', 'vault']]) {
+  for (const args of [['decide', 'gate', 'begin', 'charted'], ['decide', 'compositions/control', 'begin'], ['import', 'vault']]) {
     const result = command(root, ...args);
     assert.equal(result.status, 0, result.stderr);
   }
-  assert.deepEqual(listComponents(root), ['gate', 'vault']);
-  assert.deepEqual(listSystems(root), ['control']);
-  for (const name of ['components/gate', 'systems/control', 'components/vault']) assert.deepEqual(readIntegrity(join(root, name)).problems, []);
-  const imported = join(root, 'components/vault');
+  assert.deepEqual(listParts(root), ['gate', 'vault']);
+  assert.deepEqual(listCompositions(root), ['control']);
+  for (const name of ['parts/gate', 'compositions/control', 'parts/vault']) assert.deepEqual(readIntegrity(join(root, name)).problems, []);
+  const imported = join(root, 'parts/vault');
   const before = fingerprint(imported);
   assert.ok(existsSync(join(imported, 'margin.md')));
   assert.equal(readIntegrity(imported).manifest?.decisionHead, null, 'import authors a draft, not an owner decision');
@@ -116,7 +116,7 @@ test('begin and import publish complete component and system records without rep
 });
 
 test('begin adopts hand-drafted inputs, but refuses records without integrity.json and an aliased destination, rewriting neither', t => {
-  const root = rootFor(t), dir = join(root, 'components/gate');
+  const root = rootFor(t), dir = join(root, 'parts/gate');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'prose.md'), 'Keep these authored words.');
   const begun = command(root, 'decide', 'gate', 'begin', '--', 'Begin the drafted gate.');
@@ -130,7 +130,7 @@ test('begin adopts hand-drafted inputs, but refuses records without integrity.js
     ['vault', 'decisions.log', /holds decisions\.log but no integrity\.json; restore integrity\.json from version control/],
     ['token', 'evidence/tlc-A1-3fa2c1.json', /holds evidence\/ but no integrity\.json; restore integrity\.json from version control/],
   ] as const) {
-    const damaged = join(root, 'components', id);
+    const damaged = join(root, 'parts', id);
     mkdirSync(join(damaged, 'evidence'), { recursive: true });
     writeFileSync(join(damaged, 'prose.md'), 'Keep these authored words too.');
     writeFileSync(join(damaged, lost), 'a record whose binding was lost\n');
@@ -141,7 +141,7 @@ test('begin adopts hand-drafted inputs, but refuses records without integrity.js
     assert.deepEqual(recordsFingerprint(damaged), before);
   }
   // A trial's local bundle is no record (STORE-BUNDLE), so a folder holding only bundles and authored inputs is adopted.
-  const local = join(root, 'components/oracle');
+  const local = join(root, 'parts/oracle');
   for (const folder of ['trials/2026-11-07-1000-chart-aaaaaa', '.running/2026-11-07-1001-chart-bbbbbb']) {
     mkdirSync(join(local, folder), { recursive: true });
     writeFileSync(join(local, folder, 'result.json'), '{"result": "as-called"}\n');
@@ -152,9 +152,9 @@ test('begin adopts hand-drafted inputs, but refuses records without integrity.js
   assert.deepEqual(readIntegrity(local).manifest?.evidence, {}, 'the bundles are not bound');
   assert.equal(parseDecisions(readIntegrity(local).decisions).decisions.length, 1);
   const outside = rootFor(t), aliasRoot = rootFor(t);
-  symlinkSync(outside, join(aliasRoot, 'components'));
+  symlinkSync(outside, join(aliasRoot, 'parts'));
   const outsideBefore = fingerprint(outside);
-  assert.throws(() => withPublicationLock(aliasRoot, () => initializeDossierLocked(aliasRoot, 'components', 'gate', { 'prose.md': '# Gate\n' })), /symbolic link/);
+  assert.throws(() => withPublicationLock(aliasRoot, () => initializeDossierLocked(aliasRoot, 'parts', 'gate', { 'prose.md': '# Gate\n' })), /symbolic link/);
   assert.deepEqual(fingerprint(outside), outsideBefore);
 });
 
@@ -180,7 +180,7 @@ test('setup serializes its marker read under the root lock and keeps every field
   const unnamed = rootFor(t, { plugin: 'old' });
   assert.equal(rewriteSetupMarker(unnamed, 'new', today).marker.storage, STORAGE, 'with no dossier under it there is nothing to protect, and setup names the format');
   const holding = rootFor(t, { plugin: 'old' });
-  mkdirSync(join(holding, 'components', 'gate'), { recursive: true });
+  mkdirSync(join(holding, 'parts', 'gate'), { recursive: true });
   const before = readFileSync(join(holding, 'dossier.json'), 'utf8');
   assert.throws(() => rewriteSetupMarker(holding, 'new', today), /names no storage while dossiers exist under it/);
   assert.equal(readFileSync(join(holding, 'dossier.json'), 'utf8'), before, 'setup does not claim records in a format it does not read');
@@ -212,7 +212,7 @@ test('setup refuses malformed, unsupported and absent storage identities without
   }
   const root = rootFor(t);
   rmSync(join(root, 'dossier.json'));
-  mkdirSync(join(root, 'components'));
+  mkdirSync(join(root, 'parts'));
   assert.throws(() => rewriteSetupMarker(root, 'new', today), /restore dossier.json from version control/);
   assert.equal(existsSync(join(root, 'dossier.json')), false);
 });

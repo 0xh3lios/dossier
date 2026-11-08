@@ -2,7 +2,7 @@
   "passages": { "A1": "12345678" },
   "records": {},
   "backing": {},
-  "composition": "composition-before",
+  "wiring": "wiring-before",
   "scenario": "scenario-before",
   "actors": "actors-before",
   "extras": null,

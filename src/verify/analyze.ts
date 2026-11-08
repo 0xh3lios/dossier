@@ -1,4 +1,4 @@
-// One component or one system, read whole: records, decisions, doubts, chart, models, and the
+// One part or one composition, read whole: records, decisions, doubts, chart, models, and the
 // answers in evidence/; then covers, marks or cells, tripwires, the summary and the next loop.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,17 +14,17 @@ import { parseAls } from '../models/alloy.ts';
 import { coversOf } from './covers.ts';
 import { marksOf } from './marks.ts';
 import { actorsHash, backingOf, cellsOf, moduleHash, scenarioHash, walksOf } from './cells.ts';
-import { componentTripwires, systemTripwires } from './tripwires.ts';
-import { routeComponent, routeSystem } from './route.ts';
+import { partTripwires, compositionTripwires } from './tripwires.ts';
+import { routePart, routeComposition } from './route.ts';
 import { conclusionsOf, groundOf, supersededAmong } from './superseded.ts';
-import { loadComponent, loadSystem, systemModuleText } from '../dossiers/load.ts';
-import { readComposition } from '../dossiers/composition.ts';
+import { loadPart, loadComposition, compositionModuleText } from '../dossiers/load.ts';
+import { readWiring } from '../dossiers/wiring.ts';
 import { actorId, findActor } from '../dossiers/actors.ts';
-import { listComponents } from '../dossiers/root.ts';
+import { listParts } from '../dossiers/root.ts';
 import type { Actor, ActorsModel } from '../dossiers/actors.ts';
 import type { AcceptedRisk, ChainBreak, DecisionLine, ForgottenAnswer, LatestDecision, OwnerState } from '../dossiers/decisions.ts';
 import type { Doubt } from '../dossiers/doubts.ts';
-import type { ComponentLoad, LoadedKnowledge, SystemLoad } from '../dossiers/load.ts';
+import type { PartLoad, LoadedKnowledge, CompositionLoad } from '../dossiers/load.ts';
 import type { Marker } from '../dossiers/root.ts';
 import type { Cfg, TlaModule } from '../models/tla.ts';
 import type { Als } from '../models/alloy.ts';
@@ -60,7 +60,7 @@ export interface AnswerRow {
   // The answers that decide stand in for the entry (ANSWER-SUPERSEDED).
   superseded?: true;
 }
-// A component's seams, read by the components that state the other side.
+// A part's seams, read by the parts that state the other side.
 export interface SeamSet { id: string; title: string; seams: SeamForm[] }
 // A review under reviews/, by file name, with the prose hash its first line names, `prose@<hash>`, as
 // the review skill writes it from the verify summary line (spec/review.md, REVIEW-OWED). A hash quoted
@@ -122,12 +122,12 @@ interface Analyzed {
   summary: Record<string, number>;
   route: Route;
 }
-export interface ComponentAnalysis extends ComponentLoad, Analyzed {
+export interface PartAnalysis extends PartLoad, Analyzed {
   actors: ActorsModel | null;
   actorOf: (sender: string | null) => Actor | null;
-  components: string[];
-  componentOf: (sender: string | null) => string | null;
-  // The retired components: a sender among them is named as such.
+  parts: string[];
+  partOf: (sender: string | null) => string | null;
+  // The retired parts: a sender among them is named as such.
   retired: string[];
   retiredOf: (sender: string | null) => string | null;
   tier: string;
@@ -150,10 +150,10 @@ export interface ComponentAnalysis extends ComponentLoad, Analyzed {
   pins: Record<string, string | null>;
   marks: Record<string, Mark>;
   usedBy: string[];
-  // Set when no system reports the actors files: the first open component's tripwires then do.
+  // Set when no composition reports the actors files: the first open part's tripwires then do.
   reportActors: boolean;
 }
-export interface SystemAnalysis extends SystemLoad, Analyzed {
+export interface CompositionAnalysis extends CompositionLoad, Analyzed {
   risks: Record<string, AcceptedRisk>;
   generated: string;
   closureMissing: string[];
@@ -161,10 +161,10 @@ export interface SystemAnalysis extends SystemLoad, Analyzed {
   propertyHeld: Record<string, string>;
   // Each Walk passage under its scenario, marked from its witness answers.
   walks: WalkMark[];
-  // The records the members and the actors the system uses pin, hashed now; null where one does not resolve.
+  // The records the members and the actors the composition uses pin, hashed now; null where one does not resolve.
   pins: Record<string, string | null>;
 }
-export type Analysis = ComponentAnalysis | SystemAnalysis;
+export type Analysis = PartAnalysis | CompositionAnalysis;
 
 const read = (p: string) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 
@@ -204,20 +204,20 @@ function rowsOf(answers: AnswerRead[], gone: Record<string, string>, superseded:
 
 // With `answers`, the answers are the ones given instead of the ones in evidence/: how a publication
 // asks which answers are superseded among the entries it is about to leave.
-export function analyzeComponent({ root, id, loaded, knowledge, pluginVersion, marker, actors, others = [], usedBy = [], components, retired, reportActors = false, answers: given }: { root: string; id: string; loaded?: ComponentLoad | null; knowledge: LoadedKnowledge; pluginVersion?: string; marker?: Marker; actors?: ActorsModel | null; others?: SeamSet[]; usedBy?: string[]; components?: string[]; retired?: string[]; reportActors?: boolean; answers?: AnswerRead[] }): ComponentAnalysis {
+export function analyzePart({ root, id, loaded, knowledge, pluginVersion, marker, actors, others = [], usedBy = [], parts, retired, reportActors = false, answers: given }: { root: string; id: string; loaded?: PartLoad | null; knowledge: LoadedKnowledge; pluginVersion?: string; marker?: Marker; actors?: ActorsModel | null; others?: SeamSet[]; usedBy?: string[]; parts?: string[]; retired?: string[]; reportActors?: boolean; answers?: AnswerRead[] }): PartAnalysis {
   // Filled in below.
-  const f = (loaded || loadComponent(root, id)) as ComponentAnalysis;
-  f.kind = 'component'; f.ref = `components/${id}`; f.title = f.ir.name || id; f.pluginVersion = pluginVersion; f.marker = marker;
+  const f = (loaded || loadPart(root, id)) as PartAnalysis;
+  f.kind = 'part'; f.ref = `parts/${id}`; f.title = f.ir.name || id; f.pluginVersion = pluginVersion; f.marker = marker;
   const { dir, ir, prose } = f;
   f.actors = actors || null;
   f.reportActors = reportActors;
   f.actorOf = (sender) => (actors ? findActor(actors, sender) : null);
-  // The open components and the retired ones, as verify lists them; a retired component is no sender.
-  const listed = components && retired ? [] : listComponents(root);
-  const retiredIds = retired || listed.filter(cid => isRetired(join(root, 'components', cid)));
-  const componentIds = components || listed.filter(cid => !retiredIds.includes(cid));
-  f.components = componentIds;
-  f.componentOf = (sender) => (sender && componentIds.includes(actorId(sender)) ? actorId(sender) : null);
+  // The open parts and the retired ones, as verify lists them; a retired part is no sender.
+  const listed = parts && retired ? [] : listParts(root);
+  const retiredIds = retired || listed.filter(cid => isRetired(join(root, 'parts', cid)));
+  const partIds = parts || listed.filter(cid => !retiredIds.includes(cid));
+  f.parts = partIds;
+  f.partOf = (sender) => (sender && partIds.includes(actorId(sender)) ? actorId(sender) : null);
   f.retired = retiredIds;
   f.retiredOf = (sender) => (sender && retiredIds.includes(actorId(sender)) ? actorId(sender) : null);
   f.integrity = readIntegrity(dir, root);
@@ -285,7 +285,7 @@ export function analyzeComponent({ root, id, loaded, knowledge, pluginVersion, m
 
   // From the answers on: what verify concludes. It runs on a copy of the analysis, without one answer,
   // to tell whether the others stand in for that one (ANSWER-SUPERSEDED), then once on the whole.
-  const conclude = (g: ComponentAnalysis, list: AnswerRead[]): ComponentAnalysis => {
+  const conclude = (g: PartAnalysis, list: AnswerRead[]): PartAnalysis => {
     evidenceOf(g, present, list);
     g.files = {};
     for (const a of g.completed) for (const path of Object.keys(inputFiles(a.entry.basis))) {
@@ -326,14 +326,14 @@ export function analyzeComponent({ root, id, loaded, knowledge, pluginVersion, m
     g.chart = { ...g.chart, gaps: latestChart && latestChart.entry.basis.snapshot.ir === g.irHash ? (latestChart.entry.answer.gaps || []).map(x => x.message) : [] };
 
     // The present as lapse compares each answer's basis with it: the passages, the compilation, the
-    // records the component pins and each guarantee's backing as a trial's snapshot would hold them now,
+    // records the part pins and each guarantee's backing as a trial's snapshot would hold them now,
     // an external one as external whatever its runs, and the files hashed now.
     const backingNow: Record<string, BackingSnapshot> = Object.fromEntries(ir.guarantees.map(k => [k.id, k.backing && k.backing.kind === 'external' ? { status: 'external' as const } : g.backing[k.id]]));
     const now: Now = { snapshot: { passages: g.hashes, ir: g.irHash, records: g.pins, backing: backingNow }, file: path => g.files[path] ?? null };
     const cov = coversOf({ completed: g.completed, ir, hashes: g.hashes });
     g.marks = ir.ok ? marksOf({ ir, tier: g.tier, ...cov, now, forgotten: name => forgivenBy(g, name), counterpart: g.counterpart, backing: g.backing, openDoubtOn: g.openDoubtOn, owner: g.owner }) : {};
     g.reviewOwed = reviewOwedWhy(g.reviews, g.hashes, Object.values(g.marks).some(m => ['checked', 'proved', 'backed'].includes(m.mark)));
-    ({ tripwires: g.tripwires, flags: g.flags } = componentTripwires(g));
+    ({ tripwires: g.tripwires, flags: g.flags } = partTripwires(g));
     const active = prose.passages.filter(p => !p.retired);
     const count = (pred: (p: Passage) => unknown) => active.filter(pred).length;
     const of = (mark: string) => count(p => g.marks[p.id] && g.marks[p.id].mark === mark);
@@ -346,21 +346,21 @@ export function analyzeComponent({ root, id, loaded, knowledge, pluginVersion, m
       doubtsOpen: g.doubts.filter(d => d.status !== 'closed').length, text: of('text'), given: of('given'),
     };
     g.answerRows = rowsOf(g.answers, g.gone, g.superseded || {});
-    g.route = routeComponent(g);
+    g.route = routePart(g);
     return g;
   };
   const answers = given ?? evidence.answers;
   ({ superseded: f.superseded, removable: f.supersededRemovable } = supersededAmong({
-    answers, gone: goneAmong(answers, present), ground: a => groundOf(a, 'component', ir, f.hashes),
+    answers, gone: goneAmong(answers, present), ground: a => groundOf(a, 'part', ir, f.hashes),
     conclusions: list => conclusionsOf(conclude({ ...f }, list)), forgiven: name => forgivenBy(f, name), bound: name => f.integrity.manifest?.evidence[name],
   }));
   return conclude(f, answers);
 }
 
-export function analyzeSystem({ root, id, components, knowledge, pluginVersion, marker, answers: given }: { root: string; id: string; components?: Record<string, ComponentLoad | null>; knowledge: LoadedKnowledge; pluginVersion?: string; marker?: Marker; answers?: AnswerRead[] }): SystemAnalysis {
+export function analyzeComposition({ root, id, parts, knowledge, pluginVersion, marker, answers: given }: { root: string; id: string; parts?: Record<string, PartLoad | null>; knowledge: LoadedKnowledge; pluginVersion?: string; marker?: Marker; answers?: AnswerRead[] }): CompositionAnalysis {
   // Filled in below.
-  const f = loadSystem(root, id, { components }) as SystemAnalysis;
-  f.kind = 'system'; f.ref = `systems/${id}`; f.title = f.prose.title || id; f.pluginVersion = pluginVersion; f.marker = marker;
+  const f = loadComposition(root, id, { parts }) as CompositionAnalysis;
+  f.kind = 'composition'; f.ref = `compositions/${id}`; f.title = f.prose.title || id; f.pluginVersion = pluginVersion; f.marker = marker;
   const { dir } = f;
   f.reviews = reviewsOf(dir);
   f.integrity = readIntegrity(dir, root);
@@ -371,39 +371,39 @@ export function analyzeSystem({ root, id, components, knowledge, pluginVersion, 
   ({ column: f.owner, latest: f.latestDecision } = ownerColumn(decisions, f.hashes));
   f.risks = acceptedRisks(decisions);
   ({ doubts: f.doubts, doubtAnswers: f.doubtAnswers } = doubtsOf(dir, decisions));
-  f.generated = systemModuleText(f);
+  f.generated = compositionModuleText(f);
   const present: Present = { passages: f.hashes, scenarios: new Set(Object.keys(f.actors.scenarioById)), walks: new Set((f.prose.walks || []).map(w => w.id)), fileExists: path => existsSync(join(dir, path)) };
   const evidence = readEvidence(dir, f.integrity.manifest ? f.integrity.manifest.evidence : null, f.forgotten, f.ref, present);
   f.removed = evidence.removed; f.evidenceNotes = evidence.notes;
 
   // Closure: every module that owns an edge of a listed type on the asset is a member.
   f.closureMissing = [];
-  const memberModules = new Set(f.composition.members.map(m => (f.members[m.component] && f.members[m.component].module) || m.component));
-  for (const rule of f.composition.closure) {
+  const memberModules = new Set(f.wiring.members.map(m => (f.members[m.part] && f.members[m.part].module) || m.part));
+  for (const rule of f.wiring.closure) {
     const edges = knowledge.edges({ types: rule.edges, asset: rule.asset });
     const owners = new Set(edges.map(e => e.module));
     for (const m of rule.modules || []) owners.add(m);
     for (const m of owners) if (!memberModules.has(m)) f.closureMissing.push(`${m} owns an edge on ${rule.asset || 'the closure'} (${rule.edges.join(', ')}) but is not a member`);
   }
 
-  // The present, hashed as the runner hashes a system trial's snapshot (snapshotOf, src/commands/trial.ts).
+  // The present, hashed as the runner hashes a composition trial's snapshot (snapshotOf, src/commands/trial.ts).
   const used = f.composed.actors || [];
-  const memberIds = f.composition.members.map(m => m.component);
+  const memberIds = f.wiring.members.map(m => m.part);
   const records: Record<string, string | null> = {};
   for (const m of Object.values(f.memberLoads)) if (m) for (const p of m.ir.pins || []) { const r = knowledge.resolve(p); records[p] = r ? r.hash : null; }
-  // The composition's own pins on its members fix their instances for this system in the same way.
-  for (const m of f.composition.members) for (const p of m.pins) { const r = knowledge.resolve(p); records[p] = r ? r.hash : null; }
+  // The wiring's own pins on its members fix their instances for this composition in the same way.
+  for (const m of f.wiring.members) for (const p of m.pins) { const r = knowledge.resolve(p); records[p] = r ? r.hash : null; }
   for (const a of f.composed.actors || []) for (const p of (f.actors.byId[a] && f.actors.byId[a].pins) || []) { const r = knowledge.resolve(p); records[p] = r ? r.hash : null; }
   f.pins = records;
   const configs = Object.fromEntries(Object.entries(f.composed.cfgs || {}).map(([name, text]) => [`model/generated/${name}`, sha256(text)]));
 
   // From the answers on: what verify concludes. It runs on a copy of the analysis, without one answer,
   // to tell whether the others stand in for that one (ANSWER-SUPERSEDED), then once on the whole.
-  const conclude = (g: SystemAnalysis, list: AnswerRead[]): SystemAnalysis => {
+  const conclude = (g: CompositionAnalysis, list: AnswerRead[]): CompositionAnalysis => {
     evidenceOf(g, present, list);
     const snapshotNow: PresentState = {
       passages: g.hashes,
-      composition: short(g.composition.text, 16),
+      wiring: short(g.wiring.text, 16),
       module: (sid) => moduleHash(g.composed.tla, sid, g.extras),
       scenario: (sid) => scenarioHash(g.actors.scenarioById[sid], used, memberIds),
       actors: actorsHash(g.actors, used),
@@ -421,25 +421,25 @@ export function analyzeSystem({ root, id, components, knowledge, pluginVersion, 
         ? configs[path] ?? null
         : existsSync(full) && statSync(full).isFile() ? fileHash(full) : null;
     }
-    ({ cells: g.cells, propertyHeld: g.propertyHeld } = cellsOf({ system: g, completed: g.completed, snapshotNow, risks: g.risks, forgotten: name => forgivenBy(g, name) }));
+    ({ cells: g.cells, propertyHeld: g.propertyHeld } = cellsOf({ composition: g, completed: g.completed, snapshotNow, risks: g.risks, forgotten: name => forgivenBy(g, name) }));
     if (g.closureMissing.length) for (const c of g.cells) c.open = true;
     g.walks = walksOf({ prose: g.prose, completed: g.completed, snapshotNow });
     g.reviewOwed = reviewOwedWhy(g.reviews, g.hashes, g.cells.some(c => ['checked', 'proved', 'violated', 'implied'].includes(c.mark)));
-    ({ tripwires: g.tripwires, flags: g.flags } = systemTripwires(g));
+    ({ tripwires: g.tripwires, flags: g.flags } = compositionTripwires(g));
     const of = (mark: string) => g.cells.filter(c => c.mark === mark).length;
     g.summary = { properties: g.prose.properties.length, scenarios: [...new Set(g.cells.map(c => c.scenario))].length, cells: g.cells.length, proved: of('proved'), checked: of('checked'), implied: of('implied'), violated: of('violated'), accepted: g.cells.filter(c => c.accepted).length, lapsed: of('lapsed'), pending: of('pending'), miscalled: of('miscalled'), held: Object.values(g.propertyHeld).filter(v => v === 'held').length, hollow: Object.values(g.propertyHeld).filter(v => v === 'hollow').length, open: g.closureMissing.length, doubtsOpen: g.doubts.filter(d => d.status !== 'closed').length };
     g.answerRows = rowsOf(g.answers, g.gone, g.superseded || {});
-    g.route = routeSystem(g);
+    g.route = routeComposition(g);
     return g;
   };
   const answers = given ?? evidence.answers;
   ({ superseded: f.superseded, removable: f.supersededRemovable } = supersededAmong({
-    answers, gone: goneAmong(answers, present), ground: a => groundOf(a, 'system', null, f.hashes),
+    answers, gone: goneAmong(answers, present), ground: a => groundOf(a, 'composition', null, f.hashes),
     conclusions: list => conclusionsOf(conclude({ ...f }, list)), forgiven: name => forgivenBy(f, name), bound: name => f.integrity.manifest?.evidence[name],
   }));
   return conclude(f, answers);
 }
 
-export function seamsOf(components: Record<string, ComponentLoad>): SeamSet[] {
-  return Object.values(components).map(c => ({ id: c.id, title: c.ir.name || c.id, seams: c.ir.seams || [] }));
+export function seamsOf(parts: Record<string, PartLoad>): SeamSet[] {
+  return Object.values(parts).map(c => ({ id: c.id, title: c.ir.name || c.id, seams: c.ir.seams || [] }));
 }

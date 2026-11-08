@@ -28,7 +28,7 @@ test('frozen grading keeps its evaluator and production semantics when the worki
   const prepared = spawnSync(process.execPath, [join(checkout, 'qualification/conformance/prepare-agent.ts'), 'review', evaluation], { encoding: 'utf8' });
   assert.equal(prepared.status, 0, prepared.stdout + prepared.stderr);
   const manifest = JSON.parse(readFileSync(join(evaluation, 'manifest.json'), 'utf8'));
-  const report = join(manifest.workspace, 'dossiers/systems/control/reviews/exercise.md');
+  const report = join(manifest.workspace, 'dossiers/compositions/control/reviews/exercise.md');
   mkdirSync(dirname(report), { recursive: true });
   const cells = [
     ['A1', 'all-honest', 'proved'], ['A1', 'governance-captured', 'checked'], ['A1', 'executor-offline', 'checked'],
@@ -36,7 +36,7 @@ test('frozen grading keeps its evaluator and production semantics when the worki
     ['N1', 'all-honest', 'checked'], ['N1', 'governance-captured', 'checked'], ['N1', 'executor-offline', 'violated'],
   ].map(([property, scenario, mark]) => ({ property, scenario, mark, accepted: mark === 'violated', proof: mark === 'proved' }));
   // The review names the prose it read on its first line (REVIEW-OWED): Control's hash in this workspace.
-  const hash = proseHash(verifyAll({ root: join(manifest.workspace, 'dossiers'), version: '0.1.0' }).systems.find(s => s.id === 'control')!.hashes);
+  const hash = proseHash(verifyAll({ root: join(manifest.workspace, 'dossiers'), version: '0.1.0' }).compositions.find(s => s.id === 'control')!.hashes);
   writeFileSync(report, `prose@${hash}\n\n# Synthetic report\n\n\`\`\`json\n` + JSON.stringify({ summarySupported: false, cells, limitations: ['This tests the evaluator, not an agent.'] }) + '\n```\n');
   const grade = async () => {
     const result = spawnSync(process.execPath, [join(checkout, 'qualification/conformance/grade-exercise.ts'), evaluation], { encoding: 'utf8' });
@@ -67,7 +67,7 @@ test('a real successful blunder cannot replace the positive chart trial in an ag
   const work = mkdtempSync(join(tmpdir(), 'dossier-budget-citation-'));
   t.after(() => rmSync(work, { recursive: true, force: true }));
   const root = join(work, 'dossiers');
-  for (const name of ['actors', 'components', 'systems']) mkdirSync(join(root, name), { recursive: true });
+  for (const name of ['actors', 'parts', 'compositions']) mkdirSync(join(root, name), { recursive: true });
   writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }));
   writeFileSync(join(root, 'actors/actors.md'), '# Actors\n```yaml\nactors:\n  - id: operator\n    kind: user\n```\n');
   const run = (...args: string[]) => {
@@ -75,33 +75,33 @@ test('a real successful blunder cannot replace the positive chart trial in an ag
     assert.equal(result.status, 0, result.stdout + result.stderr);
   };
   run('decide', 'budget', 'begin', 'charted');
-  const component = join(root, 'components/budget');
+  const part = join(root, 'parts/budget');
   const prose = readFileSync(join(plugin, 'qualification/conformance/fixtures/budget.md'), 'utf8');
-  writeFileSync(join(component, 'prose.md'), prose);
+  writeFileSync(join(part, 'prose.md'), prose);
   run('draw', 'budget');
-  mkdirSync(join(component, 'calls'));
-  writeFileSync(join(component, 'calls/chart.md'), 'kind: chart\nexecutes:\n  - prose.md\nreach: capacity 0..2 and inventory 0..3\nexpect:\n  checks: pass\nbecause: Two payments consume capacity and the third is refused.\n');
+  mkdirSync(join(part, 'calls'));
+  writeFileSync(join(part, 'calls/chart.md'), 'kind: chart\nexecutes:\n  - prose.md\nreach: capacity 0..2 and inventory 0..3\nexpect:\n  checks: pass\nbecause: Two payments consume capacity and the third is refused.\n');
   run('trial', 'budget', 'chart.md');
-  const chart = listBundles(component)[0];
+  const chart = listBundles(part)[0];
   // Each answer's reading sits beside the entry its trial established in evidence/.
   const reading = (trial: string, text: string) => {
-    const published = answerOf(component, trial);
+    const published = answerOf(part, trial);
     assert.ok(published, `${trial} established an answer`);
-    writeFileSync(join(component, 'evidence', `${published.name}.md`), text);
+    writeFileSync(join(part, 'evidence', `${published.name}.md`), text);
     return published;
   };
   reading(chart, 'The chart establishes the finite three-payment refusal, not an inductive proof.\n');
-  mkdirSync(join(component, 'chart/blunders'), { recursive: true });
-  writeFileSync(join(component, 'chart/blunders/missing-limit.json'), JSON.stringify(compileIR(parseProse(prose.replace('capacity > 0 and balance > 0', 'balance > 0')))));
-  writeFileSync(join(component, 'calls/blunder.md'), 'kind: blunder\nexecutes:\n  - chart/blunders/missing-limit.json\nreach: same finite capacity and balance ranges\nblunder: Remove the capacity guard.\nexpect:\n  checks: fail R1 W1\nbecause: A third payment is wrongly enabled and contradicts the refusal and walk.\n');
+  mkdirSync(join(part, 'chart/blunders'), { recursive: true });
+  writeFileSync(join(part, 'chart/blunders/missing-limit.json'), JSON.stringify(compileIR(parseProse(prose.replace('capacity > 0 and balance > 0', 'balance > 0')))));
+  writeFileSync(join(part, 'calls/blunder.md'), 'kind: blunder\nexecutes:\n  - chart/blunders/missing-limit.json\nreach: same finite capacity and balance ranges\nblunder: Remove the capacity guard.\nexpect:\n  checks: fail R1 W1\nbecause: A third payment is wrongly enabled and contradicts the refusal and walk.\n');
   run('trial', 'budget', 'blunder.md');
-  const blunder = listBundles(component).find(id => id.includes('-blunder-'))!;
+  const blunder = listBundles(part).find(id => id.includes('-blunder-'))!;
   // A blunder asks its own question, so its answer has its own entry beside the chart's.
   const observation = reading(blunder, 'The omitted guard enables the forbidden third payment, so the negative check failed as expected.\n');
   assert.equal(observation.entry.answer.result, 'as-called');
   assert.equal(observation.entry.answer.outcomes.checks, 'fail');
-  assert.notEqual(observation.name, answerOf(component, chart)!.name);
-  const answer = { component: 'budget', trial: chart, checker: 'chart', proof: false, thirdPaymentAllowed: false, remainingCapacity: 0, remainingInventory: 1, limitations: ['Finite abstraction; owner review remains.'] };
+  assert.notEqual(observation.name, answerOf(part, chart)!.name);
+  const answer = { part: 'budget', trial: chart, checker: 'chart', proof: false, thirdPaymentAllowed: false, remainingCapacity: 0, remainingInventory: 1, limitations: ['Finite abstraction; owner review remains.'] };
   writeFileSync(join(work, 'answer.json'), JSON.stringify(answer));
   writeFileSync(join(work, 'answer.md'), 'Two payments exhaust capacity; the third is refused within this finite abstraction.\n');
   assert.equal((await gradeBudget(work)).outcome, 'pass');

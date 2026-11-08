@@ -7,7 +7,7 @@ import { sha256 } from '../hash.ts';
 import { findRoot, locate, stripRootArgs, UsageError } from '../dossiers/root.ts';
 import { readIntegrity, requireCurrent } from '../dossiers/integrity.ts';
 import { currentManifest, inspectPublicationLock, recoverAnswer, recoverDecisions, recoverPublicationLock, validateBundle } from '../dossiers/publication.ts';
-import { knowledgeOf, loadComponent, loadSystem } from '../dossiers/load.ts';
+import { knowledgeOf, loadPart, loadComposition } from '../dossiers/load.ts';
 import { CANDIDATE, entryName, RUNNING } from '../trials/answers.ts';
 import { STANDS_IN } from '../verify/superseded.ts';
 import { answerContext } from './trial.ts';
@@ -43,7 +43,7 @@ export async function main(_command: string, args: string[], _context: CommandCo
       } else console.log(`would publish the answer of ${value} under the evidence rules · bundle ${validateBundle(where.dir, value).digest}`);
       return 0;
     }
-    const loaded = where.kind === 'component' ? loadComponent(root, where.id) : loadSystem(root, where.id);
+    const loaded = where.kind === 'part' ? loadPart(root, where.id) : loadComposition(root, where.id);
     const publication = recoverAnswer(where.dir, value, answerContext(where, loaded, where.dir, { root, knowledge: knowledgeOf(root) }));
     console.log(`${publication.action}: evidence/${publication.name}.json${publication.reason ? ` · ${publication.reason}` : ''}`);
     for (const gone of publication.gone) console.log(`removed evidence/${gone}.json: its question no longer exists`);

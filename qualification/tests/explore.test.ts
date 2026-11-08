@@ -87,18 +87,18 @@ describe('the explorer over a copy of Harbor', () => {
     const page = await get(ex, '/api/root');
     assert.deepEqual(page.route, json.route);
     assert.deepEqual(page.tripwires, json.tripwires);
-    for (const c of json.components) {
+    for (const c of json.parts) {
       const d = page.dossiers.find((x: { id: string }) => x.id === c.id);
       assert.deepEqual(d.marks, Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, m.mark])), c.id);
       assert.deepEqual(d.route, c.route, c.id);
       assert.deepEqual(d.summary, c.summary, c.id);
       assert.deepEqual(d.flags.map((f: { name: string }) => f.name), c.flags.map(f => f.name), c.id);
-      const model = await get(ex, `/api/component/${c.id}`);
+      const model = await get(ex, `/api/part/${c.id}`);
       assert.deepEqual(Object.fromEntries(Object.entries(model.marks).map(([k, m]) => [k, (m as { mark: string }).mark])), d.marks, c.id);
       assert.deepEqual(model.evidence.map((e: { entry: string }) => e.entry).sort(), c.answers.map(a => a.entry).sort(), `${c.id}: one row for each answer`);
     }
-    for (const s of json.systems) {
-      const model = await get(ex, `/api/system/${s.id}`);
+    for (const s of json.compositions) {
+      const model = await get(ex, `/api/composition/${s.id}`);
       assert.deepEqual(model.cells.map((c: { property: string; scenario: string; mark: string }) => `${c.property} ${c.scenario} ${c.mark}`), s.cells.map(c => `${c.property} ${c.scenario} ${c.mark}`), s.id);
       assert.deepEqual(model.route, s.route, s.id);
     }
@@ -106,12 +106,12 @@ describe('the explorer over a copy of Harbor', () => {
 
   it('explains every mark and cell in the reference page\'s words', async () => {
     const page = await get(ex, '/api/root');
-    for (const d of page.dossiers.filter((x: { kind: string }) => x.kind === 'component')) {
-      const model = await get(ex, `/api/component/${d.id}`);
+    for (const d of page.dossiers.filter((x: { kind: string }) => x.kind === 'part')) {
+      const model = await get(ex, `/api/part/${d.id}`);
       for (const [id, m] of Object.entries(model.marks) as [string, { mark: string; explain: { means: string | null } }][]) assert.ok(m.explain.means, `${d.id} ${id} ${m.mark} has no row in docs/reference/marks.md`);
     }
-    for (const d of page.dossiers.filter((x: { kind: string }) => x.kind === 'system')) {
-      const model = await get(ex, `/api/system/${d.id}`);
+    for (const d of page.dossiers.filter((x: { kind: string }) => x.kind === 'composition')) {
+      const model = await get(ex, `/api/composition/${d.id}`);
       for (const c of model.cells) assert.ok(c.means, `${d.id} ${c.property} ${c.scenario}: ${c.mark} has no row`);
     }
     const marks = readFileSync(join(pluginRoot, 'docs', 'reference', 'marks.md'), 'utf8');
@@ -121,7 +121,7 @@ describe('the explorer over a copy of Harbor', () => {
 
   it('decides each explored step and replays each walk with the chart\'s own code, as the checks do', async () => {
     const v = verifyAll({ root, version, write: false });
-    for (const a of v.components) {
+    for (const a of v.parts) {
       const run = await chartRun(root, a);
       const checks = await checkIR({ root, ir: a.ir });
       assert.equal(run.view.outcome, checks.outcome, a.id);
@@ -140,9 +140,9 @@ describe('the explorer over a copy of Harbor', () => {
   });
 
   it('explains a snapshot: each event case with its candidates, conditions and changes', async () => {
-    const run = await get(ex, '/api/component/oracle/run');
+    const run = await get(ex, '/api/part/oracle/run');
     const at = run.edges.find((e: { by: string[] }) => e.by.some(id => id.startsWith('M')))?.from ?? 0;
-    const x = await get(ex, `/api/component/oracle/explain?at=${at}`);
+    const x = await get(ex, `/api/part/oracle/explain?at=${at}`);
     assert.equal(x.at, at);
     for (const c of x.cases) {
       assert.ok(Array.isArray(c.by));
@@ -152,10 +152,10 @@ describe('the explorer over a copy of Harbor', () => {
   });
 
   it('maps a trace\'s actions onto the moves they encode', async () => {
-    const model = await get(ex, '/api/component/timelock');
+    const model = await get(ex, '/api/part/timelock');
     const entry = model.evidence.find((e: { answer?: { steps: number } }) => (e.answer?.steps || 0) > 2);
     assert.ok(entry, 'timelock holds an answer with a trace');
-    const trace = await get(ex, `/api/component/timelock/trace/${entry.entry}`);
+    const trace = await get(ex, `/api/part/timelock/trace/${entry.entry}`);
     assert.ok(trace.steps.length > 2);
     for (const s of trace.steps as { move: string | null; action: string | null }[]) assert.equal(s.move, /^M(\d+)_/.exec(s.action || '') ? `M${/^M(\d+)_/.exec(s.action!)![1]}` : null, `${s.action} encodes ${s.move}`);
     assert.ok(trace.steps.some((s: { move: string | null }) => s.move), 'at least one step names its move');
@@ -168,7 +168,7 @@ describe('the explorer over a copy of Harbor', () => {
     assert.equal((await ask(ex.url + 'api/root', { host: `example.com:${ex.port}` })).status, 403, 'a name rebound to this machine is refused');
     assert.equal((await ask(ex.url + 'api/root', { host: `localhost:${ex.port}` })).status, 200);
     assert.equal((await ask(ex.url + 'api/nothing')).status, 404);
-    assert.equal((await ask(ex.url + 'api/component/nobody')).status, 404);
+    assert.equal((await ask(ex.url + 'api/part/nobody')).status, 404);
     assert.equal((await ask(ex.url)).status, 503, 'no page is served before one is built');
     assert.match(new URL(ex.url).hostname, /^127\.0\.0\.1$/);
   });
@@ -178,21 +178,21 @@ describe('the explorer over a copy of Harbor', () => {
     const page = await get(ex, '/api/root');
     await get(ex, '/api/addresses');
     for (const d of page.dossiers) {
-      if (d.kind === 'system') {
-        const s = await get(ex, `/api/system/${d.id}`);
-        for (const c of s.cells.filter((x: { steps: number }) => x.steps)) await get(ex, `/api/system/${d.id}/trace/${c.property}/${c.scenario}`);
+      if (d.kind === 'composition') {
+        const s = await get(ex, `/api/composition/${d.id}`);
+        for (const c of s.cells.filter((x: { steps: number }) => x.steps)) await get(ex, `/api/composition/${d.id}/trace/${c.property}/${c.scenario}`);
         continue;
       }
-      const c = await get(ex, `/api/component/${d.id}`);
-      const run = await get(ex, `/api/component/${d.id}/run`);
-      await get(ex, `/api/component/${d.id}/explain?at=${run.snapshots.length - 1}`);
-      for (const e of c.evidence.filter((x: { answer?: { steps: number } }) => x.answer?.steps)) await get(ex, `/api/component/${d.id}/trace/${e.entry}`);
+      const c = await get(ex, `/api/part/${d.id}`);
+      const run = await get(ex, `/api/part/${d.id}/run`);
+      await get(ex, `/api/part/${d.id}/explain?at=${run.snapshots.length - 1}`);
+      for (const e of c.evidence.filter((x: { answer?: { steps: number } }) => x.answer?.steps)) await get(ex, `/api/part/${d.id}/trace/${e.entry}`);
     }
     assert.deepEqual(fingerprint(root), before);
   });
 
   it('tells an open page when a file under the root changes', async () => {
-    const note = join(root, 'components', 'oracle', 'margin.md');
+    const note = join(root, 'parts', 'oracle', 'margin.md');
     try {
       const events = await changeEvent(ex, () => writeFileSync(note, 'A note in the margin.\n'));
       assert.match(events, /event: change\ndata: .*margin\.md/);
@@ -270,7 +270,7 @@ describe('a doubt as the explorer reads it', () => {
   });
 
   it('compiles a doubt\'s walk with the plugin\'s parser, as one more Walk passage', () => {
-    const prose = readFileSync(join(pluginRoot, 'qualification', 'fixture', 'dossiers', 'components', 'oracle', 'prose.md'), 'utf8');
+    const prose = readFileSync(join(pluginRoot, 'qualification', 'fixture', 'dossiers', 'parts', 'oracle', 'prose.md'), 'utf8');
     const walk = compileWalkText(prose, 'a', 'from Fresh, tick; ends Stale.');
     assert.ok('walk' in walk, JSON.stringify(walk));
     const authored = [...prose.matchAll(/^\[(W\d+)\]/gm)].map(m => m[1]);
@@ -297,7 +297,7 @@ describe('a doubt as the explorer reads it', () => {
   });
 });
 
-// The components the review of the explorer used to find its edges, written beside Harbor's: a
+// The parts the review of the explorer used to find its edges, written beside Harbor's: a
 // parallel chart whose second region reads what the first changes, a condition that is a number,
 // a refusal whose condition divides by zero, a chart past the limit, and prose that does not compile.
 const EDGES: Record<string, string> = {
@@ -310,11 +310,11 @@ const EDGES: Record<string, string> = {
 
 describe('the explorer at the edges a review found', () => {
   let dir: string, root: string;
-  const analysis = (id: string) => verifyAll({ root, version, write: false }).components.find(a => a.id === id)!;
+  const analysis = (id: string) => verifyAll({ root, version, write: false }).parts.find(a => a.id === id)!;
   before(() => {
     dir = harborCopy();
     root = join(dir, 'dossiers');
-    for (const [id, prose] of Object.entries(EDGES)) { mkdirSync(join(root, 'components', id), { recursive: true }); writeFileSync(join(root, 'components', id, 'prose.md'), prose); }
+    for (const [id, prose] of Object.entries(EDGES)) { mkdirSync(join(root, 'parts', id), { recursive: true }); writeFileSync(join(root, 'parts', id, 'prose.md'), prose); }
   });
   after(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -384,9 +384,9 @@ describe('the explorer\'s names and folders', () => {
     try {
       let steps = 0;
       for (const id of ['control', 'supply', 'upkeep']) {
-        const s = await get(ex, `/api/system/${id}`);
+        const s = await get(ex, `/api/composition/${id}`);
         for (const c of s.cells.filter((x: { steps: number }) => x.steps)) {
-          const t = await get(ex, `/api/system/${id}/trace/${c.property}/${c.scenario}`);
+          const t = await get(ex, `/api/composition/${id}/trace/${c.property}/${c.scenario}`);
           // TLC names the first state's line Initial predicate: the start, which no one took.
           for (const step of t.steps.filter((x: { action: string | null; stuttering: boolean }) => x.action && x.action !== 'Initial predicate' && !x.stuttering)) { steps++; assert.ok(step.actor, `${id} ${c.property} ${c.scenario}: ${step.action} names no one`); }
           for (const step of t.steps) for (const m of Object.keys(step.members)) assert.ok(s.members.some((x: { id: string }) => x.id === m), `${m} is a member`);
@@ -396,25 +396,25 @@ describe('the explorer\'s names and folders', () => {
     } finally { await ex.close(); rmSync(dir, { recursive: true, force: true }); }
   });
 
-  it('shows an accepted violation in verify\'s words, and why a system does not compose', async () => {
+  it('shows an accepted violation in verify\'s words, and why a composition does not compose', async () => {
     const dir = harborCopy(), root = join(dir, 'dossiers');
-    const file = join(root, 'systems', 'supply', 'composition.md');
-    writeFileSync(file, readFileSync(file, 'utf8').replace('  - component: token\n', '  - component: nosuch\n'));
+    const file = join(root, 'compositions', 'supply', 'wiring.md');
+    writeFileSync(file, readFileSync(file, 'utf8').replace('  - part: token\n', '  - part: nosuch\n'));
     const ex = await startExplorer({ root, pluginRoot, version, port: 0, dist: null });
     try {
       const page = await get(ex, '/api/root');
       const control = page.dossiers.find((d: { id: string }) => d.id === 'control');
       assert.ok(Object.values(control.marks).includes('violated, accepted'), JSON.stringify(control.marks));
       const words = new Set([...page.legend.cells.map((c: { mark: string }) => c.mark), 'violated, accepted', 'violated, acceptance lapsed']);
-      for (const d of page.dossiers.filter((x: { kind: string }) => x.kind === 'system')) for (const m of Object.values(d.marks)) assert.ok(words.has(m as string), `${d.id}: ${m} is a cell's word`);
-      const supply = await get(ex, '/api/system/supply');
-      assert.ok(supply.errors.length > 0, 'a composition that cites no such component says why');
+      for (const d of page.dossiers.filter((x: { kind: string }) => x.kind === 'composition')) for (const m of Object.values(d.marks)) assert.ok(words.has(m as string), `${d.id}: ${m} is a cell's word`);
+      const supply = await get(ex, '/api/composition/supply');
+      assert.ok(supply.errors.length > 0, 'a wiring that cites no such part says why');
     } finally { await ex.close(); rmSync(dir, { recursive: true, force: true }); }
   });
 
   it('refreshes on a change in the knowledge base and in .running/, and not in trials/ or its own build', async () => {
-    for (const path of ['.explorer/dist/app.js', 'node_modules/x/index.js', '.git/HEAD', '_scratch/a', 'components/oracle/trials/t1/result.json']) assert.equal(quiet(path), true, path);
-    for (const path of ['components/oracle/.running/t1/entry.json', 'components/trials/prose.md', 'components/oracle/prose.md', 'systems/supply/evidence/a.json']) assert.equal(quiet(path), false, path);
+    for (const path of ['.explorer/dist/app.js', 'node_modules/x/index.js', '.git/HEAD', '_scratch/a', 'parts/oracle/trials/t1/result.json']) assert.equal(quiet(path), true, path);
+    for (const path of ['parts/oracle/.running/t1/entry.json', 'parts/trials/prose.md', 'parts/oracle/prose.md', 'compositions/supply/evidence/a.json']) assert.equal(quiet(path), false, path);
     const dir = harborCopy(), root = join(dir, 'dossiers');
     const ex = await startExplorer({ root, pluginRoot, version, port: 0, dist: null });
     try {

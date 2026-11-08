@@ -4,7 +4,7 @@ Models encode prose, and calls predict trials. Pending calls live in `calls/`. `
 
 ## The scaffold
 
-`dossier scaffold <component>` writes `model/<Id>.tla` from the prose once, and the configurations beside it: `<Id>.cfg` for the ordinary trial with TypeOK and every Always and Within, `<Id>_O<n>.cfg` per Once, `<Id>_W<n>.cfg` per walk. `<Id>` is the component's title with every character but letters, digits and underscores dropped. A later scaffold writes `<Id>.scaffold.tla` beside the hand-refined module for diffing. The hand-refined module is the one trials run.
+`dossier scaffold <part>` writes `model/<Id>.tla` from the prose once, and the configurations beside it: `<Id>.cfg` for the ordinary trial with TypeOK and every Always and Within, `<Id>_O<n>.cfg` per Once, `<Id>_W<n>.cfg` per walk. `<Id>` is the part's id with each hyphenated segment capitalized and the segments joined, such as `PasFiniteKey` for `pas-finite-key`. A later scaffold writes `<Id>.scaffold.tla` beside the hand-refined module for diffing. The hand-refined module is the one trials run.
 
 What the scaffold holds, and what the ledger reads back from it:
 
@@ -16,8 +16,8 @@ Init       the first State passage and every starting value
 Can_M<n>_<Event>   enabledness of each move as a state predicate, with an only when condition conjoined
 Due_<Actor>        the Can_ predicates of the actor's prompt events, commented \* G<n>: acts before the next tick
 M<n>_<Event>       one action per Move: state, guard, an only when condition commented with its Given's id, ~Due_<Actor> on the chain's ticks, the changes, the effects, UNCHANGED, the ghost tick counters
-<Sender>   the disjunction of one sender's moves, for an actor or a component that sends
-Next       the disjunction of every sender, actors and component senders alike
+<Sender>   the disjunction of one sender's moves, for an actor or a part that sends
+Next       the disjunction of every sender, actors and part senders alike
 <Actor>_<Event>    the actor's moves of the event a Given names, such as Public_Exec == M5_Exec
 Spec       Init /\ [][Next]_vars, then per Given with an actor: WF_vars(<Actor>_<Event>) with on, WF_vars(<Actor>) without, nothing for only when without prompt; commented \* from G<n>
 TypeOK, SentBounded, A<n>, O<n>, N<n>, Inv_<A or N>, W<n>_End, NotW<n>
@@ -51,7 +51,7 @@ because: |
 
 Kinds: `tlc` (ordinary, witness, liveness by the configuration), `apalache` (bounded or inductive), `alloy`, `external`, `blunder`, `chart`. Every enabled property has a line under `expect`, and every line names an enabled property. Every path under `executes` lies inside the dossier. The runner refuses otherwise.
 
-- A witness configuration enables TypeOK and one `NotW<n>`. The call expects `NotW<n>: violated; trace: <state>/<data> > ...` with `trace-data: <the variables after the slash>`, each a variable of the module. A system's witness is called the same way, naming `walk:` and the walk's own `scenario:`, with a trace of the `trace-data` values alone, as [compose.md](composition.md) shows.
+- A witness configuration enables TypeOK and one `NotW<n>`. The call expects `NotW<n>: violated; trace: <state>/<data> > ...` with `trace-data: <the variables after the slash>`, each a variable of the module. A composition's witness is called the same way, naming `walk:` and the walk's own `scenario:`, with a trace of the `trace-data` values alone, as [Composition](composition.md) shows.
 - A liveness configuration enables one `O<n>`.
 - An Apalache call sets `mode: bounded` with `length: <steps>`, or `mode: inductive`, with `inv: Inv_A<n>` and `cinit: ConstInit`. Inductive runs the step from the invariant and the base from Init, and both must pass.
 - A blunder executes a copy under `model/blunders/`, enables exactly one property, expects it `violated`, and says `blunder: <the wrong, in words>`. `base:` names the module copied, and is required when `model/` holds more than one module. The runner diffs the copy against its base, and refuses a copy that changes what the property asks: the property, a definition it reads, a Within's tick counter or a history variable it keeps, or the value the base gives a constant they read. For Alloy, that is the assertion checked and the preds and funs it reads.
@@ -67,11 +67,11 @@ Keep the reach small enough to finish and large enough that every action fires a
 
 ## Running the calls
 
-`dossier trial <component> <call.md>` validates the call and relevant integrity, or refuses without changing dossier records or generated views. A valid call is executed from a private copy, and the trial leaves a bundle: the call as captured, `output.txt`, `result.json` with its snapshot and input identities, and `receipt.json`. [Publication](storage.md#trials-and-answers) decides what its answer does to the question's entry. The verdict `as-called` means every outcome matches its expectation, `miscalled` means a completed trial's outcomes disagree with the call, and `aborted` means the checker started without a complete verdict. A missing checker is a refusal. `--timeout`, `--workers` and `--limit` must be numbers. A trial whose answer the evidence rules refuse exits 2, writes no entry and leaves its call pending. An aborted trial on a question that has an entry writes none either, and its call stays pending. The only authored file beside an entry is its reading.
+`dossier trial <part> <call.md>` validates the call and relevant integrity, or refuses without changing dossier records or generated views. A valid call is executed from a private copy, and the trial leaves a bundle: the call as captured, `output.txt`, `result.json` with its snapshot and input identities, and `receipt.json`. [Publication](storage.md#trials-and-answers) decides what its answer does to the question's entry. The verdict `as-called` means every outcome matches its expectation, `miscalled` means a completed trial's outcomes disagree with the call, and `aborted` means the checker started without a complete verdict. A missing checker is a refusal. `--timeout`, `--workers` and `--limit` must be numbers. A trial whose answer the evidence rules refuse exits 2, writes no entry and leaves its call pending. An aborted trial on a question that has an entry writes none either, and its call stays pending. The only authored file beside an entry is its reading.
 
 ## Execution identity
 
-Each answer's basis holds the trial's `inputIdentity`: `strategy: private-copy`, a `files` map of normalized dossier-relative paths to SHA-256 digests, a list of `shared` libraries and a `limitation` statement. The map includes the call's declared files and reachable local model imports. Built-in solvers run those copied files. Generated system paths identify the canonical composition, not a cached view. A changed or missing captured dependency lapses the answer. An unrelated local module does not.
+Each answer's basis holds the trial's `inputIdentity`: `strategy: private-copy`, a `files` map of normalized dossier-relative paths to SHA-256 digests, a list of `shared` libraries and a `limitation` statement. The map includes the call's declared files and reachable local model imports. Built-in solvers run those copied files. Generated composition paths identify the canonical composed module, not a cached view. A changed or missing captured dependency lapses the answer. An unrelated local module does not.
 
 The supported local dependency forms are static TLA+ `EXTENDS`, `INSTANCE` and configuration module overrides, and Alloy `open`. Unsupported local forms, missing nonstandard imports and nested TLA+ modules are refused instead of being silently omitted. Standard TLA+ libraries and Alloy `util/` modules remain shared. An answer whose basis holds no `inputIdentity` stays readable, and its identity is the executed files it lists. No import it did not record is inferred.
 

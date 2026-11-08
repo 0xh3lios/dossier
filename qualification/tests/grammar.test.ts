@@ -1,12 +1,12 @@
 // The grammar: brace expressions and controlled phrases (expr.ts), the
-// prose of a component and a system (prose.ts), and the intermediate form
+// prose of a part and a composition (prose.ts), and the intermediate form
 // (ir.ts). Run: node --test qualification/tests/grammar.test.ts
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   NUMBER_WORDS, evaluate, parseAssignment, parseAtom, parseClauses, parseCondition, parseExpr, parseValue, resolveIds, splitTop, toLabel, toTla,
 } from '../../src/prose/expr.ts';
-import { EVENT_CASES, KINDS, RANGE_SPAN, SYSTEM_KINDS, parseBoundary, parseProse, parseSystemProse, parseTypePhrase, passageHashes, senderId } from '../../src/prose/prose.ts';
+import { EVENT_CASES, KINDS, RANGE_SPAN, COMPOSITION_KINDS, parseBoundary, parseProse, parseCompositionProse, parseTypePhrase, passageHashes, senderId } from '../../src/prose/prose.ts';
 import { compileIR } from '../../src/prose/ir.ts';
 import type { BinOp, Expr, Value } from '../../src/prose/expr.ts';
 import type { Datum } from '../../src/prose/prose.ts';
@@ -222,7 +222,7 @@ describe('toTla and toLabel', () => {
   });
 });
 
-describe('a member reference whose component id has hyphens', () => {
+describe('a member reference whose part id has hyphens', () => {
   it('reads price-feed.price as one name, in braces and in a controlled phrase, while a - b stays a subtraction', () => {
     assert.deepEqual(parseExpr('price-feed.price > 1'), bin('>', id('price-feed.price'), int(1)));
     assert.deepEqual(parseExpr('oracle.price-lane-a.price'), bin('-', id('oracle.price'), id('lane-a.price')));
@@ -232,7 +232,7 @@ describe('a member reference whose component id has hyphens', () => {
     assert.throws(() => parseValue('price--feed.price'), /not a value/);
   });
 
-  it('resolves a hyphened component id as a sender, as the commands validate ids', () => {
+  it('resolves a hyphened part id as a sender, as the commands validate ids', () => {
     assert.equal(senderId('the Price-Feed'), 'price-feed');
     assert.equal(senderId('Price Feed'), 'price-feed');
     assert.equal(senderId('lane A'), 'lane-a');
@@ -327,12 +327,12 @@ describe('parseBoundary', () => {
     const p = parseProse('# Piece\n\nIt holds f, a flag.\n\n## States\n[S1] Idle: a.\n\n## Events\n[E1] go, from Governance: x. Carries newDelay, a count from 1 to 2, and fast, a flag.\n');
     assert.deepEqual(p.errors, ['E1: field name "newDelay" must be lower case letters, digits and underscores']);
     assert.deepEqual(p.events[0].fields.map(f => f.name), ['fast']);
-    const sys = parseSystemProse('# Supply\nConcern: supply\n\n## Walks\n[W1] Walk Go: from adapter.Open, adapter.exit Amount 1; ends adapter.Open.\n');
-    assert.deepEqual(sys.errors, ['W1: step "adapter.exit Amount 1" is not "<component>.<event>[ <field> <value>...][ refused]"']);
+    const sys = parseCompositionProse('# Supply\nConcern: supply\n\n## Walks\n[W1] Walk Go: from adapter.Open, adapter.exit Amount 1; ends adapter.Open.\n');
+    assert.deepEqual(sys.errors, ['W1: step "adapter.exit Amount 1" is not "<part>.<event>[ <field> <value>...][ refused]"']);
   });
 });
 
-// A component using every kind of passage and every form the grammar names.
+// A part using every kind of passage and every form the grammar names.
 const COMPLETE = `# Timelock
 Tier: modeled
 Module: gov-timelock
@@ -413,7 +413,7 @@ The Timelock holds a plan and executes it after a delay. It holds remaining, a c
 [M9] When Idle receives schedule, it becomes Spent.
 `;
 
-describe('a complete component prose', () => {
+describe('a complete part prose', () => {
   const prose = parseProse(COMPLETE);
 
   it('reads the header, the lead and the sections', () => {
@@ -425,7 +425,7 @@ describe('a complete component prose', () => {
     assert.deepEqual(prose.errors, []);
     assert.deepEqual(prose.misnamed, []);
     assert.equal(KINDS.K, 'Guarantee');
-    assert.ok(SYSTEM_KINDS.has('W') && !SYSTEM_KINDS.has('S'));
+    assert.ok(COMPOSITION_KINDS.has('W') && !COMPOSITION_KINDS.has('S'));
   });
 
   it('reads the boundary declarations', () => {
@@ -666,15 +666,14 @@ describe('sections, ids and malformed passages', () => {
     assert.deepEqual(p.walks[0].sent, {}, 'a count that does not read records no count');
   });
 
-  // The title names the component's TLA+ module: its letters, digits and underscores.
-  it('reports a component prose with no title, or a title with no letter to name the module by', () => {
+  // The title names the part in words; its TLA+ module is named from its id, so any title reads.
+  it('reports a part prose with no title', () => {
     const body = '\n\n## States\n[S1] Idle: a.\n';
     assert.deepEqual(parseProse(`# Piece${body}`).errors, []);
-    assert.deepEqual(parseProse(`# 2PC Coordinator${body}`).errors, [], 'a title with a letter names a module');
-    for (const text of [body, `#${body}`, `#Piece${body}`, '']) assert.deepEqual(parseProse(text).errors, ['no title: a "# <Name>" line names the component and its module'], JSON.stringify(text));
-    assert.deepEqual(parseProse(`# ---${body}`).errors, ['title "---" holds no letter to name the component\'s module by']);
-    assert.deepEqual(parseProse(`# 42${body}`).errors, ['title "42" holds no letter to name the component\'s module by']);
-    assert.deepEqual(parseSystemProse('Concern: supply\n\n## Always\n[A1] Always, {adapter.held <= 2}.\n').errors, [], 'a system is named from its id, so its title is optional');
+    assert.deepEqual(parseProse(`# 2PC Coordinator${body}`).errors, []);
+    assert.deepEqual(parseProse(`# ---${body}`).errors, [], 'a title needs no letter, since it names no module');
+    for (const text of [body, `#${body}`, `#Piece${body}`, '']) assert.deepEqual(parseProse(text).errors, ['no title: a "# <Name>" line names the part'], JSON.stringify(text));
+    assert.deepEqual(parseCompositionProse('Concern: supply\n\n## Always\n[A1] Always, {adapter.held <= 2}.\n').errors, [], 'a composition is named from its id, so its title is optional');
   });
 
   it('validates the Tier and defaults it to modeled', () => {
@@ -700,9 +699,9 @@ describe('sections, ids and malformed passages', () => {
   });
 });
 
-// ---------------------------------------------------------------- system prose
+// ---------------------------------------------------------------- composition prose
 
-const SYSTEM = `# Supply
+const COMPOSITION = `# Supply
 Concern: supply
 
 The HRD supply equals the credit the adapter holds.
@@ -729,8 +728,8 @@ Two lines of description.
 [T1] Nothing more.
 `;
 
-describe('parseSystemProse', () => {
-  const prose = parseSystemProse(SYSTEM);
+describe('parseCompositionProse', () => {
+  const prose = parseCompositionProse(COMPOSITION);
 
   it('reads the concern, the description and the properties with their scenarios', () => {
     assert.deepEqual(prose.errors, []);
@@ -744,45 +743,45 @@ describe('parseSystemProse', () => {
     assert.deepEqual(prose.properties.map(p => p.id), ['A1', 'A2', 'O1', 'N1']);
   });
 
-  it('reads Givens, the system Walk form and Words only', () => {
+  it('reads Givens, the composition Walk form and Words only', () => {
     assert.deepEqual(prose.givens[1], { id: 'G2', assumption: 'the user exits promptly', otherwise: 'held lingers', actor: 'the user', event: 'adapter.exit', promptness: 'prompt', when: null });
     assert.deepEqual(prose.walks[0], {
       id: 'W1', name: 'Exit', scenario: 'all-honest', from: 'adapter.Open',
-      steps: [{ component: 'adapter', event: 'exit', args: { amount: int(1) }, refused: false }, { component: 'adapter', event: 'halt', args: {}, refused: false }, { component: 'adapter', event: 'exit', args: { amount: int(1) }, refused: true }],
+      steps: [{ part: 'adapter', event: 'exit', args: { amount: int(1) }, refused: false }, { part: 'adapter', event: 'halt', args: {}, refused: false }, { part: 'adapter', event: 'exit', args: { amount: int(1) }, refused: true }],
       ends: 'adapter.Halted', rest: '.',
     });
     assert.deepEqual(prose.wordsOnly, [{ id: 'T1', text: 'Nothing more.' }]);
   });
 
-  it('refuses component kinds under a system and reports its own forms', () => {
-    const p = parseSystemProse('# Supply\nConcern: supply\n\n## Always\n[A1] Usually, x is 1.\n\n## Once\n[O1] Once adapter.Open, eventually adapter.Halted, given G9.\n\n## Walks\n[W1] Walk Exit: from Open, exit; ends Halted.\n\n## Moves\n[M1] When Open receives exit, it stays Open.\n\n## Retired\n[S1] Gone: x.\n');
+  it('refuses part kinds under a composition and reports its own forms', () => {
+    const p = parseCompositionProse('# Supply\nConcern: supply\n\n## Always\n[A1] Usually, x is 1.\n\n## Once\n[O1] Once adapter.Open, eventually adapter.Halted, given G9.\n\n## Walks\n[W1] Walk Exit: from Open, exit; ends Halted.\n\n## Moves\n[M1] When Open receives exit, it stays Open.\n\n## Retired\n[S1] Gone: x.\n');
     assert.ok(p.errors.includes('A1: does not follow the Always form "Always, <condition>[, given G<n>]. Scenarios: ..."'));
-    assert.ok(p.errors.some(e => e.startsWith('W1: does not follow the system Walk form')));
-    assert.ok(p.errors.includes('M1: a system holds only A, O, N, G, W and T passages'));
-    assert.ok(p.errors.includes('S1: a system holds only A, O, N, G, W and T passages'));
+    assert.ok(p.errors.some(e => e.startsWith('W1: does not follow the composition Walk form')));
+    assert.ok(p.errors.includes('M1: a composition holds only A, O, N, G, W and T passages'));
+    assert.ok(p.errors.includes('S1: a composition holds only A, O, N, G, W and T passages'));
     assert.deepEqual(p.misnamed, ['O1 cites G9, which does not exist']);
   });
 
-  it('reads nothing after a system walk\'s end state, and says so rather than cancel it', () => {
-    const p = parseSystemProse('# Supply\nConcern: supply\n\n## Walks\n[W1] Walk Exit: from adapter.Open, adapter.halt; ends adapter.Halted with adapter.held 1.\n[W2] Walk Mint: from adapter.Open, adapter.exit amount 1; ends adapter.Open; adapter.mint sent once.\n[W3] Walk Plain: from adapter.Open, adapter.halt; ends adapter.Halted.\n');
+  it('reads nothing after a composition walk\'s end state, and says so rather than cancel it', () => {
+    const p = parseCompositionProse('# Supply\nConcern: supply\n\n## Walks\n[W1] Walk Exit: from adapter.Open, adapter.halt; ends adapter.Halted with adapter.held 1.\n[W2] Walk Mint: from adapter.Open, adapter.exit amount 1; ends adapter.Open; adapter.mint sent once.\n[W3] Walk Plain: from adapter.Open, adapter.halt; ends adapter.Halted.\n');
     assert.deepEqual(p.errors, [
-      'W1: a system walk ends at "ends adapter.Halted"; "with adapter.held 1" after it is not read',
-      'W2: a system walk ends at "ends adapter.Open"; "adapter.mint sent once" after it is not read',
+      'W1: a composition walk ends at "ends adapter.Halted"; "with adapter.held 1" after it is not read',
+      'W2: a composition walk ends at "ends adapter.Open"; "adapter.mint sent once" after it is not read',
     ]);
     assert.deepEqual(p.walks.map(w => w.ends), ['adapter.Halted', 'adapter.Open', 'adapter.Halted']);
   });
 });
 
 describe('what the grammar refuses', () => {
-  it('refuses a scenario on a component walk, which runs in the component\'s own model', () => {
+  it('refuses a scenario on a part walk, which runs in the part\'s own model', () => {
     const p = parseProse('# Piece\n\n## States\n[S1] Idle: a.\n\n## Events\n[E1] go, from Governance: x.\n\n## Moves\n[M1] When Idle receives go, it stays Idle.\n\n## Walks\n[W1] Walk Go under all-honest: from Idle, go; ends Idle.\n');
-    assert.deepEqual(p.errors, ['W1: a component walk names no scenario: "under all-honest" belongs in a system\'s walk']);
+    assert.deepEqual(p.errors, ['W1: a part walk names no scenario: "under all-honest" belongs in a composition\'s walk']);
     assert.equal(p.walks[0].scenario, null);
     assert.deepEqual(p.walks[0].steps.map(s => s.event), ['go'], 'the walk is still read');
   });
 
-  it('refuses a system Within whose ticks are not a number, and names the form of a system Once or Within it cannot read', () => {
-    const p = parseSystemProse('# Supply\nConcern: supply\n\n## Once\n[O1] Once adapter.Open, adapter.Halted.\n\n## Within\n[N1] Within many ticks of adapter.Open, adapter.Halted, given G1.\n[N2] Within 2 ticks of adapter.Open.\n\n## Given\n[G1] Given that x. If this is false, y.\n');
+  it('refuses a composition Within whose ticks are not a number, and names the form of a composition Once or Within it cannot read', () => {
+    const p = parseCompositionProse('# Supply\nConcern: supply\n\n## Once\n[O1] Once adapter.Open, adapter.Halted.\n\n## Within\n[N1] Within many ticks of adapter.Open, adapter.Halted, given G1.\n[N2] Within 2 ticks of adapter.Open.\n\n## Given\n[G1] Given that x. If this is false, y.\n');
     assert.deepEqual(p.errors, [
       'O1: does not follow the Once form "Once <trigger>, eventually <goal>, given G<n>. Scenarios: ..."',
       'N1: "many" is not a number of ticks',
@@ -791,8 +790,8 @@ describe('what the grammar refuses', () => {
     assert.equal(p.withins[0].k, undefined);
   });
 
-  it('reports a scenario a system property claims twice, and counts it once', () => {
-    const p = parseSystemProse('# Supply\nConcern: supply\n\n## Always\n[A1] Always, {adapter.held <= 2}. Scenarios: all-honest, quiet, quiet, all-honest, quiet.\n');
+  it('reports a scenario a composition property claims twice, and counts it once', () => {
+    const p = parseCompositionProse('# Supply\nConcern: supply\n\n## Always\n[A1] Always, {adapter.held <= 2}. Scenarios: all-honest, quiet, quiet, all-honest, quiet.\n');
     assert.deepEqual(p.errors, ['A1: claims scenario quiet twice', 'A1: claims scenario all-honest twice']);
     assert.deepEqual(p.always[0].scenarios, ['all-honest', 'quiet']);
   });
@@ -979,8 +978,8 @@ describe('a Given with on and only when, and an Always with a Given', () => {
     const noOn = parseProse(withGivens('[G1] Given that Governance schedules short delays. If this is false, A2 is at risk. Actor: Governance, only when delay is at most 1.'));
     assert.deepEqual(noOn.errors, ['G1: only when names the event it restricts: "Actor: <Actor>, on <event>, only when <condition>."']);
     assert.deepEqual(compileIR(noOn).errors, noOn.errors, 'no follow-on error for the field it cannot read');
-    const system = parseSystemProse('# Supply\nConcern: supply\n\n## Given\n[G1] Given that x. If this is false, y. Actor: the user, only when {adapter.held <= 1}.\n');
-    assert.deepEqual(system.errors, ['G1: only when names the event it restricts: "Actor: <Actor>, on <event>, only when <condition>."']);
+    const composition = parseCompositionProse('# Supply\nConcern: supply\n\n## Given\n[G1] Given that x. If this is false, y. Actor: the user, only when {adapter.held <= 1}.\n');
+    assert.deepEqual(composition.errors, ['G1: only when names the event it restricts: "Actor: <Actor>, on <event>, only when <condition>."']);
   });
 
   it('refuses a tag with a word the form does not name, such as eventual, as a Given that does not follow the form', () => {
@@ -992,13 +991,13 @@ describe('a Given with on and only when, and an Always with a Given', () => {
     assert.deepEqual(parseProse(withGivens('[G1] Given that x. If this is false, y. Actor: Governance, prompt, on schedule.')).errors, [form], 'the clauses come in the order shown');
   });
 
-  it('reports an event no passage declares, an event the actor does not send, and a qualified event in a component', () => {
+  it('reports an event no passage declares, an event the actor does not send, and a qualified event in a part', () => {
     const undeclared = parseProse(withGivens('[G1] Given that x. If this is false, y. Actor: Governance, on nothing, prompt.'));
     assert.deepEqual(undeclared.misnamed, ['G1 names event nothing, which no Event passage declares']);
     const notSent = parseProse(withGivens('[G1] Given that x. If this is false, y. Actor: Governance, on execute, prompt.'));
     assert.deepEqual(notSent.misnamed, ['G1 names event execute, which Governance does not send']);
     const qualified = parseProse(withGivens('[G1] Given that x. If this is false, y. Actor: Governance, on timelock.schedule, prompt.'));
-    assert.deepEqual(qualified.misnamed, ['G1 names event timelock.schedule; a component\'s Given names one of its own events']);
+    assert.deepEqual(qualified.misnamed, ['G1 names event timelock.schedule; a part\'s Given names one of its own events']);
     const byName = parseProse(withGivens('[G1] Given that x. If this is false, y. Actor: Governance, on schedule.'));
     assert.deepEqual(byName.misnamed, [], 'the sender and the actor match by their normalized names');
   });
@@ -1017,16 +1016,16 @@ describe('a Given with on and only when, and an Always with a Given', () => {
     assert.deepEqual(missing.misnamed, ['A3 cites G9, which does not exist']);
   });
 
-  it('reads the same clauses in a system, where an event is <component>.<event>', () => {
-    const system = (given: string, always = '[A1] Always, {adapter.held <= 2}. Scenarios: all-honest.') => parseSystemProse(`# Supply\nConcern: supply\n\nThe adapter alone.\n\n## Always\n${always}\n\n## Given\n${given}\n`);
-    const ok = system('[G1] Given that the user exits small amounts. If this is false, A1 is at risk. Actor: the user, on adapter.exit, only when {amount <= 1}.', '[A1] Always, {adapter.held <= 2}, given G1. Scenarios: all-honest.');
+  it('reads the same clauses in a composition, where an event is <part>.<event>', () => {
+    const composition = (given: string, always = '[A1] Always, {adapter.held <= 2}. Scenarios: all-honest.') => parseCompositionProse(`# Supply\nConcern: supply\n\nThe adapter alone.\n\n## Always\n${always}\n\n## Given\n${given}\n`);
+    const ok = composition('[G1] Given that the user exits small amounts. If this is false, A1 is at risk. Actor: the user, on adapter.exit, only when {amount <= 1}.', '[A1] Always, {adapter.held <= 2}, given G1. Scenarios: all-honest.');
     assert.deepEqual(ok.errors, []);
     assert.deepEqual(ok.misnamed, []);
     assert.deepEqual(ok.givens[0], { id: 'G1', assumption: 'the user exits small amounts', otherwise: 'A1 is at risk', actor: 'the user', event: 'adapter.exit', promptness: 'eventual', when: bin('<=', id('amount'), int(1)) });
     assert.deepEqual(ok.always[0], { id: 'A1', cond: bin('<=', id('adapter.held'), int(2)), givens: ['G1'], scenarios: ['all-honest'] });
-    const bare = system('[G1] Given that x. If this is false, y. Actor: the user, on exit, prompt.');
-    assert.deepEqual(bare.misnamed, ['G1 names event exit; a system\'s Given names <component>.<event>']);
-    const fairnessOnly = system('[G1] Given that x. If this is false, y. Actor: the user, on adapter.exit.', '[A1] Always, {adapter.held <= 2}, given G1.');
+    const bare = composition('[G1] Given that x. If this is false, y. Actor: the user, on exit, prompt.');
+    assert.deepEqual(bare.misnamed, ['G1 names event exit; a composition\'s Given names <part>.<event>']);
+    const fairnessOnly = composition('[G1] Given that x. If this is false, y. Actor: the user, on adapter.exit.', '[A1] Always, {adapter.held <= 2}, given G1.');
     assert.deepEqual(fairnessOnly.misnamed, ['A1 cites G1, which has neither prompt nor only when; an Always may cite only a Given that constrains steps']);
   });
 });

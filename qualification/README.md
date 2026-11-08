@@ -46,17 +46,17 @@ Tests that need an unavailable solver skip explicitly. A deterministic generator
 
 ## Command and translation checks
 
-The command model selects four short paths that cover every declared component command event. The suite also exercises a fresh system violation when TLC is available. It checks that bounded results never become proved, accepted risk leaves a violation violated, changed meaning lapses evidence and acceptance, verification preserves bytes and mtimes, and rendering leaves integrity and decision records unchanged. A test-only preload kills the real CLI after one rename: the manifest binding the candidate, the candidate becoming the entry, or the bundle moving to `trials/`, the three of STORE-ANSWER, or the decision log's. A candidate the manifest does not bind grants no authority, and explicit recovery finishes a publication the manifest already binds.
+The command model selects four short paths that cover every declared part command event. The suite also exercises a fresh composition violation when TLC is available. It checks that bounded results never become proved, accepted risk leaves a violation violated, changed meaning lapses evidence and acceptance, verification preserves bytes and mtimes, and rendering leaves integrity and decision records unchanged. A test-only preload kills the real CLI after one rename: the manifest binding the candidate, the candidate becoming the entry, or the bundle moving to `trials/`, the three of STORE-ANSWER, or the decision log's. A candidate the manifest does not bind grants no authority, and explicit recovery finishes a publication the manifest already binds.
 
 ```bash
 node --test qualification/tests/command-lifecycle.test.ts
-# Set JAVA and TLA_TOOLS to include the live system path.
+# Set JAVA and TLA_TOOLS to include the live composition path.
 DOSSIER_QUAL_KEEP=1 node --test qualification/tests/command-lifecycle.test.ts
 ```
 
 `DOSSIER_QUAL_KEEP=1` retains the temporary command artifacts and prints their locations. These selected paths and four crash boundaries are bounded qualification, not a proof of arbitrary histories, concurrent writers or all crash points.
 
-The differential harness runs 200 deterministic component seeds and twelve composition cases by default. It retains summaries and disagreements, and minimizes component disagreements while preserving compilability and the failure. Deliberately corrupted translations must fail its oracle.
+The differential harness runs 200 deterministic part seeds and twelve composition cases by default. It retains summaries and disagreements, and minimizes part disagreements while preserving compilability and the failure. Deliberately corrupted translations must fail its oracle.
 
 ```bash
 node --test qualification/tests/differential.test.ts
@@ -76,7 +76,7 @@ Rebuild Harbor in a separate output:
 node qualification/rebuild-fixture.mjs --out /tmp/harbor-current
 ```
 
-The full recipe needs all four solver variables. The output must be outside the plugin tree, must not alias a plugin path, and must be absent or empty. Preparation copies the fixture's authored prose, composition, alternatives, actors, knowledge and stand-in replay code. It leaves out answers, owner decisions, views, calls and models, and the recipe writes the models and their reviewed refinements itself. Each dossier gets an empty `integrity.json`, and the root gets `storage: integrity-v1`.
+The full recipe needs all four solver variables. The output must be outside the plugin tree, must not alias a plugin path, and must be absent or empty. Preparation copies the fixture's authored prose, wiring, alternatives, actors, knowledge and stand-in replay code. It leaves out answers, owner decisions, views, calls and models, and the recipe writes the models and their reviewed refinements itself. Each dossier gets an empty `integrity.json`, and the root gets `storage: integrity-v1`.
 
 The recipe draws, scaffolds, runs actual trials, whose answers the runner publishes to `evidence/`, writes interpretations beside them and publishes decisions through the ordinary commands. It renders the views, verifies, and writes `observed-marks.json` under the output. That report is an observation to review against the intended guarantees. A rebuild never writes `fixture/expected-marks.json`, the reviewed golden. Preparation tests alone do not establish that the complete solver recipe passes.
 

@@ -4,8 +4,8 @@ import { api, AppContext, diffMarks, invalidate, loadSeen, marksByDossier, saveS
 import { Header_, Help, LiveRegion, Palette, Ribbon } from './Shell.jsx';
 import { Failed, Loading } from './bits.jsx';
 import { Board } from './Board.jsx';
-import { ComponentView } from './ComponentView.jsx';
-import { SystemView } from './SystemView.jsx';
+import { PartView } from './PartView.jsx';
+import { CompositionView } from './CompositionView.jsx';
 
 const THEME_KEY = 'dossier-explorer:theme';
 const readTheme = () => { try { return localStorage.getItem(THEME_KEY) || 'auto'; } catch { return 'auto'; } };
@@ -21,7 +21,7 @@ export function App() {
   const [palette, setPalette] = useState(false);
   const [help, setHelp] = useState(false);
   const [theme, setThemeState] = useState(readTheme);
-  const [systemDark, setSystemDark] = useState(() => matchMedia('(prefers-color-scheme: dark)').matches);
+  const [osDark, setOsDark] = useState(() => matchMedia('(prefers-color-scheme: dark)').matches);
   const { data: root, error } = useData(api.root, version);
   const prev = useRef(null);
 
@@ -57,7 +57,7 @@ export function App() {
 
   useEffect(() => {
     const mq = matchMedia('(prefers-color-scheme: dark)');
-    const on = e => setSystemDark(e.matches);
+    const on = e => setOsDark(e.matches);
     mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
   }, []);
@@ -66,7 +66,7 @@ export function App() {
     else document.documentElement.dataset.theme = theme;
     try { localStorage.setItem(THEME_KEY, theme); } catch { /* storage may be unavailable */ }
   }, [theme]);
-  const colorMode = theme === 'auto' ? (systemDark ? 'dark' : 'light') : theme;
+  const colorMode = theme === 'auto' ? (osDark ? 'dark' : 'light') : theme;
 
   useEffect(() => {
     const on = e => {
@@ -82,10 +82,11 @@ export function App() {
     return () => removeEventListener('keydown', on);
   }, []);
 
-  const title = id => root?.dossiers.find(d => d.id === id)?.title || id;
+  // A dossier goes by its id, the kebab-case name its folder, its links and its module share.
+  const title = id => id;
   const crumbs = route.view === 'board' ? [{ label: 'Board' }]
-    : route.view === 'system' ? [{ label: 'Board', href: '#/' }, { label: title(route.id) }]
-    : [{ label: 'Board', href: '#/' }, ...(route.params.from ? [{ label: title(route.params.from), href: `#/s/${route.params.from}` }] : []), { label: title(route.id) }];
+    : route.view === 'composition' ? [{ label: 'Board', href: '#/' }, { label: title(route.id) }]
+    : [{ label: 'Board', href: '#/' }, ...(route.params.from ? [{ label: title(route.params.from), href: `#/composition/${route.params.from}` }] : []), { label: title(route.id) }];
 
   return (
     <AppContext.Provider value={{ version, announce, root, changes, colorMode }}>
@@ -96,8 +97,8 @@ export function App() {
         <main id="main" className="main" tabIndex={-1}>
           {error ? <Failed error={error} />
             : !root ? <Loading what="the dossiers" />
-            : route.view === 'component' ? <ComponentView key={route.id} id={route.id} params={route.params} />
-            : route.view === 'system' ? <SystemView key={route.id} id={route.id} params={route.params} />
+            : route.view === 'part' ? <PartView key={route.id} id={route.id} params={route.params} />
+            : route.view === 'composition' ? <CompositionView key={route.id} id={route.id} params={route.params} />
             : <Board />}
         </main>
         <Palette isOpen={palette} onOpenChange={setPalette} />

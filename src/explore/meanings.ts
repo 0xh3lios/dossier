@@ -5,11 +5,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// A row of the page's component marks table: the mark, the passage kinds it is for, the tier the row
+// A row of the page's part marks table: the mark, the passage kinds it is for, the tier the row
 // is limited to, if any, and what it means.
 interface MarkRow { mark: string; kinds: Set<string> | 'any'; tier: string | null; means: string; for: string }
 export interface Meanings {
-  // The page's rows as the help dialog lists them: each component mark with the kinds it is for, and each cell.
+  // The page's rows as the help dialog lists them: each part mark with the kinds it is for, and each cell.
   legend: { marks: { mark: string; for: string; means: string }[]; cells: { mark: string; means: string }[] };
   mark(kind: string, mark: string, tier: string): string | null;
   cell(mark: string): string | null;
@@ -38,15 +38,15 @@ const named = (cell: string) => cell.match(/^`([^`]+)`$/)?.[1] ?? null;
 
 export function readMeanings(pluginRoot: string): Meanings {
   const page = tables(readFileSync(join(pluginRoot, 'docs', 'reference', 'marks.md'), 'utf8'));
-  const marks: MarkRow[] = (page['Component marks'] || []).flatMap(([mark, forText, means]) => {
+  const marks: MarkRow[] = (page['Part marks'] || []).flatMap(([mark, forText, means]) => {
     const name = named(mark || '');
     if (!name || !forText || !means) return [];
-    const tier = forText.match(/in a (charted|modeled) component/)?.[1] ?? null;
+    const tier = forText.match(/in a (charted|modeled) part/)?.[1] ?? null;
     const kinds = forText === 'any' ? 'any' as const : new Set(forText.match(/\b[A-Z]\b/g) || []);
     return [{ mark: name, kinds, tier, means: plain(means), for: forText }];
   });
   const byName = (section: string) => new Map((page[section] || []).flatMap(([name, means]) => { const n = named(name || ''); return n && means ? [[n, plain(means)] as const] : []; }));
-  const cells = byName('Cells'), walks = byName('Walks in a system'), flags = byName('Flags');
+  const cells = byName('Cells'), walks = byName('Walks in a composition'), flags = byName('Flags');
   return {
     legend: { marks: marks.map(r => ({ mark: r.mark, for: r.for, means: r.means })), cells: [...cells].map(([mark, means]) => ({ mark, means })) },
     // A row for the tier first, then one for every tier.

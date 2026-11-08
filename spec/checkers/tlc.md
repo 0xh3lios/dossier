@@ -8,13 +8,13 @@ Read when trying a TLC call. The runner executes `java -XX:+UseParallelGC -cp $T
 - `<Id>_O<n>.cfg`: `PROPERTIES O<n>` alone, because TLC reports a temporal violation without naming which property.
 - `<Id>_W<n>.cfg`: `INVARIANTS TypeOK NotW<n>` and nothing else.
 - A blunder's cfg beside its module under `model/blunders/`: exactly one property.
-- A system's cfgs are generated per cell under `model/generated/`, with the scenario's modes, windows and start as constants, and one per walk, `W<n>_<scenario>.cfg`, which enables `TypeOK` and the walk's `NotW<n>` under the walk's scenario. A system's cell call executes exactly its own `<Property>_<scenario>.cfg`, with the scenario's hyphens as underscores. A system's witness call names `walk:` and `scenario:` in place of `property:`.
+- A composition's cfgs are generated per cell under `model/generated/`, with the scenario's modes, windows and start as constants, and one per walk, `W<n>_<scenario>.cfg`, which enables `TypeOK` and the walk's `NotW<n>` under the walk's scenario. A composition's cell call executes exactly its own `<Property>_<scenario>.cfg`, with the scenario's hyphens as underscores. A composition's witness call names `walk:` and `scenario:` in place of `property:`.
 
 Deadlock checking is off because final states take no step. Use symmetry sets only where the prose makes values interchangeable, and never with a liveness property.
 
 ## What the runner parses
 
-When TLC completes, every enabled property `holds`. `Invariant X is violated` or `Action property X is violated` gives X `violated` and the others `holds` as far as explored, listed under `partial`. A property under `partial` is not covered by that answer. A temporal violation gives the O property `violated`. Coverage rows give each action's counts, and an action that generated no state covers nothing. A trace is read state by state with its action and values. For a component's witness the runner compares it to the called trace by `state` and the `trace-data` variables. For a system's witness it compares the `trace-data` values alone.
+When TLC completes, every enabled property `holds`. `Invariant X is violated` or `Action property X is violated` gives X `violated` and the others `holds` as far as explored, listed under `partial`. A property under `partial` is not covered by that answer. A temporal violation gives the O property `violated`. Coverage rows give each action's counts, and an action that generated no state covers nothing. A trace is read state by state with its action and values. For a part's witness the runner compares it to the called trace by `state` and the `trace-data` variables. For a composition's witness it compares the `trace-data` values alone.
 
 When `TLA_TOOLS` is unset or names no file, the runner refuses the trial before anything runs, with exit 2 and nothing written. A parse error, an exception or a timeout makes a trial that started `aborted`, and [ANSWER-ABORTED](../evidence.md#questions-and-answers) says what becomes of its answer. Parenthesize an implication's antecedent in an action property, since TLC reads `[state \in` as the start of a function.
 

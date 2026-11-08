@@ -8,7 +8,7 @@ The agent runs the `dossier` command the pages show, and you can ask it to run a
 
 - [Why model the system](explanation/why-model-the-system.md): what checking a model of the whole system tells you, why an agent can keep one current, and the four conditions under which that work can be trusted
 - [What Dossier keeps](explanation/what-dossier-keeps.md): the account, who writes what in it, how the work divides, and what you are asked to do
-- [Components, systems and scenarios](explanation/components-systems-scenarios.md): the pieces a dossier is built from
+- [Parts, compositions and scenarios](explanation/parts-compositions-scenarios.md): the pieces a dossier is built from
 - [Three kinds of tool](explanation/three-kinds-of-tool.md): why the chart, the solvers and the grounding are kept apart
 - [How a claim earns its mark](explanation/evidence.md): calls, one answer per question, planted bugs, lapse and the guards
 - [The limits of a mark](explanation/limits.md): what a mark does not establish
@@ -18,8 +18,8 @@ The agent runs the `dossier` command the pages show, and you can ask it to run a
 - [Set up a repository](how-to/set-up-a-repository.md)
 - [Install the solvers](how-to/install-the-solvers.md)
 - [Choose what to model first](how-to/choose-what-to-model.md)
-- [Start a component](how-to/start-a-component.md)
-- [Compose a system](how-to/compose-a-system.md)
+- [Start a part](how-to/start-a-part.md)
+- [Start a composition](how-to/start-a-composition.md)
 - [Check a claim](how-to/check-a-claim.md)
 - [Explore a what-if](how-to/explore-a-what-if.md)
 - [Record a decision](how-to/record-a-decision.md)
@@ -40,4 +40,4 @@ The agent runs the `dossier` command the pages show, and you can ask it to run a
 - [Harbor](reference/harbor.md): the fixture, piece by piece
 - [Glossary](reference/glossary.md): the terms the pages use, in plain words, and the README's words beside the docs'
 
-The [specification](../spec/README.md) owns the shared process, language, artifact and evidence contracts. [Publication and integrity](../spec/storage.md) defines how answers and decisions are published, and how an interrupted publication is recovered. The skills select tasks and provide host integration. Component, system, refresh and probe work use [one process](../spec/process.md), with distinct evidence obligations. The [review contract](../spec/review.md) defines the independent second read.
+The [specification](../spec/README.md) owns the shared process, language, artifact and evidence contracts. [Publication and integrity](../spec/storage.md) defines how answers and decisions are published, and how an interrupted publication is recovered. The skills select tasks and provide host integration. Part, composition, refresh and probe work use [one process](../spec/process.md), with distinct evidence obligations. The [review contract](../spec/review.md) defines the independent second read.

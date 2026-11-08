@@ -1,11 +1,11 @@
-// The grammar: prose.md for a component or a system, read into passages with
+// The grammar: prose.md for a part or a composition, read into passages with
 // ids and hashes, declarations, and the forms each kind must follow.
 import { normalize, short } from '../hash.ts';
 import { parseCondition, parseClauses, parseValue, splitTop, NUMBER_WORDS } from './expr.ts';
 import type { Assignment, Effect, Expr, Value } from './expr.ts';
 
 // The key a sender's name resolves by: lower case, "the" dropped, anything else to hyphens.
-// "the Adapter" and "adapter" are the same sender, the component adapter or the actor adapter.
+// "the Adapter" and "adapter" are the same sender, the part adapter or the actor adapter.
 export const senderId = (name: unknown): string => String(name ?? '').toLowerCase().replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 export type PassageKind = 'S' | 'E' | 'M' | 'R' | 'A' | 'O' | 'N' | 'G' | 'W' | 'X' | 'K' | 'T';
@@ -53,8 +53,8 @@ export interface AlwaysForm { id: string; while: string | null; cond: Expr | nul
 export interface Trigger { state?: string; cond?: Expr | null }
 export interface OnceForm { id: string; trigger: Trigger | null; goal: Trigger | null; givens: string[] }
 export interface WithinForm { id: string; k: number | null | undefined; trigger: Trigger | null; goal: Trigger | null; givens: string[] }
-// A Given: its actor, the event it is about (bare in a component, <component>.<event> in a
-// system), whether it is prompt ('prompt', else 'eventual'), and the step condition of an
+// A Given: its actor, the event it is about (bare in a part, <part>.<event> in a
+// composition), whether it is prompt ('prompt', else 'eventual'), and the step condition of an
 // "only when" clause.
 export interface GivenForm { id: string; text?: string; assumption?: string; otherwise?: string; actor: string | null; event: string | null; promptness: string; when: Expr | null }
 export interface Step { event: string; args: Record<string, Expr>; refused: boolean; malformed?: boolean }
@@ -82,7 +82,7 @@ export interface WordsForm { id: string; text: string }
 // One state by event pair: the moves and refusals that say it.
 export interface TableCell { state: string; event: string; moves: string[]; refusals: string[]; unconditional: string[] }
 
-export interface ComponentProse extends SplitProse {
+export interface PartProse extends SplitProse {
   tier: string;
   module: string | null;
   pins: string[];
@@ -106,30 +106,30 @@ export interface ComponentProse extends SplitProse {
   saidTwice: string[];
 }
 
-// A system's properties carry the scenarios they claim, or null for the composition's defaults.
-export interface SystemAlwaysForm { id: string; cond: Expr | null; givens: string[]; scenarios: string[] | null }
-export interface SystemOnceForm extends OnceForm { scenarios: string[] | null }
-export interface SystemWithinForm extends WithinForm { scenarios: string[] | null }
-export type SystemProperty = SystemAlwaysForm | SystemOnceForm | SystemWithinForm;
-export interface SystemStep { component: string; event: string; args: Record<string, Expr>; refused: boolean }
-export interface SystemWalkForm { id: string; name: string | null; scenario?: string | null; from?: string; steps: SystemStep[]; ends?: string; rest?: string }
-export interface SystemProse extends SplitProse {
+// A composition's properties carry the scenarios they claim, or null for the wiring's defaults.
+export interface CompositionAlwaysForm { id: string; cond: Expr | null; givens: string[]; scenarios: string[] | null }
+export interface CompositionOnceForm extends OnceForm { scenarios: string[] | null }
+export interface CompositionWithinForm extends WithinForm { scenarios: string[] | null }
+export type CompositionProperty = CompositionAlwaysForm | CompositionOnceForm | CompositionWithinForm;
+export interface CompositionStep { part: string; event: string; args: Record<string, Expr>; refused: boolean }
+export interface CompositionWalkForm { id: string; name: string | null; scenario?: string | null; from?: string; steps: CompositionStep[]; ends?: string; rest?: string }
+export interface CompositionProse extends SplitProse {
   concern: string | null;
   description: string;
-  always: SystemAlwaysForm[];
-  onces: SystemOnceForm[];
-  withins: SystemWithinForm[];
+  always: CompositionAlwaysForm[];
+  onces: CompositionOnceForm[];
+  withins: CompositionWithinForm[];
   givens: GivenForm[];
-  walks: SystemWalkForm[];
+  walks: CompositionWalkForm[];
   wordsOnly: WordsForm[];
-  properties: SystemProperty[];
+  properties: CompositionProperty[];
   misnamed: string[];
 }
 
 interface Current { id: string; kind: PassageKind; n: number; lines: string[]; line: number }
 
 export const KINDS: Record<string, string> = { S: 'State', E: 'Event', M: 'Move', R: 'Refusal', A: 'Always', O: 'Once', N: 'Within', G: 'Given', W: 'Walk', X: 'Seam', K: 'Guarantee', T: 'Words only' };
-export const SYSTEM_KINDS = new Set(['A', 'O', 'N', 'G', 'W', 'T']);
+export const COMPOSITION_KINDS = new Set(['A', 'O', 'N', 'G', 'W', 'T']);
 const SECTION_KINDS: Record<string, string> = { States: 'S', Events: 'E', Moves: 'MR', Always: 'A', Once: 'O', Within: 'N', Given: 'G', Walks: 'W', Seams: 'X', Guarantees: 'K', 'Words only': 'T', Retired: '*' };
 const ID = /^\[([SEMRAONGWXKT])(\d+)\]\s*(.*)$/;
 const NAME = '[A-Z][\\w-]*';
@@ -228,7 +228,7 @@ export function parseBoundary(text: string): { data: Datum[]; effects: BoundaryE
   return { data, effects, errors };
 }
 
-function splitPassages(text: string, { system = false } = {}): SplitProse {
+function splitPassages(text: string, { composition = false } = {}): SplitProse {
   const lines = text.split(/\r?\n/);
   const out: SplitProse = { title: null, header: {}, lead: [], passages: [], byId: {}, sections: [], errors: [] };
   let section: string | null = null, current: Current | null = null, beforeFirst = true;
@@ -265,7 +265,7 @@ function splitPassages(text: string, { system = false } = {}): SplitProse {
       const kind = start[1] as PassageKind;
       const expected = SECTION_KINDS[section!];
       if (expected && expected !== '*' && !expected.includes(kind)) out.errors.push(`${kind}${start[2]} sits under "## ${section}", which holds ${expected.split('').map(k => KINDS[k]).join(' and ')} passages`);
-      if (system && !SYSTEM_KINDS.has(kind)) out.errors.push(`${kind}${start[2]}: a system holds only A, O, N, G, W and T passages`);
+      if (composition && !COMPOSITION_KINDS.has(kind)) out.errors.push(`${kind}${start[2]}: a composition holds only A, O, N, G, W and T passages`);
       current = { id: `${kind}${start[2]}`, kind, n: Number(start[2]), lines: [start[3]], line: i + 1 };
       return;
     }
@@ -278,7 +278,7 @@ function splitPassages(text: string, { system = false } = {}): SplitProse {
 }
 
 const stepRe = new RegExp(`^(${EVENT})((?:\\s+${DATA}\\s+\\S+)*)(\\s+refused)?$`);
-const systemStepRe = new RegExp(`^([a-z][\\w-]*)\\.(${EVENT})((?:\\s+${DATA}\\s+\\S+)*)(\\s+refused)?$`);
+const compositionStepRe = new RegExp(`^([a-z][\\w-]*)\\.(${EVENT})((?:\\s+${DATA}\\s+\\S+)*)(\\s+refused)?$`);
 function parseArgs(text: string): Record<string, Expr> {
   const args: Record<string, Expr> = {};
   const tokens = text.trim().split(/\s+/).filter(Boolean);
@@ -300,7 +300,7 @@ const givensOf = (text: string) => text.split(/\s+and\s+/).map(s => s.trim());
 
 const GIVEN = /^Given that (.+?)\. If this is false, (.+?)\.(?:\s*Actor: ([^.,]+?)(?:, on ([a-z][\w-]*(?:\.[a-z][\w-]*)?))?(?:, (prompt))?(?:, only when (.+?))?\.)?$/;
 const GIVEN_FORM = 'Given that <text>. If this is false, <text>.[ Actor: <Actor>[, on <event>][, prompt][, only when <condition>].]';
-// A Given as a component or a system reads it. Prompt and only when are about one event, so
+// A Given as a part or a composition reads it. Prompt and only when are about one event, so
 // each needs "on". A tag the form does not read would otherwise be taken into the text before
 // it, so an "Actor:" left there is a Given that does not follow the form.
 function readGiven(x: Passage, err: (id: string, msg: string) => void): GivenForm {
@@ -316,7 +316,7 @@ function readGiven(x: Passage, err: (id: string, msg: string) => void): GivenFor
 // A Given that constrains steps rather than runs: prompt, or only when. Only these may back an Always.
 export const constrainsSteps = (g: Pick<GivenForm, 'promptness' | 'when'>): boolean => g.promptness === 'prompt' || Boolean(g.when);
 
-function readComponent(p: null, prose: ComponentProse): ComponentProse {
+function readPart(p: null, prose: PartProse): PartProse {
   const err = (id: string, msg: string) => prose.errors.push(`${id}: ${msg}`);
   const active = prose.passages.filter(x => !x.retired);
   const of = (kind: PassageKind) => active.filter(x => x.kind === kind);
@@ -404,8 +404,8 @@ function readComponent(p: null, prose: ComponentProse): ComponentProse {
   prose.walks = of('W').map((x): WalkForm => {
     const m = x.text.match(new RegExp(`^Walk ([\\w-]+)(?: under ([\\w-]+))?: from (${PATH})(?: with (.+?))?, (.+?); ends (${PATH})\\b(.*)$`));
     if (!m) { err(x.id, 'does not follow the Walk form "Walk <Name>: from <State>, <event>, ...; ends <State>."'); return { id: x.id, name: null, steps: [], from: null, ends: null, with: {}, endData: {}, sent: {}, notSent: [] }; }
-    // A scenario is a system's: a component's walk runs in the component's own model, which has no modes.
-    if (m[2]) err(x.id, `a component walk names no scenario: "under ${m[2]}" belongs in a system's walk`);
+    // A scenario is a composition's: a part's walk runs in the part's own model, which has no modes.
+    if (m[2]) err(x.id, `a part walk names no scenario: "under ${m[2]}" belongs in a composition's walk`);
     const steps: Step[] = [];
     for (const s of splitTop(m[5], [', '])) {
       const r = s.match(stepRe);
@@ -430,7 +430,7 @@ function readComponent(p: null, prose: ComponentProse): ComponentProse {
   });
   prose.seams = of('X').map((x): SeamForm => {
     const m = x.text.match(/^Seam with ([\w-]+): (.+)$/);
-    if (!m) { err(x.id, 'does not follow the Seam form "Seam with <Component>: ..."'); return { id: x.id, piece: null, body: null }; }
+    if (!m) { err(x.id, 'does not follow the Seam form "Seam with <Part>: ..."'); return { id: x.id, piece: null, body: null }; }
     return { id: x.id, piece: m[1], body: normalize(m[2]) };
   });
   prose.guarantees = of('K').map((x): GuaranteeForm => {
@@ -474,11 +474,11 @@ function readComponent(p: null, prose: ComponentProse): ComponentProse {
     for (const g of o.givens) if (!prose.byId[g] || prose.byId[g].retired) mis(o.id, `cites ${g}, which does not exist`);
     for (const side of [o.trigger, o.goal]) if (side && side.state && !stateNames.has(side.state)) mis(o.id, `names state ${side.state}, which no State passage declares`);
   }
-  // A Given's event is one of this component's, sent by the Given's actor; an Always cites only a step Given.
+  // A Given's event is one of this part's, sent by the Given's actor; an Always cites only a step Given.
   const senderOf = Object.fromEntries(prose.events.filter(e => e.name).map(e => [e.name!, e.sender]));
   for (const g of prose.givens) {
     if (!g.event) continue;
-    if (g.event.includes('.')) { mis(g.id, `names event ${g.event}; a component's Given names one of its own events`); continue; }
+    if (g.event.includes('.')) { mis(g.id, `names event ${g.event}; a part's Given names one of its own events`); continue; }
     if (!eventNames.has(g.event)) { mis(g.id, `names event ${g.event}, which no Event passage declares`); continue; }
     if (g.actor && senderId(senderOf[g.event]) !== senderId(g.actor)) mis(g.id, `names event ${g.event}, which ${g.actor} does not send`);
   }
@@ -512,13 +512,12 @@ function readComponent(p: null, prose: ComponentProse): ComponentProse {
   return prose;
 }
 
-export function parseProse(text: string): ComponentProse {
+export function parseProse(text: string): PartProse {
   const split = splitPassages(text);
-  // Filled in below and by readComponent.
-  const prose = { ...split, tier: 'modeled', module: split.header.module || null, pins: split.header.pins ? split.header.pins.split(/,\s*/).filter(Boolean) : [] } as ComponentProse;
-  // The title names the component, and its letters, digits and underscores name its TLA+ module.
-  if (split.title === null) prose.errors.push('no title: a "# <Name>" line names the component and its module');
-  else if (!/[A-Za-z]/.test(split.title)) prose.errors.push(`title "${split.title}" holds no letter to name the component's module by`);
+  // Filled in below and by readPart.
+  const prose = { ...split, tier: 'modeled', module: split.header.module || null, pins: split.header.pins ? split.header.pins.split(/,\s*/).filter(Boolean) : [] } as PartProse;
+  // The title names the part in words, for its readers; its TLA+ module is named from its id.
+  if (split.title === null) prose.errors.push('no title: a "# <Name>" line names the part');
   if (split.header.tier) {
     if (/^(charted|modeled)$/i.test(split.header.tier)) prose.tier = split.header.tier.toLowerCase();
     else prose.errors.push(`Tier must be charted or modeled, not "${split.header.tier}"`);
@@ -527,14 +526,14 @@ export function parseProse(text: string): ComponentProse {
   const b = parseBoundary(boundaryText);
   prose.boundary = { text: boundaryText, data: b.data, effects: b.effects };
   prose.errors.push(...b.errors.map(e => `boundary: ${e}`));
-  return readComponent(null, prose);
+  return readPart(null, prose);
 }
 
-// A system's prose: properties over member data, each with its scenarios.
-export function parseSystemProse(text: string): SystemProse {
-  const split = splitPassages(text, { system: true });
+// A composition's prose: properties over member data, each with its scenarios.
+export function parseCompositionProse(text: string): CompositionProse {
+  const split = splitPassages(text, { composition: true });
   // Filled in below.
-  const prose = { ...split, concern: split.header.concern || null, description: split.lead.join(' ') } as SystemProse;
+  const prose = { ...split, concern: split.header.concern || null, description: split.lead.join(' ') } as CompositionProse;
   const err = (id: string, msg: string) => prose.errors.push(`${id}: ${msg}`);
   const attempt = <T,>(id: string, fn: () => T, fallback: T): T => { try { return fn(); } catch (e) { err(id, (e as Error).message); return fallback; } };
   const active = prose.passages.filter(x => !x.retired);
@@ -547,19 +546,19 @@ export function parseSystemProse(text: string): SystemProse {
     return { body: m ? p.text.slice(0, m.index).trim() : p.text, scenarios: listed ? [...new Set(listed)] : null };
   };
   const triggerOf = (id: string, text: string): Trigger => (/^[a-z][\w-]*\.[A-Z][\w-]*$/.test(text.trim()) ? { state: text.trim() } : { cond: attempt<Expr | null>(id, () => parseCondition(text), null) });
-  prose.always = of('A').map((x): SystemAlwaysForm => {
+  prose.always = of('A').map((x): CompositionAlwaysForm => {
     const { body, scenarios } = scenariosOf(x);
     const m = body.match(/^Always, (.+?)(?:, given (G\d+(?: and G\d+)*))?\.?$/);
     if (!m) { err(x.id, 'does not follow the Always form "Always, <condition>[, given G<n>]. Scenarios: ..."'); return { id: x.id, cond: null, givens: [], scenarios }; }
     return { id: x.id, cond: attempt<Expr | null>(x.id, () => parseCondition(m[1]), null), givens: m[2] ? givensOf(m[2]) : [], scenarios };
   });
-  prose.onces = of('O').map((x): SystemOnceForm => {
+  prose.onces = of('O').map((x): CompositionOnceForm => {
     const { body, scenarios } = scenariosOf(x);
     const m = body.match(/^Once (.+?), eventually (.+?), given (G\d+(?: and G\d+)*)\.?$/);
     if (!m) { err(x.id, 'does not follow the Once form "Once <trigger>, eventually <goal>, given G<n>. Scenarios: ..."'); return { id: x.id, trigger: null, goal: null, givens: [], scenarios }; }
     return { id: x.id, trigger: triggerOf(x.id, m[1]), goal: triggerOf(x.id, m[2]), givens: givensOf(m[3]), scenarios };
   });
-  prose.withins = of('N').map((x): SystemWithinForm => {
+  prose.withins = of('N').map((x): CompositionWithinForm => {
     const { body, scenarios } = scenariosOf(x);
     const m = body.match(/^Within (\S+) ticks? of (.+?), (.+?), given (G\d+(?: and G\d+)*)\.?$/);
     if (!m) { err(x.id, 'does not follow the Within form "Within <k> ticks of <trigger>, <goal>, given G<n>. Scenarios: ..."'); return { id: x.id, k: null, trigger: null, goal: null, givens: [], scenarios }; }
@@ -568,18 +567,18 @@ export function parseSystemProse(text: string): SystemProse {
     return { id: x.id, k, trigger: triggerOf(x.id, m[2]), goal: triggerOf(x.id, m[3]), givens: givensOf(m[4]), scenarios };
   });
   prose.givens = of('G').map(x => readGiven(x, err));
-  // A system's walk ends at a member's state and says nothing more: a clause after it would not be checked.
-  prose.walks = of('W').map((x): SystemWalkForm => {
+  // A composition's walk ends at a member's state and says nothing more: a clause after it would not be checked.
+  prose.walks = of('W').map((x): CompositionWalkForm => {
     const m = x.text.match(/^Walk ([\w-]+)(?: under ([\w-]+))?: from ([a-z][\w-]*\.[A-Z][\w-]*), (.+?); ends ([a-z][\w-]*\.[A-Z][\w-]*)\b(.*)$/);
-    if (!m) { err(x.id, 'does not follow the system Walk form "Walk <Name>[ under <scenario>]: from <component>.<State>, <component>.<event>[ <field> <value>][ refused], ...; ends <component>.<State>."'); return { id: x.id, name: null, steps: [] }; }
-    const steps: SystemStep[] = [];
+    if (!m) { err(x.id, 'does not follow the composition Walk form "Walk <Name>[ under <scenario>]: from <part>.<State>, <part>.<event>[ <field> <value>][ refused], ...; ends <part>.<State>."'); return { id: x.id, name: null, steps: [] }; }
+    const steps: CompositionStep[] = [];
     for (const s of splitTop(m[4], [', '])) {
-      const r = s.match(systemStepRe);
-      if (!r) { err(x.id, `step "${s}" is not "<component>.<event>[ <field> <value>...][ refused]"`); continue; }
-      steps.push({ component: r[1], event: r[2], args: attempt(x.id, () => parseArgs(r[3]), {}), refused: Boolean(r[4]) });
+      const r = s.match(compositionStepRe);
+      if (!r) { err(x.id, `step "${s}" is not "<part>.<event>[ <field> <value>...][ refused]"`); continue; }
+      steps.push({ part: r[1], event: r[2], args: attempt(x.id, () => parseArgs(r[3]), {}), refused: Boolean(r[4]) });
     }
     const rest = m[6].trim();
-    if (rest && rest !== '.') err(x.id, `a system walk ends at "ends ${m[5]}"; "${rest.replace(/^[;,]\s*|\.$/g, '')}" after it is not read`);
+    if (rest && rest !== '.') err(x.id, `a composition walk ends at "ends ${m[5]}"; "${rest.replace(/^[;,]\s*|\.$/g, '')}" after it is not read`);
     return { id: x.id, name: m[1], scenario: m[2] || null, from: m[3], steps, ends: m[5], rest };
   });
   prose.wordsOnly = of('T').map(x => ({ id: x.id, text: x.text }));
@@ -591,8 +590,8 @@ export function parseSystemProse(text: string): SystemProse {
     const g = prose.givens.find(x => x.id === gid);
     if (!g || !constrainsSteps(g)) prose.misnamed.push(`${a.id} cites ${gid}, which has neither prompt nor only when; an Always may cite only a Given that constrains steps`);
   }
-  // Whether the event exists and its sender is the actor is the composition's to check; the form is checked here.
-  for (const g of prose.givens) if (g.event && !/^[a-z][\w-]*\.[a-z][\w-]*$/.test(g.event)) prose.misnamed.push(`${g.id} names event ${g.event}; a system's Given names <component>.<event>`);
+  // Whether the event exists and its sender is the actor is the wiring's to check; the form is checked here.
+  for (const g of prose.givens) if (g.event && !/^[a-z][\w-]*\.[a-z][\w-]*$/.test(g.event)) prose.misnamed.push(`${g.id} names event ${g.event}; a composition's Given names <part>.<event>`);
   return prose;
 }
 

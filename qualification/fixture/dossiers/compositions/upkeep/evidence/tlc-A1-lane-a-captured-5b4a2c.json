@@ -1,0 +1,204 @@
+{
+  "schema": 1,
+  "dossier": "compositions/upkeep",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/generated/A1_lane_a_captured.cfg",
+      "model/generated/Upkeep.tla"
+    ],
+    "expects": [
+      "A1",
+      "TypeOK"
+    ],
+    "property": "A1",
+    "scenario": "lane-a-captured",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nproperty: A1\nscenario: lane-a-captured\nexecutes:\n  - model/generated/Upkeep.tla\n  - model/generated/A1_lane_a_captured.cfg\nreach: stale up to 3; price and last up to 4; clock up to 2; effects up to 4\nexpect:\n  TypeOK: holds\n  A1: violated\nbecause: |\n  A captured lane A posts any price. One post of 0 after a price of 2 puts last two steps from price.\n",
+    "reach": "stale up to 3; price and last up to 4; clock up to 2; effects up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "A1": {
+        "expect": "violated"
+      }
+    },
+    "because": "A captured lane A posts any price. One post of 0 after a price of 2 puts last two steps from price."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "A1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "A1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "A1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "oracle_last": "2",
+          "oracle_stale": "0",
+          "oracle_price": "2",
+          "oracle_state": "\"Fresh\"",
+          "n1_ticks": "0",
+          "clock": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "TickStep",
+        "values": {
+          "oracle_last": "2",
+          "oracle_stale": "1",
+          "oracle_price": "2",
+          "oracle_state": "\"Stale\"",
+          "n1_ticks": "1",
+          "clock": "1"
+        }
+      },
+      {
+        "index": 3,
+        "action": "Lane_a",
+        "values": {
+          "oracle_last": "2",
+          "oracle_stale": "0",
+          "oracle_price": "0",
+          "oracle_state": "\"Fresh\"",
+          "n1_ticks": "0",
+          "clock": "1"
+        }
+      }
+    ],
+    "states": {
+      "generated": 3,
+      "distinct": 3,
+      "queued": 0,
+      "depth": 3
+    },
+    "actions": {
+      "Lane_a": {
+        "distinct": 1,
+        "generated": 15
+      },
+      "Lane_b": {
+        "distinct": 0,
+        "generated": 0
+      },
+      "TickStep": {
+        "distinct": 1,
+        "generated": 2
+      }
+    },
+    "init": {
+      "accepted": 2,
+      "generated": 2
+    },
+    "partial": [
+      "TypeOK"
+    ],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "88ed033d",
+      "A1": "14e26382"
+    },
+    "reach": {
+      "text": "stale up to 3; price and last up to 4; clock up to 2; effects up to 4",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_chain": "\"honest\"",
+        "Mode_lane_a": "\"malicious\"",
+        "Mode_lane_b": "\"honest\"",
+        "From_lane_a": "0",
+        "Until_lane_a": "0",
+        "From_lane_b": "0",
+        "Until_lane_b": "0",
+        "Start_oracle_state": "\"Fresh\"",
+        "Start_oracle_stale": "0"
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_chain": "honest",
+        "Mode_lane_a": "malicious",
+        "Mode_lane_b": "honest",
+        "From_lane_a": 0,
+        "Until_lane_a": 0,
+        "From_lane_b": 0,
+        "Until_lane_b": 0,
+        "Start_oracle_state": "Fresh",
+        "Start_oracle_stale": 0
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "266374aa",
+        "N1": "649b2ec4",
+        "G1": "155c7d2b",
+        "G2": "e0813f7f",
+        "G3": "9367edd6",
+        "G4": "416bbd6d",
+        "T1": "a25aba5c"
+      },
+      "records": {},
+      "backing": {},
+      "wiring": "bae35b592cdbc44f",
+      "module": "bf76883ae516c926",
+      "members": {
+        "oracle": {
+          "prose": "b7da5a952322a306",
+          "backing": {
+            "K1": "54717f13065bd868"
+          }
+        }
+      },
+      "scenario": "e9cdeccfc797a8f6",
+      "actors": "064e352e3b207b1e",
+      "extras": null
+    },
+    "executed": {
+      "model/generated/Upkeep.tla": "fb86a84fdfea62cc5a770e44ea39b87d3804c739ff2a9fd11dc3a1cf675a35bb",
+      "model/generated/A1_lane_a_captured.cfg": "8cc7e11924d85c47cb88ede3be6e4aa0f19f98d2c299d53a59145db94e318384"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/generated/A1_lane_a_captured.cfg": "8cc7e11924d85c47cb88ede3be6e4aa0f19f98d2c299d53a59145db94e318384",
+        "model/generated/Upkeep.tla": "fb86a84fdfea62cc5a770e44ea39b87d3804c739ff2a9fd11dc3a1cf675a35bb"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2340-tlc-e72613",
+    "at": "2026-11-08T23:40:25.045Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "253e64f46b046a9274782ebcc35d87ccca644468f69c1b19a8556356dacaa75b"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

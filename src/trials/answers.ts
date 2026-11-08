@@ -83,19 +83,19 @@ export interface Answer {
 
 // A guarantee's backing as it stood when the trial ran.
 export interface BackingSnapshot { status: 'assumed' | 'external' | 'backed' | 'unresolved'; runner?: string; hash?: string; path?: string; reason?: string }
-// A system member as a snapshot holds it: its prose hashed, and each of its guarantees' backing as
-// the backing's hash, or its status when it has none. What the member's IR puts into the system is in
+// A composition member as a snapshot holds it: its prose hashed, and each of its guarantees' backing as
+// the backing's hash, or its status when it has none. What the member's IR puts into the composition is in
 // the module's hash.
 export interface MemberSnapshot { prose: string; backing: Record<string, string> }
 // The part of a basis taken from the dossier's text and records, hashed when the trial ran:
-// passages, the prose's compilation, records and backing, and for a system its composition, the
+// passages, the prose's compilation, records and backing, and for a composition its wiring, the
 // module the composer wrote, members, scenario, actors and extras.
 export interface Snapshot {
   passages: Record<string, string>;
   records: Record<string, string | null>;
   backing: Record<string, BackingSnapshot>;
   ir?: string;
-  composition?: string;
+  wiring?: string;
   module?: string | null;
   members?: Record<string, MemberSnapshot>;
   scenario?: string | null;
@@ -206,14 +206,14 @@ const nullableString = (value: unknown) => value === null || typeof value === 's
 const VERDICTS = ['as-called', 'miscalled', 'aborted'];
 // An answer as an entry must hold it: a verdict, the outcomes and the properties checked.
 const answerShaped = (a: unknown) => object(a) && VERDICTS.includes(a.result as string) && object(a.outcomes) && strings(a.enabled);
-// A basis as an entry must hold it: the snapshot's passages, records and backing, and a system's
-// composition, module, scenario, actors, extras and each member's prose and backing, with the files
+// A basis as an entry must hold it: the snapshot's passages, records and backing, and a composition's
+// wiring, module, scenario, actors, extras and each member's prose and backing, with the files
 // executed. Its input identity is checked last, by inputIdentityProblem.
-function basisShaped(b: unknown, system: boolean): boolean {
+function basisShaped(b: unknown, composition: boolean): boolean {
   if (!object(b) || !object(b.snapshot) || !object(b.executed)) return false;
   const s = b.snapshot;
   if (!object(s.passages) || !object(s.records) || !object(s.backing)) return false;
-  return !system || (typeof s.composition === 'string' && nullableString(s.module) && nullableString(s.scenario) && typeof s.actors === 'string' && nullableString(s.extras)
+  return !composition || (typeof s.wiring === 'string' && nullableString(s.module) && nullableString(s.scenario) && typeof s.actors === 'string' && nullableString(s.extras)
     && object(s.members) && Object.values(s.members).every(m => object(m) && typeof m.prose === 'string' && object(m.backing)));
 }
 const establishedShaped = (e: unknown) => object(e) && typeof e.trial === 'string' && typeof e.at === 'string' && object(e.versions) && typeof e.bundle === 'string' && /^[0-9a-f]{64}$/.test(e.bundle);
@@ -223,13 +223,13 @@ export function entryProblem(value: unknown, name: string, ref: string): string 
   if (!object(value) || value.schema !== 1) return 'unsupported entry schema; expected 1';
   const keys = ['schema', 'dossier', 'question', 'call', 'answer', 'basis', 'established', 'previous', 'narrowed', 'replaced'];
   if (Object.keys(value).sort().join('|') !== [...keys].sort().join('|')) return `entry fields must be ${keys.join(', ')}`;
-  const q = value.question, c = value.call, b = value.basis, p = value.previous, system = ref.startsWith('systems/');
+  const q = value.question, c = value.call, b = value.basis, p = value.previous, composition = ref.startsWith('compositions/');
   if (!object(q) || typeof q.kind !== 'string' || typeof q.checker !== 'string' || !strings(q.executes) || !strings(q.expects) || !nullableString(q.property) || !nullableString(q.scenario) || !nullableString(q.walk)) return 'malformed question';
   if (!object(c) || typeof c.text !== 'string' || typeof c.reach !== 'string' || !object(c.expect) || typeof c.because !== 'string') return 'malformed call';
   if (!answerShaped(value.answer)) return 'malformed answer';
-  if (!basisShaped(b, system)) return 'malformed basis';
+  if (!basisShaped(b, composition)) return 'malformed basis';
   if (!establishedShaped(value.established)) return 'malformed establishing trial';
-  if (p !== null && (!object(p) || !answerShaped(p.answer) || !basisShaped(p.basis, system) || !establishedShaped(p.established) || !nullableString(p.classification))) return 'malformed previous answer';
+  if (p !== null && (!object(p) || !answerShaped(p.answer) || !basisShaped(p.basis, composition) || !establishedShaped(p.established) || !nullableString(p.classification))) return 'malformed previous answer';
   if (value.narrowed !== null && !object(value.narrowed)) return 'malformed narrowed reach';
   if (value.replaced !== null && (!object(value.replaced) || typeof value.replaced.trial !== 'string' || !strings(value.replaced.moved))) return 'malformed replaced answer';
   if (value.dossier !== ref) return `entry names ${String(value.dossier)}, not ${ref}`;

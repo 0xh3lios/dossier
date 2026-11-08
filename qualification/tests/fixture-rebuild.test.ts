@@ -71,11 +71,11 @@ test('fresh preparation copies authored Harbor inputs into integrity-v1 storage 
   assert.equal(marker.knowledge.root, '../knowledge');
   assert.deepEqual(marker.external.replay.command, ['node', 'tools/replay.mjs']);
   let dossiers = 0;
-  for (const kind of ['components', 'systems']) for (const id of readdirSync(join(root, kind))) {
+  for (const kind of ['parts', 'compositions']) for (const id of readdirSync(join(root, kind))) {
     dossiers++;
     const dir = join(root, kind, id), source = join(fixture, 'dossiers', kind, id);
     assert.deepEqual(JSON.parse(readFileSync(join(dir, 'integrity.json'), 'utf8')), empty);
-    for (const name of ['prose.md', ...(kind === 'systems' ? ['composition.md'] : [])]) assert.equal(readFileSync(join(dir, name), 'utf8'), readFileSync(join(source, name), 'utf8'));
+    for (const name of ['prose.md', ...(kind === 'compositions' ? ['wiring.md'] : [])]) assert.equal(readFileSync(join(dir, name), 'utf8'), readFileSync(join(source, name), 'utf8'));
     for (const name of ['evidence', 'trials', 'decisions.log', 'ledger.md', 'calls', 'chart', 'model']) assert.equal(existsSync(join(dir, name)), false, `old ${name} must not be copied`);
   }
   assert.equal(dossiers, 9);
@@ -86,10 +86,10 @@ test('fresh preparation copies authored Harbor inputs into integrity-v1 storage 
     assert.deepEqual(files(join(out, folder)), files(join(fixture, folder)), `${folder} copied independently with original bytes and permissions`);
   }
   for (const name of ['expected-marks.json', 'observed-marks.json', 'dossiers/index.md']) assert.equal(existsSync(join(out, name)), false);
-  assert.equal(readFileSync(join(root, 'components/oracle/doubts.md'), 'utf8'), readFileSync(join(fixture, 'dossiers/components/oracle/doubts.md'), 'utf8'));
+  assert.equal(readFileSync(join(root, 'parts/oracle/doubts.md'), 'utf8'), readFileSync(join(fixture, 'dossiers/parts/oracle/doubts.md'), 'utf8'));
   const before = fingerprint(out), report = JSON.parse(command(root, 'verify', '--json'));
   assert.deepEqual(report.tripwires, []);
-  assert.ok([...report.components, ...report.systems].every(dossier => !dossier.tripwires.length));
+  assert.ok([...report.parts, ...report.compositions].every(dossier => !dossier.tripwires.length));
   assert.deepEqual(fingerprint(out), before, 'prepared current seed verifies without writing views or authority');
   assert.deepEqual(fingerprint(fixture), original, 'preparation leaves the fixture byte/mtime unchanged');
 });
@@ -109,8 +109,8 @@ test('install refuses a rebuild that failed verify or whose marks differ from th
   const expected = JSON.parse(readFileSync(join(fixture, 'expected-marks.json'), 'utf8'));
   assert.throws(() => installFixture({ output: work, verified: 1, observed: expected }), /verify exited 1 on the rebuild; the fixture is unchanged/);
   const moved = structuredClone(expected);
-  moved.systems.control.cells['A1|all-honest'].mark = 'checked';
-  assert.throws(() => installFixture({ output: work, verified: 0, observed: moved }), /observed marks differ from expected-marks\.json in systems\/control/);
+  moved.compositions.control.cells['A1|all-honest'].mark = 'checked';
+  assert.throws(() => installFixture({ output: work, verified: 0, observed: moved }), /observed marks differ from expected-marks\.json in compositions\/control/);
   assert.deepEqual(fingerprint(fixture), before, 'neither refusal writes to the fixture');
 });
 
@@ -132,7 +132,7 @@ test('an output holding a link, a hard link or a publication remnant is refused 
 test('a prepared seed runs the real commands, verify never reads a bundle, and an edited entry fails verify', t => {
   const work = workspace(t), out = join(work, 'harbor'), original = fingerprint(fixture);
   const { root } = prepareFixture({ out });
-  const vault = join(root, 'components/vault');
+  const vault = join(root, 'parts/vault');
   command(root, 'draw', 'vault', '--brief');
   mkdirSync(join(vault, 'calls'));
   writeFileSync(join(vault, 'calls/chart.md'), 'kind: chart\nexecutes:\n  - prose.md\nreach: debt, free and joined 0..4; line 2..4\nexpect:\n  checks: pass\nbecause: The finite moves, refusals and walks preserve the authored chart relations.\n');
@@ -163,18 +163,18 @@ test('install replaces the fixture with the rebuild\'s answers, readings and dec
   const work = workspace(t), copy = join(work, 'plugin'), copied = join(copy, 'qualification/rebuild-fixture.mjs');
   mkdirSync(dirname(copied), { recursive: true });
   cpSync(script, copied);
-  const target = join(copy, 'qualification/fixture'), observed = { components: {}, systems: {} };
+  const target = join(copy, 'qualification/fixture'), observed = { parts: {}, compositions: {} };
   mkdirSync(join(target, 'dossiers'), { recursive: true });
   writeFileSync(join(target, 'dossiers', 'old-record'), 'the fixture before');
   writeFileSync(join(target, 'expected-marks.json'), JSON.stringify(observed));
   const output = join(work, 'build');
-  const committed = ['dossier.json', 'index.md', 'components/vault/integrity.json', 'components/vault/decisions.log', 'components/vault/ledger.md', 'components/vault/evidence/chart-64fcc7.json', 'components/vault/evidence/chart-64fcc7.md', 'systems/control/evidence/tlc-N1-executor-offline-4dafb3.json'];
-  const local = ['components/vault/trials/2026-11-07-0700-chart-aaaaaa/output.txt', 'components/vault/.running/2026-11-07-0701-tlc-bbbbbb/result.json', 'systems/control/trials/2026-11-07-0702-tlc-cccccc/receipt.json'];
+  const committed = ['dossier.json', 'index.md', 'parts/vault/integrity.json', 'parts/vault/decisions.log', 'parts/vault/ledger.md', 'parts/vault/evidence/chart-64fcc7.json', 'parts/vault/evidence/chart-64fcc7.md', 'compositions/control/evidence/tlc-N1-executor-offline-4dafb3.json'];
+  const local = ['parts/vault/trials/2026-11-07-0700-chart-aaaaaa/output.txt', 'parts/vault/.running/2026-11-07-0701-tlc-bbbbbb/result.json', 'compositions/control/trials/2026-11-07-0702-tlc-cccccc/receipt.json'];
   for (const path of [...committed, ...local]) { mkdirSync(dirname(join(output, 'dossiers', path)), { recursive: true }); writeFileSync(join(output, 'dossiers', path), path); }
   const installed = spawnSync(process.execPath, ['--input-type=module', '-e', `const { installFixture } = await import(${JSON.stringify(pathToFileURL(copied).href)}); installFixture(${JSON.stringify({ output, verified: 0, observed })});`], { encoding: 'utf8' });
   assert.equal(installed.status, 0, installed.stderr);
   for (const path of committed) assert.equal(readFileSync(join(target, 'dossiers', path), 'utf8'), path, `${path} is installed`);
-  for (const folder of ['components/vault/trials', 'components/vault/.running', 'systems/control/trials']) assert.equal(existsSync(join(target, 'dossiers', folder)), false, `${folder}/ stays with the rebuild`);
+  for (const folder of ['parts/vault/trials', 'parts/vault/.running', 'compositions/control/trials']) assert.equal(existsSync(join(target, 'dossiers', folder)), false, `${folder}/ stays with the rebuild`);
   assert.equal(existsSync(join(target, 'dossiers', 'old-record')), false, 'the fixture is replaced whole');
   assert.deepEqual(readdirSync(target).sort(), ['dossiers', 'expected-marks.json'], 'no staging folder is left');
   for (const path of local) assert.equal(readFileSync(join(output, 'dossiers', path), 'utf8'), path, 'the rebuild keeps its bundles');

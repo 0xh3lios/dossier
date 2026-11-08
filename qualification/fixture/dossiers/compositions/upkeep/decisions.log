@@ -1,0 +1,4 @@
+2026-11-08T23:40:19Z forget tlc-N1-lanes-offline-e14ebc@cbd5f6e4 "Apalache found the same two-tick path symbolically; one answer on this cell is enough" 00000000
+2026-11-08T23:40:31Z risk N1@649b2ec4 lanes-offline 2026-11-08-2340-apalache-8258c3 "both lanes down is an incident, not a design flaw" efaed0c9
+2026-11-08T23:40:31Z risk N1@649b2ec4 lanes-down-two 2026-11-08-2340-tlc-39418f "two blocks without a lane is the same incident, shorter; one block is what the lanes are sized for" 740469c8
+2026-11-08T23:40:31Z risk A1@266374aa lane-a-captured 2026-11-08-2340-tlc-e72613 "a captured lane posts any price; the band is what honest lanes promise, not what the Oracle enforces" 34345818

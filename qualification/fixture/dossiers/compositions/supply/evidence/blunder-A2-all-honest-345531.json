@@ -1,0 +1,231 @@
+{
+  "schema": 1,
+  "dossier": "compositions/supply",
+  "question": {
+    "kind": "blunder",
+    "checker": "tlc",
+    "executes": [
+      "model/blunders/doublemint.tla",
+      "model/blunders/doublemint_A2.cfg"
+    ],
+    "expects": [
+      "A2"
+    ],
+    "property": "A2",
+    "scenario": "all-honest",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: blunder\nproperty: A2\nscenario: all-honest\nblunder: the adapter mints twice the credit it takes\nexecutes:\n  - model/blunders/doublemint.tla\n  - model/blunders/doublemint_A2.cfg\nreach: amounts up to 2\nexpect:\n  A2: violated\nbecause: |\n  With the wrong in place A2 fails on a short path under all-honest.\n",
+    "reach": "amounts up to 2",
+    "expect": {
+      "A2": {
+        "expect": "violated"
+      }
+    },
+    "because": "With the wrong in place A2 fails on a short path under all-honest."
+  },
+  "answer": {
+    "enabled": [
+      "A2"
+    ],
+    "outcomes": {
+      "A2": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "A2"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "vault_state": "\"Open\"",
+          "token_supply": "0",
+          "token_state": "\"Live\"",
+          "vault_free": "0",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "vault_issued": "0",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "vault_debt": "0",
+          "adapter_sent_burn": "0",
+          "adapter_sent_mint": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "User",
+        "values": {
+          "vault_state": "\"Open\"",
+          "token_supply": "0",
+          "token_state": "\"Live\"",
+          "vault_free": "1",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "vault_issued": "0",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "vault_debt": "1",
+          "adapter_sent_burn": "0",
+          "adapter_sent_mint": "0"
+        }
+      },
+      {
+        "index": 3,
+        "action": "User",
+        "values": {
+          "vault_state": "\"Open\"",
+          "token_supply": "2",
+          "token_state": "\"Live\"",
+          "vault_free": "0",
+          "adapter_live": "TRUE",
+          "adapter_held": "1",
+          "adapter_state": "\"Open\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "vault_issued": "1",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "1",
+          "vault_debt": "1",
+          "adapter_sent_burn": "0",
+          "adapter_sent_mint": "1"
+        }
+      }
+    ],
+    "states": {
+      "generated": 17,
+      "distinct": 10,
+      "queued": 7,
+      "depth": 3
+    },
+    "actions": {
+      "vault_M5_Change": {
+        "distinct": 1,
+        "generated": 1
+      },
+      "vault_M6_Change": {
+        "distinct": 0,
+        "generated": 0
+      },
+      "adapter_M4_Halt": {
+        "distinct": 1,
+        "generated": 1
+      },
+      "Holder": {
+        "distinct": 0,
+        "generated": 4
+      },
+      "User": {
+        "distinct": 7,
+        "generated": 25
+      }
+    },
+    "init": {
+      "accepted": 2,
+      "generated": 2
+    },
+    "partial": [],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "A2": "518a666a"
+    },
+    "reach": {
+      "text": "amounts up to 2",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_holder": "\"honest\"",
+        "Mode_user": "\"honest\""
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_holder": "honest",
+        "Mode_user": "honest"
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "1b854fdd",
+        "A2": "e8f5fa97",
+        "A3": "2b69812d",
+        "W1": "7ebabe90",
+        "T1": "5cf28469"
+      },
+      "records": {
+        "vault#observation:checkpoint-2026-11-01": "f53d903a45677849"
+      },
+      "backing": {},
+      "wiring": "613f91fd87ef47e8",
+      "module": "80039f34c3a995fc",
+      "members": {
+        "vault": {
+          "prose": "ad6f1070f6fac376",
+          "backing": {
+            "K1": "48fb01304d30b4b7",
+            "K2": "e8e54bc755943a68",
+            "K3": "bb4712dfb9f4915d",
+            "K4": "assumed"
+          }
+        },
+        "adapter": {
+          "prose": "58d831b706099361",
+          "backing": {
+            "K1": "7b42dc7c1831a88a"
+          }
+        },
+        "token": {
+          "prose": "69858faf20e7b8ea",
+          "backing": {
+            "K1": "9dbf540264cc615a"
+          }
+        }
+      },
+      "scenario": "32ef1d2c356c5b3a",
+      "actors": "ea02bc898e688534",
+      "extras": "979f4371be250e2e"
+    },
+    "executed": {
+      "model/blunders/doublemint.tla": "9f942475adc9f3556e15216a3d7d970be1ad8e590cd4bc12535969c774996906",
+      "model/blunders/doublemint_A2.cfg": "7b7959e2c267d5288a0dad1a09c527834b65275f64d0df2601d9be3db31c79b0"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/blunders/doublemint.tla": "9f942475adc9f3556e15216a3d7d970be1ad8e590cd4bc12535969c774996906",
+        "model/blunders/doublemint_A2.cfg": "7b7959e2c267d5288a0dad1a09c527834b65275f64d0df2601d9be3db31c79b0"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2338-blunder-e1d10d",
+    "at": "2026-11-08T23:38:26.588Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "198d8936fc7342d0bd4d8f682df0a2b846a50ddd886c847b7b326e115a4b8cbe"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

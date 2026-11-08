@@ -1,4 +1,4 @@
-// dossier import <module> [--as <component>]: start a component dossier from
+// dossier import <module> [--as <part>]: start a part dossier from
 // the knowledge base's records. Writes a draft prose that compiles and a
 // margin with everything the records say, for the agent to turn into passages.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -32,10 +32,10 @@ export async function main(command: string, args: string[]): Promise<number> {
   const asAt = rest.indexOf('--as');
   const id = asAt >= 0 ? rest[asAt + 1] : null;
   const module = rest.filter((a, i) => !a.startsWith('--') && rest[i - 1] !== '--as')[0];
-  if (!module || (asAt >= 0 && (!id || id.startsWith('--')))) { console.error('usage: dossier import <module> [--as <component>]'); return 2; }
-  const component = id || module;
-  const problem = idProblem(component);
-  if (problem) { console.error(`dossier import: ${problem}${id ? '' : `; name the component with --as <id>`}`); return 2; }
+  if (!module || (asAt >= 0 && (!id || id.startsWith('--')))) { console.error('usage: dossier import <module> [--as <part>]'); return 2; }
+  const part = id || module;
+  const problem = idProblem(part);
+  if (problem) { console.error(`dossier import: ${problem}${id ? '' : `; name the part with --as <id>`}`); return 2; }
   const marker = readMarker(root);
   if (marker.error) { console.error(`dossier import: ${marker.error}`); return 2; }
   requireCurrent(root);
@@ -45,8 +45,8 @@ export async function main(command: string, args: string[]): Promise<number> {
     console.error('dossier import: no knowledge base is configured in dossier.json'); return 2;
   }
   if (!knowledge.modules().includes(module)) { console.error(`dossier import: the knowledge base has no module ${module} (it has ${knowledge.modules().join(', ')})`); return 2; }
-  const dir = join(root, 'components', component);
-  if (existsSync(join(dir, 'prose.md'))) { console.error(`dossier import: components/${component}/prose.md exists; import writes only a fresh dossier`); return 1; }
+  const dir = join(root, 'parts', part);
+  if (existsSync(join(dir, 'prose.md'))) { console.error(`dossier import: parts/${part}/prose.md exists; import writes only a fresh dossier`); return 1; }
   const records = knowledge.moduleRecords(module);
   const collect = (name: string) => { const out: YamlMap[] = []; for (const [path, r] of Object.entries(records.files)) if (Array.isArray(r[name])) for (const item of r[name] as YamlMap[]) out.push({ ...item, _path: path }); return out; };
   const actors = collect('actors'), operations = collect('operations'), invariants = collect('invariants'), quantities = collect('quantities'), edges = collect('edges'), flows = collect('flows');
@@ -77,7 +77,7 @@ export async function main(command: string, args: string[]): Promise<number> {
   const obsDir = join(knowledge.root, 'modules', module, 'observations');
   if (existsSync(obsDir)) for (const f of entries(obsDir)) if (f.isFile()) observations.push(f.name.replace(/\.(json|md)$/, ''));
 
-  const title = cap(component);
+  const title = cap(part);
   const lines: string[] = [];
   lines.push(`# ${title}`, '', 'Tier: modeled', `Module: ${module}`);
   if (observations.length) lines.push(`Pins: ${observations.map(o => `${module}#observation:${o}`).join(', ')}`);
@@ -130,12 +130,12 @@ export async function main(command: string, args: string[]): Promise<number> {
   if (specs.length) margin.push('## Certora', ...specs.map(s => `- ${s.kind} ${s.rule} in ${s.path} at ${s.commit}${s.repository ? ` (repository: ${s.repository}; review applicability)` : ''}`), '');
   const releaseRoot = acquirePublicationLock(root);
   try {
-    if (dossierPathExists(dir)) { console.error(`dossier import: components/${component} exists; import cannot replace its authority`); return 1; }
-    initializeDossierLocked(root, 'components', component, { 'prose.md': prose, 'margin.md': margin.join('\n') });
+    if (dossierPathExists(dir)) { console.error(`dossier import: parts/${part} exists; import cannot replace its authority`); return 1; }
+    initializeDossierLocked(root, 'parts', part, { 'prose.md': prose, 'margin.md': margin.join('\n') });
   } finally { releaseRoot(); }
-  console.log(`wrote components/${component}/prose.md (${events.length} events, ${k} guarantees, ${data.length} data placeholders) and margin.md`);
+  console.log(`wrote parts/${part}/prose.md (${events.length} events, ${k} guarantees, ${data.length} data placeholders) and margin.md`);
   const senders = [...new Set(check.events.map(e => e.sender).filter(Boolean))];
-  if (senders.length) console.log(`declare these senders in actors/actors.md unless they already are, or start a component for each contract among them: ${senders.join(', ')}`);
+  if (senders.length) console.log(`declare these senders in actors/actors.md unless they already are, or start a part for each contract among them: ${senders.join(', ')}`);
   if (check.errors.length || check.misnamed.length) console.log(`the draft does not compile yet: ${[...check.errors, ...check.misnamed].join('; ')}`);
   else console.log('the draft compiles; replace the placeholders with what the piece actually does, then dossier draw');
   return 0;

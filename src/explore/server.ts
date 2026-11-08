@@ -9,7 +9,7 @@ import { extname, join, resolve } from 'node:path';
 import { verifyAll } from '../commands/verify.ts';
 import { readMarker } from '../dossiers/root.ts';
 import { readMeanings } from './meanings.ts';
-import { addresses, componentModel, componentTrace, rootModel, systemModel, systemTrace } from './model.ts';
+import { addresses, partModel, partTrace, rootModel, compositionModel, compositionTrace } from './model.ts';
 import { chartRun, explainAt, LIMIT } from './run.ts';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { FSWatcher } from 'node:fs';
@@ -24,7 +24,7 @@ const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.j
 // Changes that move nothing verify reads: the explorer's own build, the packages, scratch work and
 // git's own files at the root, and each dossier's local trial bundles. A dossier's .running/ is not
 // quiet, since verify reports a publication left unfinished there.
-export const quiet = (path: string): boolean => /^(\.explorer|node_modules|_scratch|\.git)([\\/]|$)|^(components|systems)[\\/][^\\/]+[\\/]trials([\\/]|$)/.test(path);
+export const quiet = (path: string): boolean => /^(\.explorer|node_modules|_scratch|\.git)([\\/]|$)|^(parts|compositions)[\\/][^\\/]+[\\/]trials([\\/]|$)/.test(path);
 
 // No free port among the ones tried.
 export class NoFreePort extends Error {}
@@ -33,7 +33,7 @@ export interface ExplorerOptions { root: string; pluginRoot: string; version: st
 export interface Explorer { url: string; port: number; close(): Promise<void> }
 
 // Listens on the asked port, or the next free one: an address that stays the same keeps what the page
-// remembers. Port 0 asks the system for any free port.
+// remembers. Port 0 asks the composition for any free port.
 async function listen(server: Server, port: number): Promise<number> {
   const last = port === 0 ? 0 : Math.min(port + TRIES - 1, 65535);
   for (let p = port; p <= last; p++) {
@@ -54,13 +54,13 @@ export async function startExplorer({ root, pluginRoot, version, port = DEFAULT_
   const meanings = readMeanings(pluginRoot);
   let analysis: Verified | null = null;
   const verified = () => (analysis ||= verifyAll({ root, version, write: false }));
-  const component = (id: string) => verified().components.find(x => x.id === id) || null;
-  const system = (id: string) => verified().systems.find(x => x.id === id) || null;
+  const part = (id: string) => verified().parts.find(x => x.id === id) || null;
+  const composition = (id: string) => verified().compositions.find(x => x.id === id) || null;
 
-  // A component's chart run, kept while its compiled form and its doubts' walks stay the same.
+  // A part's chart run, kept while its compiled form and its doubts' walks stay the same.
   const runs = new Map<string, { key: string; run: Promise<Run> }>();
   const runOf = (id: string) => {
-    const a = component(id);
+    const a = part(id);
     if (!a) return null;
     const key = `${a.irHash}:${JSON.stringify(a.doubts.map(d => [d.id, d.walks]))}`;
     const held = runs.get(id);
@@ -94,12 +94,12 @@ export async function startExplorer({ root, pluginRoot, version, port = DEFAULT_
     if (path === '/api/root') return json(res, rootModel(verified(), root, version, meanings));
     if (path === '/api/addresses') return json(res, addresses(verified()));
     let m: RegExpMatchArray | null;
-    if ((m = path.match(/^\/api\/component\/([\w-]+)$/))) { const a = component(m[1]); return json(res, a && componentModel(verified(), a, meanings)); }
-    if ((m = path.match(/^\/api\/component\/([\w-]+)\/run$/))) { const run = await runOf(m[1]); return json(res, run?.view); }
-    if ((m = path.match(/^\/api\/component\/([\w-]+)\/explain$/))) { const run = await runOf(m[1]); return json(res, run && explainAt(run, Number(url.searchParams.get('at') || 0))); }
-    if ((m = path.match(/^\/api\/component\/([\w-]+)\/trace\/([\w-]+)$/))) { const a = component(m[1]); return json(res, a && componentTrace(a, m[2])); }
-    if ((m = path.match(/^\/api\/system\/([\w-]+)$/))) { const a = system(m[1]); return json(res, a && systemModel(verified(), a, meanings)); }
-    if ((m = path.match(/^\/api\/system\/([\w-]+)\/trace\/([\w-]+)\/([\w-]+)$/))) { const a = system(m[1]); return json(res, a && systemTrace(verified(), a, m[2], m[3])); }
+    if ((m = path.match(/^\/api\/part\/([\w-]+)$/))) { const a = part(m[1]); return json(res, a && partModel(verified(), a, meanings)); }
+    if ((m = path.match(/^\/api\/part\/([\w-]+)\/run$/))) { const run = await runOf(m[1]); return json(res, run?.view); }
+    if ((m = path.match(/^\/api\/part\/([\w-]+)\/explain$/))) { const run = await runOf(m[1]); return json(res, run && explainAt(run, Number(url.searchParams.get('at') || 0))); }
+    if ((m = path.match(/^\/api\/part\/([\w-]+)\/trace\/([\w-]+)$/))) { const a = part(m[1]); return json(res, a && partTrace(a, m[2])); }
+    if ((m = path.match(/^\/api\/composition\/([\w-]+)$/))) { const a = composition(m[1]); return json(res, a && compositionModel(verified(), a, meanings)); }
+    if ((m = path.match(/^\/api\/composition\/([\w-]+)\/trace\/([\w-]+)\/([\w-]+)$/))) { const a = composition(m[1]); return json(res, a && compositionTrace(verified(), a, m[2], m[3])); }
     if (path.startsWith('/api/')) return text(res, 404, 'no such question');
     if (!dist) return text(res, 503, 'the explorer\'s page is not built: run dossier explore --install');
     // One file of the built page, by its own name: no folder, no path, nothing hidden.
@@ -119,7 +119,7 @@ export async function startExplorer({ root, pluginRoot, version, port = DEFAULT_
   bound = await listen(server, port);
 
   // Open pages are told of each change under the root and in the knowledge base, whose records a
-  // component's pins and a guarantee's backing read. The watch starts once the port is bound.
+  // part's pins and a guarantee's backing read. The watch starts once the port is bound.
   let pending: NodeJS.Timeout | undefined, changed = new Set<string>();
   const notify = (file: string) => {
     changed.add(file);

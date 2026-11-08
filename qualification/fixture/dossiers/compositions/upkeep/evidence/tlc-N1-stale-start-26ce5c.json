@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "dossier": "compositions/upkeep",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/generated/N1_stale_start.cfg",
+      "model/generated/Upkeep.tla"
+    ],
+    "expects": [
+      "N1",
+      "TypeOK"
+    ],
+    "property": "N1",
+    "scenario": "stale-start",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nproperty: N1\nscenario: stale-start\nexecutes:\n  - model/generated/Upkeep.tla\n  - model/generated/N1_stale_start.cfg\nreach: stale up to 3; price and last up to 4; clock up to 2; effects up to 4\nexpect:\n  TypeOK: holds\n  N1: holds\nbecause: |\n  The price starts three blocks stale with both lanes live, and a prompt lane posts before the next tick.\n",
+    "reach": "stale up to 3; price and last up to 4; clock up to 2; effects up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "N1": {
+        "expect": "holds"
+      }
+    },
+    "because": "The price starts three blocks stale with both lanes live, and a prompt lane posts before the next tick."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "N1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "N1": "holds"
+    },
+    "violation": null,
+    "trace": [],
+    "states": {
+      "generated": 120,
+      "distinct": 42,
+      "queued": 0,
+      "depth": 7
+    },
+    "actions": {
+      "Lane_a": {
+        "distinct": 25,
+        "generated": 47
+      },
+      "Lane_b": {
+        "distinct": 0,
+        "generated": 47
+      },
+      "TickStep": {
+        "distinct": 16,
+        "generated": 25
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "88ed033d",
+      "N1": "a4ae7304"
+    },
+    "reach": {
+      "text": "stale up to 3; price and last up to 4; clock up to 2; effects up to 4",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_chain": "\"honest\"",
+        "Mode_lane_a": "\"honest\"",
+        "Mode_lane_b": "\"honest\"",
+        "From_lane_a": "0",
+        "Until_lane_a": "0",
+        "From_lane_b": "0",
+        "Until_lane_b": "0",
+        "Start_oracle_state": "\"Stale\"",
+        "Start_oracle_stale": "3"
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_chain": "honest",
+        "Mode_lane_a": "honest",
+        "Mode_lane_b": "honest",
+        "From_lane_a": 0,
+        "Until_lane_a": 0,
+        "From_lane_b": 0,
+        "Until_lane_b": 0,
+        "Start_oracle_state": "Stale",
+        "Start_oracle_stale": 3
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "266374aa",
+        "N1": "649b2ec4",
+        "G1": "155c7d2b",
+        "G2": "e0813f7f",
+        "G3": "9367edd6",
+        "G4": "416bbd6d",
+        "T1": "a25aba5c"
+      },
+      "records": {},
+      "backing": {},
+      "wiring": "bae35b592cdbc44f",
+      "module": "91f42f6db41fd6e9",
+      "members": {
+        "oracle": {
+          "prose": "b7da5a952322a306",
+          "backing": {
+            "K1": "54717f13065bd868"
+          }
+        }
+      },
+      "scenario": "17e629fbc8bf54d9",
+      "actors": "064e352e3b207b1e",
+      "extras": null
+    },
+    "executed": {
+      "model/generated/Upkeep.tla": "fb86a84fdfea62cc5a770e44ea39b87d3804c739ff2a9fd11dc3a1cf675a35bb",
+      "model/generated/N1_stale_start.cfg": "d396ce90b751b88127308bdf32f9643f8163b139d3bf71064940942505e99454"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/generated/N1_stale_start.cfg": "d396ce90b751b88127308bdf32f9643f8163b139d3bf71064940942505e99454",
+        "model/generated/Upkeep.tla": "fb86a84fdfea62cc5a770e44ea39b87d3804c739ff2a9fd11dc3a1cf675a35bb"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2340-tlc-ed4e21",
+    "at": "2026-11-08T23:40:22.561Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "8105becbb80e00d488919445e1ca03418207fe6f771f574195b689bb16c3da93"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

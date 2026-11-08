@@ -62,7 +62,7 @@ const SCENARIOS = '# Scenarios\n\n```yaml\nscenarios:\n  - id: all-honest\n    m
 function makeRepo({ withKnowledge = true } = {}) {
   const repo = mkdtempSync(join(tmpdir(), 'dossier-commands-'));
   const root = join(repo, 'dossiers');
-  for (const d of ['actors', 'components', 'systems']) mkdirSync(join(root, d), { recursive: true });
+  for (const d of ['actors', 'parts', 'compositions']) mkdirSync(join(root, d), { recursive: true });
   const marker: Marker = { plugin: version, setup: today, updated: today, storage: 'integrity-v1' };
   if (withKnowledge) marker.knowledge = { root: knowledge };
   writeFileSync(join(root, 'dossier.json'), JSON.stringify(marker, null, 2) + '\n');
@@ -73,7 +73,7 @@ function makeRepo({ withKnowledge = true } = {}) {
 type Repo = ReturnType<typeof makeRepo>;
 const removeRepo = (r: Repo | undefined) => { if (r) rmSync(r.repo, { recursive: true, force: true }); };
 
-// A small component that compiles: two states, three events, three moves,
+// A small part that compiles: two states, three events, three moves,
 // three refusals (one conditional), an Always, a Walk and a Words-only passage.
 const gate = ({ title = 'Gate', tier = 'charted', module = 'gate', pins = null, ends = 'Shut' }: { title?: string; tier?: string; module?: string; pins?: string | null; ends?: string } = {}) => `# ${title}
 
@@ -113,7 +113,7 @@ The ${title} opens and closes unless it is locked. It holds locked, a flag. It s
 const PASSAGES = ['S1', 'S2', 'E1', 'E2', 'E3', 'M1', 'M2', 'M3', 'R1', 'R2', 'R3', 'A1', 'W1', 'T1'];
 const BROKEN = '# Gate\n\nTier: charted\nModule: gate\n\nIt holds locked, a flag.\n\n## States\n[S1] Shut: the gate is closed.\n\n## Moves\n[M1] nonsense that follows no form.\n';
 
-const componentDir = (root: string, id: string) => join(root, 'components', id);
+const partDir = (root: string, id: string) => join(root, 'parts', id);
 function initializeEmptyDossier(root: string, dir: string) {
   // Fixture initialization only: never re-anchor an existing record or corruption.
   const existed = existsSync(dir);
@@ -122,15 +122,15 @@ function initializeEmptyDossier(root: string, dir: string) {
     writeFileSync(join(dir, 'integrity.json'), JSON.stringify({ schema: 1, evidence: {}, decisionHead: null }) + '\n');
   }
 }
-function writeComponent(root: string, id: string, text: string) {
-  initializeEmptyDossier(root, componentDir(root, id));
-  writeFileSync(join(componentDir(root, id), 'prose.md'), text);
+function writePart(root: string, id: string, text: string) {
+  initializeEmptyDossier(root, partDir(root, id));
+  writeFileSync(join(partDir(root, id), 'prose.md'), text);
 }
-// A system over the gate: one Always claiming the composition's default scenarios.
-function writeSystem(root: string, id: string, { members = ['gate'], scenarios = ['all-honest'] } = {}) {
-  const dir = join(root, 'systems', id);
+// A composition over the gate: one Always claiming the wiring's default scenarios.
+function writeComposition(root: string, id: string, { members = ['gate'], scenarios = ['all-honest'] } = {}) {
+  const dir = join(root, 'compositions', id);
   initializeEmptyDossier(root, dir);
-  writeFileSync(join(dir, 'composition.md'), `# Composition\n\n\`\`\`yaml\nmembers:\n${members.map(m => `  - component: ${m}\n    role: member\n`).join('')}wiring: []\nclosure: []\nscenarios: [${scenarios.join(', ')}]\n\`\`\`\n`);
+  writeFileSync(join(dir, 'wiring.md'), `# Wiring\n\n\`\`\`yaml\nmembers:\n${members.map(m => `  - part: ${m}\n    role: member\n`).join('')}wiring: []\nclosure: []\nscenarios: [${scenarios.join(', ')}]\n\`\`\`\n`);
   const title = id[0].toUpperCase() + id.slice(1);
   writeFileSync(join(dir, 'prose.md'), `# ${title}\n\nConcern: ${id}\n\nThe gate alone.\n\n## Always\n[A1] Always, {not gate.locked or gate.Shut}.\n\n## Words only\n[T1] Nothing else is claimed.\n`);
   return dir;
@@ -142,15 +142,15 @@ const MISCALL = 'kind: chart\nexecutes:\n  - prose.md\nreach: the chart over loc
 const MALFORMED = 'kind: chart\nexecutes:\n  - prose.md\nexpect:\n  checks: pass\n';
 const TLC_CALL = 'kind: tlc\nexecutes:\n  - model/Gate.tla\n  - model/Gate.cfg\nreach: the lock alone\nexpect:\n  TypeOK: holds\n  A1: holds\nbecause: |\n  Both hold on the scaffold.\n';
 function writeCall(root: string, id: string, name: string, text: string) {
-  mkdirSync(join(componentDir(root, id), 'calls'), { recursive: true });
-  writeFileSync(join(componentDir(root, id), 'calls', name), text);
+  mkdirSync(join(partDir(root, id), 'calls'), { recursive: true });
+  writeFileSync(join(partDir(root, id), 'calls', name), text);
 }
 // A chart blunder: the prose's machine with M1's guard dropped.
 function writeBlunder(root: string, id: string) {
-  const machine = JSON.parse(read(join(componentDir(root, id), 'chart', 'machine.json'))) as Ir;
+  const machine = JSON.parse(read(join(partDir(root, id), 'chart', 'machine.json'))) as Ir;
   machine.transitions.find(t => t.id === 'M1')!.guard = null;
-  mkdirSync(join(componentDir(root, id), 'chart', 'blunders'), { recursive: true });
-  writeFileSync(join(componentDir(root, id), 'chart', 'blunders', 'x.json'), JSON.stringify(machine, null, 2) + '\n');
+  mkdirSync(join(partDir(root, id), 'chart', 'blunders'), { recursive: true });
+  writeFileSync(join(partDir(root, id), 'chart', 'blunders', 'x.json'), JSON.stringify(machine, null, 2) + '\n');
 }
 // The bundles a dossier's trials left in the local trials/, which stay on this machine and are no record.
 const bundlesOf = (dir: string) => (existsSync(join(dir, 'trials')) ? readdirSync(join(dir, 'trials')).sort() : []);
@@ -176,8 +176,8 @@ function verifyJson(run: Run) {
   assert.ok([0, 1].includes(r.status!), r.stderr);
   return JSON.parse(r.stdout) as VerifyJson;
 }
-const componentOf = (json: VerifyJson, id: string) => json.components.find(c => c.id === id)!;
-const marksOf = (json: VerifyJson, id: string) => Object.fromEntries(Object.entries(componentOf(json, id).marks).map(([k, m]) => [k, m.mark]));
+const partOf = (json: VerifyJson, id: string) => json.parts.find(c => c.id === id)!;
+const marksOf = (json: VerifyJson, id: string) => Object.fromEntries(Object.entries(partOf(json, id).marks).map(([k, m]) => [k, m.mark]));
 const flagNames = (a: { flags: Note[] }) => a.flags.map(f => f.name);
 
 // decisions.log: every line chained from the previous one, the first from genesis.
@@ -210,7 +210,7 @@ describe('setup', () => {
 
   it('creates dossiers/ with the marker, the records and the folders, then runs doctor and the smoke test', () => {
     const r = setup(['--knowledge', knowledge]);
-    for (const f of ['dossier.json', 'README.md', 'package.json', '.gitignore', 'actors/actors.md', 'actors/scenarios.md', 'components', 'systems']) assert.ok(existsSync(join(dossiers(), f)), `${f} exists`);
+    for (const f of ['dossier.json', 'README.md', 'package.json', '.gitignore', 'actors/actors.md', 'actors/scenarios.md', 'parts', 'compositions']) assert.ok(existsSync(join(dossiers(), f)), `${f} exists`);
     const m = marker();
     assert.equal(m.plugin, version);
     assert.equal(m.setup, today);
@@ -220,7 +220,7 @@ describe('setup', () => {
     assert.match(read(join(dossiers(), 'actors', 'actors.md')), /id: public/);
     assert.match(read(join(dossiers(), 'actors', 'scenarios.md')), /id: all-honest/);
     assert.equal((JSON.parse(read(join(dossiers(), 'package.json'))) as { name: string }).name, 'dossiers');
-    assert.deepEqual(read(join(dossiers(), '.gitignore')).split('\n').filter(line => line && !line.startsWith('#')), ['/index.md', '/_scratch/', '/node_modules/', '/components/*/trials/', '/systems/*/trials/', '/components/*/.running/', '/systems/*/.running/']);
+    assert.deepEqual(read(join(dossiers(), '.gitignore')).split('\n').filter(line => line && !line.startsWith('#')), ['/index.md', '/_scratch/', '/node_modules/', '/parts/*/trials/', '/compositions/*/trials/', '/parts/*/.running/', '/compositions/*/.running/']);
     assert.ok(!/^ignore: /m.test(r.stdout), 'setup writes the ignore file rather than asking for lines in one');
     for (const line of ['created dossiers/', 'created dossiers/dossier.json', 'created dossiers/README.md', 'created dossiers/package.json', 'created dossiers/.gitignore', 'created dossiers/actors/actors.md', 'created dossiers/actors/scenarios.md', `knowledge ${knowledge}`]) assert.ok(r.stdout.includes(`${line}\n`), line);
     for (const what of ['node', 'java', 'TLA_TOOLS', 'ALLOY_JAR', 'APALACHE', 'dossiers root', 'knowledge']) assert.match(r.stdout, new RegExp(`^(ok|missing|info)\\s+${what}: `, 'm'), `doctor row ${what}`);
@@ -258,7 +258,7 @@ describe('setup', () => {
     cpSync(knowledge, join(repo, 'records'), { recursive: true });
     const r = setup(['--root', 'ledgers', '--knowledge', 'records']);
     const root = join(repo, 'ledgers');
-    for (const f of ['dossier.json', 'README.md', 'package.json', '.gitignore', 'actors/actors.md', 'actors/scenarios.md', 'components', 'systems']) assert.ok(existsSync(join(root, f)), `${f} exists`);
+    for (const f of ['dossier.json', 'README.md', 'package.json', '.gitignore', 'actors/actors.md', 'actors/scenarios.md', 'parts', 'compositions']) assert.ok(existsSync(join(root, f)), `${f} exists`);
     assert.ok(!existsSync(dossiers()), 'nothing is written under dossiers/');
     for (const line of ['created ledgers/', 'created ledgers/dossier.json', `knowledge ${join(repo, 'records')}`]) assert.ok(r.stdout.includes(`${line}\n`), line);
     const m = JSON.parse(read(join(root, 'dossier.json'))) as Marker;
@@ -272,13 +272,13 @@ describe('setup', () => {
   });
 
   it('keeps the index, the workspace, the libraries and the trials\' bundles out of git, and nothing else', t => {
-    // Hermetic: no global or system git configuration, so no ignore rule but setup's applies.
-    const git = (...args: string[]) => spawnSync('git', args, { cwd: repo, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' } });
+    // Hermetic: no global or composition git configuration, so no ignore rule but setup's applies.
+    const git = (...args: string[]) => spawnSync('git', args, { cwd: repo, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOCOMPOSITION: '1' } });
     if (git('--version').error) { t.skip('git is not installed'); return; }
     assert.equal(git('init', '-q').status, 0);
     assert.ok([0, 1].includes(setup([]).status!));
-    const ignored = ['dossiers/index.md', 'dossiers/_scratch/notes.md', 'dossiers/node_modules/xstate/package.json', 'dossiers/components/vault/trials/2026-11-07-1000-tlc-aaaaaa/output.txt', 'dossiers/systems/control/trials/2026-11-07-1000-tlc-aaaaaa/receipt.json', 'dossiers/components/vault/.running/2026-11-07-1000-tlc-aaaaaa/entry.json', 'dossiers/systems/control/.running/2026-11-07-1000-tlc-aaaaaa/result.json'];
-    const committed = ['dossiers/README.md', 'dossiers/.gitignore', 'dossiers/dossier.json', 'dossiers/package.json', 'dossiers/components/vault/ledger.md', 'dossiers/components/vault/index.md', 'dossiers/components/vault/evidence/tlc-A1-3fa2c1.json', 'dossiers/components/vault/evidence/tlc-A1-3fa2c1.md', 'dossiers/systems/control/evidence/tlc-N1-executor-offline-9b1e04.json', 'dossiers/components/vault/integrity.json'];
+    const ignored = ['dossiers/index.md', 'dossiers/_scratch/notes.md', 'dossiers/node_modules/xstate/package.json', 'dossiers/parts/vault/trials/2026-11-07-1000-tlc-aaaaaa/output.txt', 'dossiers/compositions/control/trials/2026-11-07-1000-tlc-aaaaaa/receipt.json', 'dossiers/parts/vault/.running/2026-11-07-1000-tlc-aaaaaa/entry.json', 'dossiers/compositions/control/.running/2026-11-07-1000-tlc-aaaaaa/result.json'];
+    const committed = ['dossiers/README.md', 'dossiers/.gitignore', 'dossiers/dossier.json', 'dossiers/package.json', 'dossiers/parts/vault/ledger.md', 'dossiers/parts/vault/index.md', 'dossiers/parts/vault/evidence/tlc-A1-3fa2c1.json', 'dossiers/parts/vault/evidence/tlc-A1-3fa2c1.md', 'dossiers/compositions/control/evidence/tlc-N1-executor-offline-9b1e04.json', 'dossiers/parts/vault/integrity.json'];
     const r = git('check-ignore', ...ignored, ...committed);
     assert.deepEqual(r.stdout.split('\n').filter(Boolean), ignored, 'the root index, _scratch/, node_modules/ and the trial bundles only; the answers in evidence/ and a folder\'s own index.md stay in git');
   });
@@ -337,79 +337,79 @@ describe('decide', () => {
   afterEach(() => removeRepo(r));
   const log = (kind: string, id: string) => read(join(r.root, kind, id, 'decisions.log'));
 
-  it('begin creates the component skeleton and a begin line chained from genesis', () => {
+  it('begin creates the part skeleton and a begin line chained from genesis', () => {
     const d = r.run(['decide', 'gate', 'begin', 'charted']);
     assert.equal(d.status, 0, d.stderr);
     assert.match(d.stdout.trim(), /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z begin charted "" 00000000$/);
-    const prose = read(join(componentDir(r.root, 'gate'), 'prose.md'));
+    const prose = read(join(partDir(r.root, 'gate'), 'prose.md'));
     assert.match(prose, /^# Gate\n/);
     assert.match(prose, /^Tier: charted$/m);
     assert.match(prose, /^Module: gate$/m);
     for (const s of ['States', 'Events', 'Moves', 'Always', 'Once', 'Within', 'Given', 'Walks', 'Seams', 'Guarantees', 'Words only', 'Retired']) assert.ok(prose.includes(`## ${s}\n`), `section ${s}`);
-    assert.equal(log('components', 'gate'), d.stdout);
+    assert.equal(log('parts', 'gate'), d.stdout);
     assert.deepEqual(parseProse(prose).errors, [], 'the skeleton compiles');
 
     const modeled = r.run(['decide', 'beta', 'begin']);
     assert.equal(modeled.status, 0);
     assert.match(modeled.stdout, /begin modeled "" 00000000$/m, 'the tier defaults to modeled');
-    assert.match(read(join(componentDir(r.root, 'beta'), 'prose.md')), /^Tier: modeled$/m);
+    assert.match(read(join(partDir(r.root, 'beta'), 'prose.md')), /^Tier: modeled$/m);
 
-    writeComponent(r.root, 'kept', gate({ title: 'Kept', module: 'kept' }));
+    writePart(r.root, 'kept', gate({ title: 'Kept', module: 'kept' }));
     assert.equal(r.run(['decide', 'kept', 'begin', 'charted']).status, 0);
-    assert.equal(read(join(componentDir(r.root, 'kept'), 'prose.md')), gate({ title: 'Kept', module: 'kept' }), 'begin never overwrites a prose');
+    assert.equal(read(join(partDir(r.root, 'kept'), 'prose.md')), gate({ title: 'Kept', module: 'kept' }), 'begin never overwrites a prose');
   });
 
-  it('begin system creates composition.md and prose.md', () => {
-    const d = r.run(['decide', 'net', 'begin', 'system']);
+  it('begin composition creates wiring.md and prose.md', () => {
+    const d = r.run(['decide', 'net', 'begin', 'composition']);
     assert.equal(d.status, 0, d.stderr);
-    assert.match(d.stdout.trim(), /^\S+ begin system "" 00000000$/);
-    const dir = join(r.root, 'systems', 'net');
-    const composition = read(join(dir, 'composition.md'));
-    assert.match(composition, /^members: \[\]$/m);
-    assert.match(composition, /^scenarios: \[all-honest\]$/m);
+    assert.match(d.stdout.trim(), /^\S+ begin composition "" 00000000$/);
+    const dir = join(r.root, 'compositions', 'net');
+    const wiring = read(join(dir, 'wiring.md'));
+    assert.match(wiring, /^members: \[\]$/m);
+    assert.match(wiring, /^scenarios: \[all-honest\]$/m);
     const prose = read(join(dir, 'prose.md'));
     assert.match(prose, /^# Net\n/);
     assert.match(prose, /^Concern: net$/m);
     for (const s of ['Always', 'Once', 'Within', 'Given', 'Walks', 'Words only', 'Retired']) assert.ok(prose.includes(`## ${s}\n`), `section ${s}`);
-    assert.equal(log('systems', 'net'), d.stdout);
-    assert.ok(!existsSync(componentDir(r.root, 'net')), 'no component folder is created');
-    assert.equal(r.run(['decide', 'systems/other', 'begin']).status, 0, 'the systems/ prefix also begins a system');
-    assert.ok(existsSync(join(r.root, 'systems', 'other', 'composition.md')));
+    assert.equal(log('compositions', 'net'), d.stdout);
+    assert.ok(!existsSync(partDir(r.root, 'net')), 'no part folder is created');
+    assert.equal(r.run(['decide', 'compositions/other', 'begin']).status, 0, 'the compositions/ prefix also begins a composition');
+    assert.ok(existsSync(join(r.root, 'compositions', 'other', 'wiring.md')));
     assert.equal(r.run(['verify']).status, 0, 'the skeletons verify clean');
   });
 
   it('accept appends id@hash arguments with the words quoted, and verify shows the passages settled', () => {
-    writeComponent(r.root, 'gate', gate());
+    writePart(r.root, 'gate', gate());
     assert.equal(r.run(['decide', 'gate', 'begin', 'charted']).status, 0);
     const d = r.run(['decide', 'gate', 'accept', 'S1', 'E1', '--', 'the gate as built']);
     assert.equal(d.status, 0, d.stderr);
     const hashes = parseProse(gate()).byId;
     assert.match(d.stdout.trim(), new RegExp(`^\\S+ accept S1@${hashes.S1.hash} E1@${hashes.E1.hash} "the gate as built" [0-9a-f]{8}$`));
-    const ls = assertChained(log('components', 'gate'));
+    const ls = assertChained(log('parts', 'gate'));
     assert.equal(ls.length, 2);
     assert.equal(ls[1], d.stdout.trim());
     const json = verifyJson(r.run);
-    const marks = componentOf(json, 'gate').marks;
+    const marks = partOf(json, 'gate').marks;
     assert.equal(marks.S1.owner, 'settled');
     assert.equal(marks.E1.owner, 'settled');
     assert.equal(marks.S2.owner, 'unsettled');
-    assert.equal(componentOf(json, 'gate').summary.settled, 2);
+    assert.equal(partOf(json, 'gate').summary.settled, 2);
     assert.equal(r.run(['render']).status, 0);
-    assert.match(read(join(componentDir(r.root, 'gate'), 'ledger.md')), /^\| S1 \| State \| [^|]+ \| settled \|/m);
+    assert.match(read(join(partDir(r.root, 'gate'), 'ledger.md')), /^\| S1 \| State \| [^|]+ \| settled \|/m);
 
     const quoted = r.run(['decide', 'gate', 'accept', 'S2', '--', 'said "so", with a \\ backslash']);
     assert.equal(quoted.status, 0, quoted.stderr);
-    assert.equal(assertChained(log('components', 'gate')).length, 3, 'words with quotes are escaped, not broken');
+    assert.equal(assertChained(log('parts', 'gate')).length, 3, 'words with quotes are escaped, not broken');
     assert.equal(r.run(['decide', 'gate', 'accept', 'S1']).status, 2, 'accept needs words');
     assert.equal(r.run(['decide', 'gate', 'accept', '--', 'x']).status, 2, 'accept needs an id');
     const unknown = r.run(['decide', 'gate', 'accept', 'Z9', '--', 'x']);
     assert.equal(unknown.status, 2);
     assert.match(unknown.stderr, /Z9 is not a passage of gate/);
-    assert.equal(assertChained(log('components', 'gate')).length, 3, 'refused decisions write nothing');
+    assert.equal(assertChained(log('parts', 'gate')).length, 3, 'refused decisions write nothing');
   });
 
   it('reject requires exactly one id and the reason', () => {
-    writeComponent(r.root, 'gate', gate());
+    writePart(r.root, 'gate', gate());
     for (const args of [['reject'], ['reject', 'S1', 'S2']]) {
       const d = r.run(['decide', 'gate', ...args, '--', 'x']);
       assert.equal(d.status, 2, args.join(' '));
@@ -418,12 +418,12 @@ describe('decide', () => {
     const mute = r.run(['decide', 'gate', 'reject', 'S1']);
     assert.equal(mute.status, 2);
     assert.match(mute.stderr, /reject carries the owner's reason/);
-    assert.ok(!existsSync(join(componentDir(r.root, 'gate'), 'decisions.log')));
+    assert.ok(!existsSync(join(partDir(r.root, 'gate'), 'decisions.log')));
     const d = r.run(['decide', 'gate', 'reject', 'S1', '--', 'say what shut means']);
     assert.equal(d.status, 0, d.stderr);
     assert.match(d.stdout.trim(), new RegExp(`^\\S+ reject S1@${parseProse(gate()).byId.S1.hash} "say what shut means" 00000000$`));
-    assertChained(log('components', 'gate'));
-    const c = componentOf(verifyJson(r.run), 'gate');
+    assertChained(log('parts', 'gate'));
+    const c = partOf(verifyJson(r.run), 'gate');
     assert.equal(c.marks.S1.owner, 'rejected');
     assert.equal(c.summary.rejected, 1);
     assert.equal(c.route.pass, 'Write');
@@ -431,157 +431,157 @@ describe('decide', () => {
   });
 
   it('answer fails when doubts.md lacks the doubt and succeeds after it is written', () => {
-    writeComponent(r.root, 'gate', gate());
+    writePart(r.root, 'gate', gate());
     const missing = r.run(['decide', 'gate', 'answer', 'D1', 'a', '--', 'two swings']);
     assert.equal(missing.status, 2);
     assert.match(missing.stderr, /D1 is not in doubts\.md/);
-    writeFileSync(join(componentDir(r.root, 'gate'), 'doubts.md'), '## D1\non: M1\nassumed: a\nWhether opening twice is one swing or two.\nWalk a: from Shut, open, close, open; ends Open.\nWalk b: from Shut, open, close, open refused; ends Shut.\n');
-    const authoredDoubt = read(join(componentDir(r.root, 'gate'), 'doubts.md'));
-    assert.ok(flagNames(componentOf(verifyJson(r.run), 'gate')).includes('doubt open'), 'an unanswered doubt is flagged');
+    writeFileSync(join(partDir(r.root, 'gate'), 'doubts.md'), '## D1\non: M1\nassumed: a\nWhether opening twice is one swing or two.\nWalk a: from Shut, open, close, open; ends Open.\nWalk b: from Shut, open, close, open refused; ends Shut.\n');
+    const authoredDoubt = read(join(partDir(r.root, 'gate'), 'doubts.md'));
+    assert.ok(flagNames(partOf(verifyJson(r.run), 'gate')).includes('doubt open'), 'an unanswered doubt is flagged');
     assert.equal(r.run(['decide', 'gate', 'answer', 'D1', 'c', '--', 'x']).status, 2, 'a reading is a or b');
     const d = r.run(['decide', 'gate', 'answer', 'D1', 'a', '--', 'two swings']);
     assert.equal(d.status, 0, d.stderr);
     // SHA-256 prefix of this authored entry after whitespace normalization.
     assert.match(d.stdout.trim(), /^\S+ answer D1@618eb690 a "two swings" 00000000$/);
-    assertChained(log('components', 'gate'));
-    const c = componentOf(verifyJson(r.run), 'gate');
+    assertChained(log('parts', 'gate'));
+    const c = partOf(verifyJson(r.run), 'gate');
     assert.ok(!flagNames(c).includes('doubt open'), 'the answered doubt is no longer flagged');
     assert.equal(c.summary.doubtsOpen, 0, 'the committed answer closes the doubt without copying current state');
     assert.ok(!c.route.why.some(w => /answered doubts to close/.test(w)));
-    assert.equal(read(join(componentDir(r.root, 'gate'), 'doubts.md')), authoredDoubt, 'the authored alternatives stay unchanged');
-    const committed = log('components', 'gate');
-    writeFileSync(join(componentDir(r.root, 'gate'), 'doubts.md'), authoredDoubt.replace('assumed: a', 'status: closed\nassumed: a'));
-    assert.ok(componentOf(verifyJson(r.run), 'gate').tripwires.some(t => t.name === 'malformed doubt' && t.where.includes('status: is not written by hand')), 'a written status is a second owner of the answer, and is refused');
-    writeFileSync(join(componentDir(r.root, 'gate'), 'doubts.md'), authoredDoubt.replace('Walk a: from Shut, open, close, open; ends Open.', 'Walk a: from Shut, open, close; ends Shut.'));
-    const changed = componentOf(verifyJson(r.run), 'gate');
+    assert.equal(read(join(partDir(r.root, 'gate'), 'doubts.md')), authoredDoubt, 'the authored alternatives stay unchanged');
+    const committed = log('parts', 'gate');
+    writeFileSync(join(partDir(r.root, 'gate'), 'doubts.md'), authoredDoubt.replace('assumed: a', 'status: closed\nassumed: a'));
+    assert.ok(partOf(verifyJson(r.run), 'gate').tripwires.some(t => t.name === 'malformed doubt' && t.where.includes('status: is not written by hand')), 'a written status is a second owner of the answer, and is refused');
+    writeFileSync(join(partDir(r.root, 'gate'), 'doubts.md'), authoredDoubt.replace('Walk a: from Shut, open, close, open; ends Open.', 'Walk a: from Shut, open, close; ends Shut.'));
+    const changed = partOf(verifyJson(r.run), 'gate');
     assert.equal(changed.summary.doubtsOpen, 1, 'an answer to old alternatives cannot close changed meaning');
     assert.ok(flagNames(changed).includes('doubt open'));
-    assert.equal(log('components', 'gate'), committed, 'the old answer remains unchanged history');
+    assert.equal(log('parts', 'gate'), committed, 'the old answer remains unchanged history');
   });
 
   // Accepting a violation a trial has shown, with the line that names that trial, runs on Harbor's
   // shipped violation in command-lifecycle.test.ts; here are the refusals, which need no trial.
-  it('risk is refused on a component, on a cell no trial has violated, and on a pair that is no cell', () => {
-    writeComponent(r.root, 'gate', gate());
-    writeSystem(r.root, 'net');
-    const logOf = () => existsSync(join(r.root, 'systems', 'net', 'decisions.log')) ? log('systems', 'net') : '';
+  it('risk is refused on a part, on a cell no trial has violated, and on a pair that is no cell', () => {
+    writePart(r.root, 'gate', gate());
+    writeComposition(r.root, 'net');
+    const logOf = () => existsSync(join(r.root, 'compositions', 'net', 'decisions.log')) ? log('compositions', 'net') : '';
     const before = logOf();
-    const onComponent = r.run(['decide', 'gate', 'risk', 'A1', 'all-honest', '--', 'x']);
-    assert.equal(onComponent.status, 2);
-    assert.match(onComponent.stderr, /risk is accepted on a system cell/);
-    const pending = r.run(['decide', 'systems/net', 'risk', 'A1', 'all-honest', '--', 'accepted: the gate is ours']);
+    const onPart = r.run(['decide', 'gate', 'risk', 'A1', 'all-honest', '--', 'x']);
+    assert.equal(onPart.status, 2);
+    assert.match(onPart.stderr, /risk is accepted on a composition cell/);
+    const pending = r.run(['decide', 'compositions/net', 'risk', 'A1', 'all-honest', '--', 'accepted: the gate is ours']);
     assert.equal(pending.status, 2, pending.out);
     assert.match(pending.stderr, /^dossier decide: A1 × all-honest is pending, not violated: a risk accepts the violation a trial has shown$/m);
     const bare = r.run(['decide', 'net', 'risk', 'A1', 'all-honest', '--', 'again']);
-    assert.match(bare.stderr, /A1 × all-honest is pending, not violated/, 'a bare system id also locates the system and its cell');
-    const noCell = r.run(['decide', 'systems/net', 'risk', 'A1', 'nosuch', '--', 'x']);
+    assert.match(bare.stderr, /A1 × all-honest is pending, not violated/, 'a bare composition id also locates the composition and its cell');
+    const noCell = r.run(['decide', 'compositions/net', 'risk', 'A1', 'nosuch', '--', 'x']);
     assert.equal(noCell.status, 2);
     assert.match(noCell.stderr, /A1 × nosuch is not a cell of net/);
     assert.equal(logOf(), before, 'the refused risks write nothing');
   });
 
   it('is refused while verify has a tripwire, and nothing is written', () => {
-    writeComponent(r.root, 'gate', gate());
-    writeFileSync(join(componentDir(r.root, 'gate'), 'stray.txt'), 'not a dossier file\n');
+    writePart(r.root, 'gate', gate());
+    writeFileSync(join(partDir(r.root, 'gate'), 'stray.txt'), 'not a dossier file\n');
     const d = r.run(['decide', 'gate', 'accept', 'S1', '--', 'x']);
     assert.equal(d.status, 1);
     assert.match(d.stderr, /^verify: FAIL · Gate · .* 1 tripwire: stray files \(Gate: stray\.txt\)/m);
     assert.match(d.stderr, /dossier decide: refused until the tripwires are fixed/);
-    assert.ok(!existsSync(join(componentDir(r.root, 'gate'), 'decisions.log')));
-    rmSync(join(componentDir(r.root, 'gate'), 'stray.txt'));
+    assert.ok(!existsSync(join(partDir(r.root, 'gate'), 'decisions.log')));
+    rmSync(join(partDir(r.root, 'gate'), 'stray.txt'));
     assert.equal(r.run(['decide', 'gate', 'accept', 'S1', '--', 'x']).status, 0, 'accepted once the tripwire is gone');
   });
 
   it('holds back every owner reading while the actors files are malformed, though one dossier reports them', () => {
-    writeComponent(r.root, 'gate', gate());
-    writeSystem(r.root, 'net');
-    writeSystem(r.root, 'web');
+    writePart(r.root, 'gate', gate());
+    writeComposition(r.root, 'net');
+    writeComposition(r.root, 'web');
     writeFileSync(join(r.root, 'actors', 'actors.md'), ACTORS.replace('    kind: chain\n', '    kind: weather\n'));
-    for (const argv of [['decide', 'systems/web', 'risk', 'A1', 'all-honest', '--', 'x'], ['decide', 'gate', 'accept', 'S1', '--', 'x']]) {
+    for (const argv of [['decide', 'compositions/web', 'risk', 'A1', 'all-honest', '--', 'x'], ['decide', 'gate', 'accept', 'S1', '--', 'x']]) {
       const d = r.run(argv);
       assert.equal(d.status, 1, d.out);
       assert.match(d.stderr, /tripwire: malformed actors \(Net: actors\.md: chain has kind "weather"/);
       assert.match(d.stderr, /dossier decide: refused until the tripwires are fixed/);
     }
-    assert.ok(!existsSync(join(r.root, 'systems', 'web', 'decisions.log')) || !read(join(r.root, 'systems', 'web', 'decisions.log')).includes(' risk '), 'nothing is written');
+    assert.ok(!existsSync(join(r.root, 'compositions', 'web', 'decisions.log')) || !read(join(r.root, 'compositions', 'web', 'decisions.log')).includes(' risk '), 'nothing is written');
     writeFileSync(join(r.root, 'actors', 'actors.md'), ACTORS);
     assert.equal(r.run(['decide', 'gate', 'accept', 'S1', '--', 'x']).status, 0, 'accepted once the actors files read');
   });
 
   it('checks the tripwires of the named dossier, not of the first one', () => {
-    writeComponent(r.root, 'alpha', gate({ title: 'Alpha', module: 'alpha' }));
-    writeComponent(r.root, 'gate', gate());
-    writeFileSync(join(componentDir(r.root, 'gate'), 'stray.txt'), 'x\n');
+    writePart(r.root, 'alpha', gate({ title: 'Alpha', module: 'alpha' }));
+    writePart(r.root, 'gate', gate());
+    writeFileSync(join(partDir(r.root, 'gate'), 'stray.txt'), 'x\n');
     const tripped = r.run(['decide', 'gate', 'accept', 'S1', '--', 'x']);
     assert.equal(tripped.status, 1, `gate has a tripwire, so its decision is refused: ${tripped.out}`);
-    assert.ok(!existsSync(join(componentDir(r.root, 'gate'), 'decisions.log')));
-    rmSync(join(componentDir(r.root, 'gate'), 'stray.txt'));
-    writeFileSync(join(componentDir(r.root, 'alpha'), 'stray.txt'), 'x\n');
+    assert.ok(!existsSync(join(partDir(r.root, 'gate'), 'decisions.log')));
+    rmSync(join(partDir(r.root, 'gate'), 'stray.txt'));
+    writeFileSync(join(partDir(r.root, 'alpha'), 'stray.txt'), 'x\n');
     const clean = r.run(['decide', 'gate', 'accept', 'S1', '--', 'x']);
     assert.equal(clean.status, 0, `alpha's tripwire is not gate's: ${clean.out}`);
   });
 
   it('needs a known dossier and a verb', () => {
-    writeComponent(r.root, 'gate', gate());
+    writePart(r.root, 'gate', gate());
     const unknown = r.run(['decide', 'nosuch', 'accept', 'S1', '--', 'x']);
     assert.equal(unknown.status, 2);
-    assert.match(unknown.stderr, /no component or system named nosuch/);
+    assert.match(unknown.stderr, /no part or composition named nosuch/);
     const verb = r.run(['decide', 'gate', 'frob', '--', 'x']);
     assert.equal(verb.status, 2);
     assert.match(verb.stderr, /usage: dossier decide/);
   });
 
   it('begins a dossier once: a second begin appends nothing', () => {
-    writeComponent(r.root, 'gate', gate());
+    writePart(r.root, 'gate', gate());
     assert.equal(r.run(['decide', 'gate', 'begin', 'charted']).status, 0);
     assert.equal(r.run(['decide', 'gate', 'accept', 'S1', '--', 'shut is shut']).status, 0);
     const again = r.run(['decide', 'gate', 'begin', 'charted']);
     assert.equal(again.status, 0, again.out);
-    assert.equal(again.stdout, 'components/gate has begun already; nothing appended\n');
-    writeSystem(r.root, 'net');
-    assert.equal(r.run(['decide', 'net', 'begin', 'system']).status, 0, 'a system with no decision yet begins');
-    assert.equal(r.run(['decide', 'net', 'begin', 'system']).stdout, 'systems/net has begun already; nothing appended\n');
-    assert.deepEqual(assertChained(log('components', 'gate')).map(l => l.split(' ')[1]), ['begin', 'accept']);
-    assert.equal(assertChained(log('systems', 'net')).length, 1);
+    assert.equal(again.stdout, 'parts/gate has begun already; nothing appended\n');
+    writeComposition(r.root, 'net');
+    assert.equal(r.run(['decide', 'net', 'begin', 'composition']).status, 0, 'a composition with no decision yet begins');
+    assert.equal(r.run(['decide', 'net', 'begin', 'composition']).stdout, 'compositions/net has begun already; nothing appended\n');
+    assert.deepEqual(assertChained(log('parts', 'gate')).map(l => l.split(' ')[1]), ['begin', 'accept']);
+    assert.equal(assertChained(log('compositions', 'net')).length, 1);
   });
 
-  it('retire takes a component out of verify, the index, the router, where and its systems until begin reopens it', () => {
-    writeComponent(r.root, 'gate', gate());
-    writeSystem(r.root, 'net');
+  it('retire takes a part out of verify, the index, the router, where and its compositions until begin reopens it', () => {
+    writePart(r.root, 'gate', gate());
+    writeComposition(r.root, 'net');
     assert.equal(r.run(['decide', 'gate', 'begin', 'charted']).status, 0);
     const retire = r.run(['decide', 'gate', 'retire', '--', 'folded into the vault']);
     assert.equal(retire.status, 0, retire.out);
     assert.match(retire.stdout.trim(), /^\S+ retire "folded into the vault" [0-9a-f]{8}$/);
     const json = verifyJson(r.run);
-    assert.deepEqual(json.components, [], 'a retired component is not analyzed');
-    assert.deepEqual(json.systems[0].tripwires, [{ name: 'composition cites unknown component', where: 'composition names component gate, which is retired' }], 'its system lacks the member');
-    assert.equal(json.route.target, 'systems/net', 'the router names the system, not the retired component');
+    assert.deepEqual(json.parts, [], 'a retired part is not analyzed');
+    assert.deepEqual(json.compositions[0].tripwires, [{ name: 'wiring names unknown part', where: 'wiring names part gate, which is retired' }], 'its composition lacks the member');
+    assert.equal(json.route.target, 'compositions/net', 'the router names the composition, not the retired part');
     assert.equal(r.run(['render']).status, 1, 'render reports the missing retired member');
     const index = read(join(r.root, 'index.md'));
     assert.ok(!/^\| gate \|/m.test(index) && !/^- Gate: /m.test(index), 'nor is it in the index');
-    assert.ok(!existsSync(join(componentDir(r.root, 'gate'), 'ledger.md')), 'nor is its ledger written');
+    assert.ok(!existsSync(join(partDir(r.root, 'gate'), 'ledger.md')), 'nor is its ledger written');
     const where = r.run(['where', 'gate']);
     assert.equal(where.status, 0, where.out);
-    assert.equal(where.stdout, 'component gate: retired\n');
+    assert.equal(where.stdout, 'part gate: retired\n');
     const refused = r.run(['decide', 'gate', 'accept', 'S1', '--', 'x']);
     assert.equal(refused.status, 2);
-    assert.equal(refused.stderr, 'dossier decide: components/gate is retired; dossier decide components/gate begin reopens it\n');
-    assert.equal(assertChained(log('components', 'gate')).length, 2, 'the refused decision writes nothing');
+    assert.equal(refused.stderr, 'dossier decide: parts/gate is retired; dossier decide parts/gate begin reopens it\n');
+    assert.equal(assertChained(log('parts', 'gate')).length, 2, 'the refused decision writes nothing');
     const reopened = r.run(['decide', 'gate', 'begin', 'charted']);
     assert.match(reopened.stdout.trim(), /^\S+ begin charted "" [0-9a-f]{8}$/, 'a begin after a retire reopens it');
-    assert.deepEqual(assertChained(log('components', 'gate')).map(l => l.split(' ')[1]), ['begin', 'retire', 'begin']);
+    assert.deepEqual(assertChained(log('parts', 'gate')).map(l => l.split(' ')[1]), ['begin', 'retire', 'begin']);
     const back = verifyJson(r.run);
-    assert.deepEqual(back.components.map(c => c.id), ['gate']);
-    assert.deepEqual(back.systems[0].tripwires, []);
-    assert.match(r.run(['where', 'gate']).stdout, /^component gate: module gate, tier charted, \d+ passages\n  in net as member: /);
-    // A retired system: its own ledger is no longer written, and the suggested begin reopens the system.
+    assert.deepEqual(back.parts.map(c => c.id), ['gate']);
+    assert.deepEqual(back.compositions[0].tripwires, []);
+    assert.match(r.run(['where', 'gate']).stdout, /^part gate: module gate, tier charted, \d+ passages\n  in net as member: /);
+    // A retired composition: its own ledger is no longer written, and the suggested begin reopens the composition.
     assert.equal(r.run(['decide', 'net', 'retire', '--', 'merged into another concern']).status, 0);
-    const system = r.run(['decide', 'net', 'risk', 'A1', 'all-honest', '--', 'x']);
-    assert.equal(system.stderr, 'dossier decide: systems/net is retired; dossier decide systems/net begin reopens it\n');
-    assert.deepEqual(verifyJson(r.run).systems, []);
-    assert.equal(r.run(['decide', 'systems/net', 'begin']).status, 0);
-    assert.ok(!existsSync(componentDir(r.root, 'net')), 'the suggested begin reopened the system, and began no component');
-    assert.deepEqual(verifyJson(r.run).systems.map(s => s.id), ['net']);
+    const composition = r.run(['decide', 'net', 'risk', 'A1', 'all-honest', '--', 'x']);
+    assert.equal(composition.stderr, 'dossier decide: compositions/net is retired; dossier decide compositions/net begin reopens it\n');
+    assert.deepEqual(verifyJson(r.run).compositions, []);
+    assert.equal(r.run(['decide', 'compositions/net', 'begin']).status, 0);
+    assert.ok(!existsSync(partDir(r.root, 'net')), 'the suggested begin reopened the composition, and began no part');
+    assert.deepEqual(verifyJson(r.run).compositions.map(s => s.id), ['net']);
   });
 });
 
@@ -589,18 +589,18 @@ describe('draw', () => {
   let r: Repo;
   beforeEach(() => { r = makeRepo(); });
   afterEach(() => removeRepo(r));
-  const chart = (name: string) => join(componentDir(r.root, 'gate'), 'chart', name);
+  const chart = (name: string) => join(partDir(r.root, 'gate'), 'chart', name);
 
-  it('draws a compiling component: a draw: line, the two chart files, exit 0', () => {
-    writeComponent(r.root, 'gate', gate());
+  it('draws a compiling part: a draw: line, the two chart files, exit 0', () => {
+    writePart(r.root, 'gate', gate());
     const d = r.run(['draw', 'gate'], { env: NO_TOOLCHAIN });
     assert.equal(d.status, 0, d.out);
     assert.match(lines(d.stdout)[0], /^draw: gate · pass · (\d+) of \1 checks · \d+ states explored$/);
     for (const f of ['machine.json', 'grid.md']) {
       assert.ok(existsSync(chart(f)), `${f} written`);
-      assert.ok(d.stdout.includes(`  wrote components/gate/chart/${f}\n`), `${f} printed`);
+      assert.ok(d.stdout.includes(`  wrote parts/gate/chart/${f}\n`), `${f} printed`);
     }
-    assert.deepEqual(readdirSync(join(componentDir(r.root, 'gate'), 'chart')).sort(), ['grid.md', 'machine.json'], 'no Mermaid picture is written');
+    assert.deepEqual(readdirSync(join(partDir(r.root, 'gate'), 'chart')).sort(), ['grid.md', 'machine.json'], 'no Mermaid picture is written');
     assert.doesNotMatch(d.stdout, /removed/);
     const machine = JSON.parse(read(chart('machine.json'))) as Ir;
     assert.equal(machine.ok, true);
@@ -613,7 +613,7 @@ describe('draw', () => {
     const result = JSON.parse(j.stdout) as DrawResult;
     assert.equal(result.ok, true);
     assert.equal(result.outcome, 'pass');
-    assert.deepEqual(result.files, ['components/gate/chart/machine.json', 'components/gate/chart/grid.md']);
+    assert.deepEqual(result.files, ['parts/gate/chart/machine.json', 'parts/gate/chart/grid.md']);
     assert.deepEqual(result.removed, []);
     assert.ok(Array.isArray(result.checks) && result.checks.length >= 12);
     for (const c of result.checks) {
@@ -629,7 +629,7 @@ describe('draw', () => {
   });
 
   it('removes the Mermaid pictures an earlier draw left, says so, and keeps the blunders', () => {
-    writeComponent(r.root, 'gate', gate());
+    writePart(r.root, 'gate', gate());
     assert.equal(r.run(['draw', 'gate', '--brief']).status, 0);
     // The chart folder as an earlier draw left it: two Mermaid pictures beside the machine and the grid, and an authored blunder.
     writeFileSync(chart('chart.mmd'), 'stateDiagram-v2\n  [*] --> Shut\n');
@@ -638,15 +638,15 @@ describe('draw', () => {
     const blunder = read(chart('blunders/x.json'));
     const d = r.run(['draw', 'gate'], { env: NO_TOOLCHAIN });
     assert.equal(d.status, 0, d.out);
-    assert.ok(d.stdout.endsWith('  wrote components/gate/chart/grid.md\n  removed components/gate/chart/chart.mmd\n  removed components/gate/chart/walks.mmd\n'), d.stdout);
-    assert.deepEqual(readdirSync(join(componentDir(r.root, 'gate'), 'chart')).sort(), ['blunders', 'grid.md', 'machine.json']);
+    assert.ok(d.stdout.endsWith('  wrote parts/gate/chart/grid.md\n  removed parts/gate/chart/chart.mmd\n  removed parts/gate/chart/walks.mmd\n'), d.stdout);
+    assert.deepEqual(readdirSync(join(partDir(r.root, 'gate'), 'chart')).sort(), ['blunders', 'grid.md', 'machine.json']);
     assert.equal(read(chart('blunders/x.json')), blunder, 'an authored blunder stays as it was');
     const again = JSON.parse(r.run(['draw', 'gate', '--json']).stdout) as DrawResult;
     assert.deepEqual(again.removed, [], 'once removed, nothing is left to remove');
   });
 
   it('exits 1 when a check fails', () => {
-    writeComponent(r.root, 'gate', gate({ ends: 'Open' }));
+    writePart(r.root, 'gate', gate({ ends: 'Open' }));
     const d = r.run(['draw', 'gate']);
     assert.equal(d.status, 1);
     assert.match(lines(d.stdout)[0], /^draw: gate · fail · \d+ of \d+ checks · \d+ states explored$/);
@@ -658,12 +658,12 @@ describe('draw', () => {
   });
 
   it('exits 1 when the prose does not compile, and writes no chart', () => {
-    writeComponent(r.root, 'gate', BROKEN);
+    writePart(r.root, 'gate', BROKEN);
     const d = r.run(['draw', 'gate']);
     assert.equal(d.status, 1);
     assert.match(lines(d.stdout)[0], /^draw: gate · does not compile$/);
     assert.match(d.stdout, /^  M1: does not follow the Move form/m);
-    assert.ok(!existsSync(join(componentDir(r.root, 'gate'), 'chart')));
+    assert.ok(!existsSync(join(partDir(r.root, 'gate'), 'chart')));
     const result = JSON.parse(r.run(['draw', 'gate', '--json']).stdout) as DrawResult;
     assert.equal(result.ok, false);
     assert.ok(result.errors!.length > 0);
@@ -671,21 +671,21 @@ describe('draw', () => {
   });
 
   it('--brief prints the summary\'s first line alone', () => {
-    writeComponent(r.root, 'gate', gate());
+    writePart(r.root, 'gate', gate());
     const brief = r.run(['draw', 'gate', '--brief']);
     assert.equal(brief.status, 0, brief.out);
     assert.match(brief.stdout, /^draw: gate · pass · (\d+) of \1 checks · \d+ states explored\n$/);
-    writeComponent(r.root, 'gate', gate({ ends: 'Open' }));
+    writePart(r.root, 'gate', gate({ ends: 'Open' }));
     const failing = r.run(['draw', 'gate', '--brief']);
     assert.equal(failing.status, 1);
     assert.match(failing.stdout, /^draw: gate · fail · \d+ of \d+ checks · \d+ states explored\n$/, 'the failing checks are the full summary\'s to list');
     assert.equal(r.run(['draw', 'gate', '--brief', '--limit', '2']).stdout, 'draw: gate · fail · exploration exceeded 2 states: narrow the declared ranges or raise --limit\n');
   });
 
-  it('exits 2 for an unknown component', () => {
+  it('exits 2 for an unknown part', () => {
     const d = r.run(['draw', 'nosuch']);
     assert.equal(d.status, 2);
-    assert.match(d.stderr, /no component named nosuch/);
+    assert.match(d.stderr, /no part named nosuch/);
     assert.equal(r.run(['draw']).status, 2);
   });
 });
@@ -695,13 +695,13 @@ describe('scaffold', () => {
   beforeEach(() => { r = makeRepo(); });
   afterEach(() => removeRepo(r));
 
-  it('writes the component module and cfgs once, then a .scaffold.tla beside the kept module', () => {
-    writeComponent(r.root, 'gate', gate());
-    const model = join(componentDir(r.root, 'gate'), 'model');
+  it('writes the part module and cfgs once, then a .scaffold.tla beside the kept module', () => {
+    writePart(r.root, 'gate', gate());
+    const model = join(partDir(r.root, 'gate'), 'model');
     const first = r.run(['scaffold', 'gate']);
     assert.equal(first.status, 0, first.out);
     assert.deepEqual(readdirSync(model).sort(), ['Gate.cfg', 'Gate.tla', 'Gate_W1.cfg']);
-    for (const f of ['Gate.tla', 'Gate.cfg', 'Gate_W1.cfg']) assert.ok(first.stdout.includes(`wrote components/gate/model/${f}\n`), f);
+    for (const f of ['Gate.tla', 'Gate.cfg', 'Gate_W1.cfg']) assert.ok(first.stdout.includes(`wrote parts/gate/model/${f}\n`), f);
     const scaffold = read(join(model, 'Gate.tla'));
     assert.match(scaffold, /MODULE Gate/);
     assert.match(scaffold, /^A1 ==/m);
@@ -712,21 +712,33 @@ describe('scaffold', () => {
     const second = r.run(['scaffold', 'gate']);
     assert.equal(second.status, 0, second.out);
     assert.match(second.stdout, /^Gate\.tla exists and was kept; the fresh scaffold is Gate\.scaffold\.tla for diffing$/m);
-    assert.ok(second.stdout.includes('wrote components/gate/model/Gate.scaffold.tla\n'));
+    assert.ok(second.stdout.includes('wrote parts/gate/model/Gate.scaffold.tla\n'));
     assert.deepEqual(readdirSync(model).sort(), ['Gate.cfg', 'Gate.scaffold.tla', 'Gate.tla', 'Gate_W1.cfg']);
     assert.equal(read(join(model, 'Gate.tla')), scaffold + '\\* refined by hand\n', 'the hand-refined module is kept');
     assert.equal(read(join(model, 'Gate.scaffold.tla')), scaffold, 'the fresh scaffold is the same text');
   });
 
-  it('writes a system module under model/generated/ with one cfg per cell, and prints the cells', () => {
-    writeComponent(r.root, 'gate', gate());
-    const dir = writeSystem(r.root, 'net', { scenarios: ['all-honest', 'public-malicious'] });
+  it('names a part module from the part id, as a composition module is named from its id, whatever the title says', () => {
+    writePart(r.root, 'pau-gate', gate({ title: 'The gate, in words' }));
+    const d = r.run(['scaffold', 'pau-gate']);
+    assert.equal(d.status, 0, d.out);
+    const model = join(partDir(r.root, 'pau-gate'), 'model');
+    assert.deepEqual(readdirSync(model).sort(), ['PauGate.cfg', 'PauGate.tla', 'PauGate_W1.cfg']);
+    assert.match(read(join(model, 'PauGate.tla')), /MODULE PauGate/);
+    const call = r.run(['call', 'pau-gate', 'first', 'tlc']);
+    assert.equal(call.status, 0, call.out);
+    assert.match(read(join(partDir(r.root, 'pau-gate'), 'calls', 'first.md')), /model\/PauGate\.tla/);
+  });
+
+  it('writes a composition module under model/generated/ with one cfg per cell, and prints the cells', () => {
+    writePart(r.root, 'gate', gate());
+    const dir = writeComposition(r.root, 'net', { scenarios: ['all-honest', 'public-malicious'] });
     const d = r.run(['scaffold', 'net']);
     assert.equal(d.status, 0, d.out);
     assert.match(d.stdout, /^cells: A1×all-honest A1×public-malicious$/m);
     const gen = join(dir, 'model', 'generated');
     assert.deepEqual(readdirSync(gen).sort(), ['A1_all_honest.cfg', 'A1_public_malicious.cfg', 'Net.tla']);
-    for (const f of ['Net.tla', 'A1_all_honest.cfg', 'A1_public_malicious.cfg']) assert.ok(d.stdout.includes(`wrote systems/net/model/generated/${f}\n`), f);
+    for (const f of ['Net.tla', 'A1_all_honest.cfg', 'A1_public_malicious.cfg']) assert.ok(d.stdout.includes(`wrote compositions/net/model/generated/${f}\n`), f);
     const tla = read(join(gen, 'Net.tla'));
     assert.match(tla, /MODULE Net/);
     assert.match(tla, /^A1 == /m);
@@ -735,19 +747,19 @@ describe('scaffold', () => {
     assert.match(read(join(gen, 'A1_all_honest.cfg')), /^INVARIANTS TypeOK A1$/m);
   });
 
-  it('refuses a component that does not compile and an unknown dossier', () => {
-    writeComponent(r.root, 'gate', BROKEN);
+  it('refuses a part that does not compile and an unknown dossier', () => {
+    writePart(r.root, 'gate', BROKEN);
     const d = r.run(['scaffold', 'gate']);
     assert.equal(d.status, 1);
     assert.match(d.stderr, /gate does not compile/);
-    assert.ok(!existsSync(join(componentDir(r.root, 'gate'), 'model')));
+    assert.ok(!existsSync(join(partDir(r.root, 'gate'), 'model')));
     assert.equal(r.run(['scaffold', 'nosuch']).status, 2);
   });
 });
 
 describe('trial', () => {
   let r: Repo, dir: string;
-  beforeEach(() => { r = makeRepo(); writeComponent(r.root, 'gate', gate()); dir = componentDir(r.root, 'gate'); });
+  beforeEach(() => { r = makeRepo(); writePart(r.root, 'gate', gate()); dir = partDir(r.root, 'gate'); });
   afterEach(() => removeRepo(r));
   const trial = (name: string, env = NO_TOOLCHAIN) => r.run(['trial', 'gate', name], { env });
 
@@ -775,7 +787,7 @@ describe('trial', () => {
     assert.equal(res.result, 'as-called');
     assert.equal(res.kind, 'chart');
     assert.equal(res.checker, 'chart');
-    assert.equal(res.dossier, 'components/gate');
+    assert.equal(res.dossier, 'parts/gate');
     assert.equal(res.id, id);
     assert.deepEqual(res.miscalls, []);
     assert.deepEqual(res.outcomes, { checks: 'pass' });
@@ -806,7 +818,7 @@ describe('trial', () => {
     assert.deepEqual(manifestOf(dir).evidence, { [name]: sha256(text) }, 'integrity.json binds the entry\'s exact bytes');
     const entry = JSON.parse(text) as Entry;
     assert.equal(entry.schema, 1);
-    assert.equal(entry.dossier, 'components/gate');
+    assert.equal(entry.dossier, 'parts/gate');
     assert.deepEqual(entry.question, { kind: 'chart', checker: 'chart', executes: [], expects: ['checks'], property: null, scenario: null, walk: null }, 'the question: the kind, the files other than prose.md, the expectations, no cell and no walk');
     assert.deepEqual(entry.call, { text: CHART_CALL, reach: 'the chart over locked', expect: { checks: { expect: 'pass' } }, because: 'Every state is reached and every move, refusal and walk replays as said.' }, 'the prediction, kept apart from the observation');
     assert.equal(entry.answer.result, 'as-called');
@@ -821,7 +833,7 @@ describe('trial', () => {
     assert.equal(entry.narrowed, null);
     assert.equal(entry.replaced, null, 'the first answer to its question replaced none');
     assert.equal(answerOf(dir, id)?.name, name, 'the trial id finds the entry it established');
-    const listed = componentOf(verifyJson(r.run), 'gate').answers;
+    const listed = partOf(verifyJson(r.run), 'gate').answers;
     assert.deepEqual(listed.map(x => [x.entry, x.trial]), [[name, id]], 'verify lists the answer by its entry and the trial that established it');
   });
 
@@ -861,7 +873,7 @@ describe('trial', () => {
     assert.equal(manifestOf(dir).evidence[name], sha256(read(join(dir, 'evidence', `${name}.json`))));
     const marks = marksOf(verifyJson(r.run), 'gate');
     assert.equal(marks.A1, 'checked', 'a chart trial plus a caught chart blunder checks the Always of a charted piece');
-    assert.ok(!flagNames(componentOf(verifyJson(r.run), 'gate')).includes('blunder owed'), 'the blunder is no longer owed');
+    assert.ok(!flagNames(partOf(verifyJson(r.run), 'gate')).includes('blunder owed'), 'the blunder is no longer owed');
     assert.equal(marks.M1, 'checked');
   });
 
@@ -926,7 +938,7 @@ describe('trial', () => {
     const { name } = answered(first.stdout);
     writeFileSync(join(dir, 'evidence', `${name}.md`), 'Every check passed over the declared ranges.\n');
     // S1's words change, and the chart passes as before: the same answer on a basis that moved.
-    writeComponent(r.root, 'gate', gate().replace('[S1] Shut: the gate is closed.', '[S1] Shut: the gate is closed and still.'));
+    writePart(r.root, 'gate', gate().replace('[S1] Shut: the gate is closed.', '[S1] Shut: the gate is closed and still.'));
     writeCall(r.root, 'gate', 'chart.md', CHART_CALL.replace('Every state is reached', 'After the edit: every state is reached'));
     const again = trial('chart.md');
     assert.equal(again.status, 0, again.out);
@@ -994,7 +1006,7 @@ describe('trial', () => {
     assert.deepEqual([res.result, res.reason, res.limitHit, res.checks], ['aborted', reason, true, undefined]);
     assert.deepEqual(trialBundle(dir, id).problems, [], 'receipted as any trial is');
     assert.deepEqual([entryAt(dir, name).answer.result, entryAt(dir, name).answer.reason], ['aborted', reason]);
-    let c = componentOf(verifyJson(r.run), 'gate');
+    let c = partOf(verifyJson(r.run), 'gate');
     assert.deepEqual(c.tripwires, [], 'an exploration cut short is no miscall to classify');
     assert.ok(c.flags.some(f => f.name === 'unrun' && f.where === `evidence/${name}.json: ${reason}`), JSON.stringify(c.flags));
     assert.equal(c.marks.S1.mark, 'pending', 'it covers nothing');
@@ -1004,7 +1016,7 @@ describe('trial', () => {
     assert.deepEqual(answered(whole.stdout), { name, action: 'replaced the recorded answer', reason: null }, 'the same question, now answered');
     assert.equal(entryAt(dir, name).previous, null, 'an aborted answer never becomes previous');
     assert.deepEqual(entryAt(dir, name).replaced, { trial: id, moved: [] }, 'though the entry records the trial it replaced');
-    c = componentOf(verifyJson(r.run), 'gate');
+    c = partOf(verifyJson(r.run), 'gate');
     assert.ok(!flagNames(c).includes('unrun'), 'a completed answer replaces it');
     assert.equal(c.marks.S1.mark, 'checked');
 
@@ -1082,7 +1094,7 @@ describe('trial', () => {
     assert.equal(r.run(['decide', 'gate', 'retire', '--', 'replaced by the new gate']).status, 0);
     const t = trial('chart.md');
     assert.equal(t.status, 2, t.out);
-    assert.equal(t.stderr, 'dossier trial: components/gate is retired; dossier decide components/gate begin reopens it\n');
+    assert.equal(t.stderr, 'dossier trial: parts/gate is retired; dossier decide parts/gate begin reopens it\n');
     assert.ok(existsSync(join(dir, 'calls', 'chart.md')), 'the call stays pending');
     const retired = read(join(dir, 'decisions.log')).trim();
     assert.equal(r.run(['decide', 'gate', 'begin', 'charted', '--', 'back']).status, 0);
@@ -1100,7 +1112,7 @@ describe('trial', () => {
   });
 
   it('refuses a path that leaves the dossier, and reads nothing there', () => {
-    writeComponent(r.root, 'other', gate({ title: 'Other', module: 'other' }));
+    writePart(r.root, 'other', gate({ title: 'Other', module: 'other' }));
     writeCall(r.root, 'gate', 'escape.md', CHART_CALL.replace('  - prose.md', '  - prose.md\n  - ../other/prose.md'));
     const t = trial('escape.md');
     assert.equal(t.status, 2, t.out);
@@ -1190,11 +1202,11 @@ describe('recheck', () => {
   afterEach(() => rmSync(work, { recursive: true, force: true }));
   const solver = { skip: !(process.env.TLA_TOOLS && existsSync(process.env.TLA_TOOLS)) && 'TLA_TOOLS is not set: recheck asks TLC again; the cases that need no solver still run' };
   const jar = ANY_JAR;
-  const token = () => join(root, 'components', 'token');
+  const token = () => join(root, 'parts', 'token');
   const answers = answersIn;
   const answerNamed = (kind: string) => { const name = answers(token()).find(n => n.startsWith(`${kind}-`)); assert.ok(name, `token has a ${kind} answer`); return name; };
   // The line recheck prints for an entry: same, different or not run, and what follows.
-  const said = (stdout: string, name: string, ref = 'components/token') => {
+  const said = (stdout: string, name: string, ref = 'parts/token') => {
     const m = stdout.match(new RegExp(`^(same|different|not run): ${ref}/evidence/${name}\\.json · (.*)$`, 'm'));
     assert.ok(m, `a line for ${ref}/evidence/${name}.json in: ${stdout}`);
     return { verdict: m[1], rest: m[2] };
@@ -1222,32 +1234,32 @@ describe('recheck', () => {
     const before = fingerprint(work);
     const c = run(['recheck', 'token']);
     assert.equal(c.status, 0, c.out);
-    allSame(c.stdout, 'components/token');
+    allSame(c.stdout, 'parts/token');
     assert.equal(summary(c.stdout), `recheck: ${names.length} same, 0 different, 0 not run`);
     assert.deepEqual(fingerprint(work), before, 'recheck writes nothing');
   });
 
-  it('asks every current answer of a system again, the cells\' TLC answers, an Apalache answer and the blunders\', and finds each the same: exit 0, and the copy unchanged', { skip: !(process.env.TLA_TOOLS && existsSync(process.env.TLA_TOOLS) && process.env.APALACHE && existsSync(process.env.APALACHE)) && 'TLA_TOOLS or APALACHE is not set: a recheck of upkeep asks TLC and Apalache again' }, () => {
-    const names = answersIn(join(root, 'systems', 'upkeep'));
+  it('asks every current answer of a composition again, the cells\' TLC answers, an Apalache answer and the blunders\', and finds each the same: exit 0, and the copy unchanged', { skip: !(process.env.TLA_TOOLS && existsSync(process.env.TLA_TOOLS) && process.env.APALACHE && existsSync(process.env.APALACHE)) && 'TLA_TOOLS or APALACHE is not set: a recheck of upkeep asks TLC and Apalache again' }, () => {
+    const names = answersIn(join(root, 'compositions', 'upkeep'));
     assert.deepEqual([...new Set(names.map(n => n.split('-')[0]))].sort(), ['apalache', 'blunder', 'tlc']);
     assert.ok(names.some(n => /-(lanes-offline|lane-a-captured|lanes-down-two)-/.test(n)), 'among them cells that are violated');
     const before = fingerprint(work);
     const c = run(['recheck', 'upkeep']);
     assert.equal(c.status, 0, c.out);
-    allSame(c.stdout, 'systems/upkeep');
+    allSame(c.stdout, 'compositions/upkeep');
     assert.equal(summary(c.stdout), `recheck: ${names.length} same, 0 different, 0 not run`);
     assert.deepEqual(fingerprint(work), before, 'recheck writes nothing');
   });
 
-  it('asks Alloy\'s answers again with the rest of a component, a check and a blunder among them, and finds each the same: exit 0, and the copy unchanged', { skip: !(process.env.TLA_TOOLS && existsSync(process.env.TLA_TOOLS) && process.env.ALLOY_JAR && existsSync(process.env.ALLOY_JAR)) && 'TLA_TOOLS or ALLOY_JAR is not set: a recheck of breaker asks TLC and Alloy again' }, () => {
-    const breaker = join(root, 'components', 'breaker');
+  it('asks Alloy\'s answers again with the rest of a part, a check and a blunder among them, and finds each the same: exit 0, and the copy unchanged', { skip: !(process.env.TLA_TOOLS && existsSync(process.env.TLA_TOOLS) && process.env.ALLOY_JAR && existsSync(process.env.ALLOY_JAR)) && 'TLA_TOOLS or ALLOY_JAR is not set: a recheck of breaker asks TLC and Alloy again' }, () => {
+    const breaker = join(root, 'parts', 'breaker');
     const names = answersIn(breaker);
     const questions = names.map(n => `${entryAt(breaker, n).question.kind} by ${entryAt(breaker, n).question.checker}`);
     for (const question of ['alloy by alloy', 'blunder by alloy', 'chart by chart', 'tlc by tlc', 'blunder by tlc']) assert.ok(questions.includes(question), `breaker asks a ${question}: ${questions.join(', ')}`);
     const before = fingerprint(work);
     const c = run(['recheck', 'breaker']);
     assert.equal(c.status, 0, c.out);
-    allSame(c.stdout, 'components/breaker');
+    allSame(c.stdout, 'parts/breaker');
     assert.equal(summary(c.stdout), `recheck: ${names.length} same, 0 different, 0 not run`);
     assert.deepEqual(fingerprint(work), before, 'recheck writes nothing, Alloy\'s instances included');
   });
@@ -1269,8 +1281,8 @@ describe('recheck', () => {
     assert.match(summary(c.stdout)!, /^recheck: \d+ same, 1 different, \d+ not run$/);
     assert.deepEqual(fingerprint(work), before, 'recheck writes nothing, even on a difference');
     const json = verifyJson(run);
-    assert.deepEqual(componentOf(json, 'token').tripwires, [], 'the entry is still bound: the difference is the checker\'s, not a damaged record\'s');
-    assert.ok(componentOf(json, 'token').answers.some(t => t.entry === external && t.result === 'as-called'), 'and verify still reads the recorded answer');
+    assert.deepEqual(partOf(json, 'token').tripwires, [], 'the entry is still bound: the difference is the checker\'s, not a damaged record\'s');
+    assert.ok(partOf(json, 'token').answers.some(t => t.entry === external && t.result === 'as-called'), 'and verify still reads the recorded answer');
   });
 
   it('reports as different a hand-made answer the runner published, once TLC asks the question again', solver, () => {
@@ -1391,18 +1403,18 @@ describe('recheck', () => {
     writeFileSync(path, JSON.stringify(edited, null, 2) + '\n');
     // The replay runner, as copied, logs each dossier it is asked about.
     const log = join(work, 'replay.log'), replay = join(work, 'tools', 'replay.mjs');
-    const asked = 'const component = input.dossier.id;';
+    const asked = 'const part = input.dossier.id;';
     assert.ok(read(replay).includes(asked));
-    writeFileSync(replay, `import { appendFileSync } from 'node:fs';\n${read(replay).replace(asked, `${asked}\nappendFileSync(${JSON.stringify(log)}, component + '\\n');`)}`);
-    const adapter = join(root, 'components', 'adapter');
+    writeFileSync(replay, `import { appendFileSync } from 'node:fs';\n${read(replay).replace(asked, `${asked}\nappendFileSync(${JSON.stringify(log)}, part + '\\n');`)}`);
+    const adapter = join(root, 'parts', 'adapter');
     const before = fingerprint(root);
     const c = run(['recheck', 'token', 'adapter'], { env: NO_TOOLCHAIN });
     assert.equal(c.status, 0, c.out);
-    const named = lines(c.stdout).filter(l => l.includes('components/token'));
+    const named = lines(c.stdout).filter(l => l.includes('parts/token'));
     assert.equal(named.length, 1, `one line for the dossier, none for its entries: ${named.join('\n')}`);
-    assert.match(named[0], new RegExp(`^not run: components/token · its records do not verify: .*evidence/${external}\\.json: answer edited\\b`));
-    assert.equal(said(c.stdout, answersIn(adapter).find(n => n.startsWith('chart-'))!, 'components/adapter').verdict, 'same', 'adapter is still asked');
-    assert.equal(said(c.stdout, answersIn(adapter).find(n => n.startsWith('external-'))!, 'components/adapter').verdict, 'same');
+    assert.match(named[0], new RegExp(`^not run: parts/token · its records do not verify: .*evidence/${external}\\.json: answer edited\\b`));
+    assert.equal(said(c.stdout, answersIn(adapter).find(n => n.startsWith('chart-'))!, 'parts/adapter').verdict, 'same', 'adapter is still asked');
+    assert.equal(said(c.stdout, answersIn(adapter).find(n => n.startsWith('external-'))!, 'parts/adapter').verdict, 'same');
     assert.deepEqual(lines(read(log)), ['adapter'], 'the replay runner was asked about adapter, never about token');
     // Token's entries count as not run, and so do adapter's TLC ones, with no TLC on this machine.
     const tlcRuns = answersIn(adapter).filter(n => /^(tlc|blunder)-/.test(n)).length;
@@ -1414,7 +1426,7 @@ describe('recheck', () => {
     const before = fingerprint(work);
     const unknown = run(['recheck', 'nosuch']);
     assert.equal(unknown.status, 2, unknown.out);
-    assert.match(unknown.stderr, /^dossier recheck: no component or system named nosuch under /);
+    assert.match(unknown.stderr, /^dossier recheck: no part or composition named nosuch under /);
     const option = run(['recheck', 'token', '--timeout', '0']);
     assert.equal(option.status, 2, option.out);
     assert.equal(option.stderr, 'dossier recheck: --timeout takes a whole number of seconds above 0, not "0"\n');
@@ -1431,7 +1443,7 @@ describe('decide forget', () => {
   let work: string, root: string, run: Run;
   beforeEach(() => { ({ work, root, run } = copyHarbor()); });
   afterEach(() => rmSync(work, { recursive: true, force: true }));
-  const control = 'systems/control', token = 'components/token';
+  const control = 'compositions/control', token = 'parts/token';
   // A dossier's entry by the start of its name, and the argument forget takes for it as integrity.json binds it now.
   const entryNamed = (ref: string, prefix: string) => { const name = answersIn(join(root, ref)).find(n => n.startsWith(prefix)); assert.ok(name, `${ref} holds an answer named ${prefix}…`); return name; };
   const argumentFor = (ref: string, name: string) => `${name}@${manifestOf(join(root, ref)).evidence[name].slice(0, 8)}`;
@@ -1443,7 +1455,7 @@ describe('decide forget', () => {
   // risk. A stand-in for TLC answers the same question with a pass, as a hand-made result would, on an
   // unchanged basis: that answer waits for the owner's forget.
   it('refuses a pass over a recorded violation on an unchanged basis and names the owner\'s command; once the owner forgets that answer, the same trial replaces it and keeps the violation as previous', () => {
-    const control = join(root, 'systems', 'control');
+    const control = join(root, 'compositions', 'control');
     const answers = answersIn(control);
     const name = answers.find(n => n.startsWith('tlc-N1-executor-offline-'));
     assert.ok(name, 'control holds an answer to N1 × executor-offline');
@@ -1462,13 +1474,13 @@ describe('decide forget', () => {
     const refusal = answered(refused.stdout);
     assert.deepEqual([refusal.name, refusal.action], [name, 'refused']);
     assert.match(refusal.reason!, /\bon an unchanged basis this answer would turn N1 from a counterexample into a pass\b/);
-    assert.ok(refusal.reason!.endsWith(`: dossier decide systems/control forget ${name}@${bound.slice(0, 8)} -- "<the owner's words>"`), `the refusal ends with the owner's command: ${refusal.reason}`);
+    assert.ok(refusal.reason!.endsWith(`: dossier decide compositions/control forget ${name}@${bound.slice(0, 8)} -- "<the owner's words>"`), `the refusal ends with the owner's command: ${refusal.reason}`);
     assert.match(refused.stdout, new RegExp(`^  the bundle stays in trials/${id}/, and the call stays pending$`, 'm'));
     assert.ok(existsSync(join(control, 'calls', 'n1.md')), 'the call stays pending');
     assert.deepEqual(recordOf(control), record, 'nothing is written: evidence/, integrity.json and decisions.log are as they were');
 
     const words = 'the recorded violation came from a trial the owner withdraws';
-    const forget = run(['decide', 'systems/control', 'forget', `${name}@${bound.slice(0, 8)}`, '--', words]);
+    const forget = run(['decide', 'compositions/control', 'forget', `${name}@${bound.slice(0, 8)}`, '--', words]);
     assert.equal(forget.status, 0, forget.out);
     assert.match(forget.stdout.trim(), new RegExp(`^\\S+ forget ${name}@${bound.slice(0, 8)} "${words}" [0-9a-f]{8}$`));
     assert.equal(assertChained(read(join(control, 'decisions.log'))).at(-1), forget.stdout.trim());
@@ -1491,7 +1503,7 @@ describe('decide forget', () => {
     const v = run(['verify']);
     assert.equal(v.status, 0, v.out);
     assert.match(lines(v.stdout)[0], /^verify: ok · .* · 0 tripwires$/);
-    const cell = verifyJson(run).systems.find(s => s.id === 'control')!.cells.find(c => c.property === 'N1' && c.scenario === 'executor-offline')!;
+    const cell = verifyJson(run).compositions.find(s => s.id === 'control')!.cells.find(c => c.property === 'N1' && c.scenario === 'executor-offline')!;
     assert.equal(cell.mark, 'checked', 'the cell reads the answer now recorded');
   });
 
@@ -1503,10 +1515,10 @@ describe('decide forget', () => {
       const argument = argumentFor(control, violation()).slice(0, -2);
       return { ref: control, argument, status: 2, says: `dossier decide: forget names an entry and the first eight hex of its digest, such as tlc-N1-executor-offline-9b1e04@3fa2c1d0, not ${argument}\n` };
     }],
-    ['an entry integrity.json does not bind', () => ({ ref: control, argument: 'tlc-N1-nowhere-000000@00000000', status: 2, says: 'dossier decide: evidence/tlc-N1-nowhere-000000.json at 00000000 is not an answer integrity.json binds in systems/control\n' })],
+    ['an entry integrity.json does not bind', () => ({ ref: control, argument: 'tlc-N1-nowhere-000000@00000000', status: 2, says: 'dossier decide: evidence/tlc-N1-nowhere-000000.json at 00000000 is not an answer integrity.json binds in compositions/control\n' })],
     ['a digest other than the one integrity.json binds', () => {
       const name = violation(), other = argumentFor(control, name).endsWith('@00000000') ? '11111111' : '00000000';
-      return { ref: control, argument: `${name}@${other}`, status: 2, says: `dossier decide: evidence/${name}.json at ${other} is not an answer integrity.json binds in systems/control\n` };
+      return { ref: control, argument: `${name}@${other}`, status: 2, says: `dossier decide: evidence/${name}.json at ${other} is not an answer integrity.json binds in compositions/control\n` };
     }],
     ['an entry edited since integrity.json bound it', () => {
       const name = violation(), argument = argumentFor(control, name), path = join(root, control, 'evidence', `${name}.json`), text = read(path);
@@ -1523,7 +1535,7 @@ describe('decide forget', () => {
       const name = lost(), argument = argumentFor(token, name);
       lose(token, name);
       assert.equal(forget(token, argument).status, 0, 'the first forget lets the removed answer go');
-      return { ref: token, argument, status: 2, says: `dossier decide: evidence/${name}.json is not a removed answer of components/token; verify names each one as answer removed\n` };
+      return { ref: token, argument, status: 2, says: `dossier decide: evidence/${name}.json is not a removed answer of parts/token; verify names each one as answer removed\n` };
     }],
     ['a violation while another tripwire stands: a stray file', () => {
       writeFileSync(join(root, control, 'notes.txt'), 'a note left in the dossier\n');
@@ -1546,7 +1558,7 @@ describe('decide forget', () => {
   });
 
   it('lets go of an entry still there whose counterexample is only in its previous answer', () => {
-    const vault = 'components/vault', name = entryNamed(vault, 'apalache-A2-'), entry = entryAt(join(root, vault), name);
+    const vault = 'parts/vault', name = entryNamed(vault, 'apalache-A2-'), entry = entryAt(join(root, vault), name);
     assert.deepEqual([entry.answer.outcomes, entry.previous?.answer.outcomes, entry.previous?.classification], [{ Inv_A2: 'holds' }, { Inv_A2: 'violated' }, 'call was wrong'], 'the strengthened invariant\'s proof keeps the miscall before it as previous');
     const r = forget(vault, argumentFor(vault, name), 'the miscall before the lemma is no longer of interest');
     assert.equal(r.status, 0, r.out);
@@ -1568,7 +1580,7 @@ describe('decide forget', () => {
     const v = run(['verify']);
     assert.equal(v.status, 0, v.out);
     assert.match(lines(v.stdout)[0], /^verify: ok · .* · 0 tripwires$/);
-    assert.ok(!componentOf(verifyJson(run), 'token').answers.some(a => a.entry === name), 'a forgotten removed answer is no answer: it covers nothing');
+    assert.ok(!partOf(verifyJson(run), 'token').answers.some(a => a.entry === name), 'a forgotten removed answer is no answer: it covers nothing');
     assert.equal(manifestOf(dir).evidence[name], bound, 'its manifest line stays');
     // The question asked again, of a stand-in for TLC that reports a completed run: its answer takes the line.
     mkdirSync(join(dir, 'calls'), { recursive: true });
@@ -1588,32 +1600,32 @@ describe('verify', () => {
   const ledger = (kind: string, id: string) => read(join(r.root, kind, id, 'ledger.md'));
 
   it('verify reports without writing; render explicitly writes the ledgers and the index as views', () => {
-    writeComponent(r.root, 'gate', gate());
-    writeSystem(r.root, 'net');
+    writePart(r.root, 'gate', gate());
+    writeComposition(r.root, 'net');
     assert.equal(r.run(['draw', 'gate', '--brief']).status, 0);
     const observed = r.run(['verify'], { env: NO_TOOLCHAIN });
     assert.equal(observed.status, 0, observed.out);
     assert.equal(existsSync(join(r.root, 'index.md')), false);
-    assert.equal(existsSync(join(componentDir(r.root, 'gate'), 'ledger.md')), false);
+    assert.equal(existsSync(join(partDir(r.root, 'gate'), 'ledger.md')), false);
     const v = r.run(['render'], { env: NO_TOOLCHAIN });
     assert.equal(v.status, 0, v.out);
     const out = lines(v.stdout);
-    assert.equal(out[0], `verify: ok · 1 component, 1 system · dossier ${version} · 0 tripwires`);
+    assert.equal(out[0], `verify: ok · 1 part, 1 composition · dossier ${version} · 0 tripwires`);
     assert.match(v.stdout, /^Gate: \d+ passages · unsettled \d+ · /m);
     assert.match(v.stdout, /^  next: Draw — no chart answer covers: S1 S2 /m);
     assert.match(v.stdout, /^Net: 1 property × 1 scenario · 1 cell · /m);
-    assert.match(v.stdout, /^next: System on systems\/net — Net: cells pending: A1×all-honest/m);
+    assert.match(v.stdout, /^next: Try on compositions\/net — Net: cells pending: A1×all-honest/m);
     assert.ok(v.stdout.includes(`\nread: ${pluginRoot}/spec/process.md\n`), 'read: names the page');
     assert.ok(v.stdout.includes(`\nindex: ${join(r.root, 'index.md')}\n`));
-    for (const [kind, id] of [['components', 'gate'], ['systems', 'net']]) {
+    for (const [kind, id] of [['parts', 'gate'], ['compositions', 'net']]) {
       const text = ledger(kind, id);
       assert.ok(isView(text), `${kind}/${id}/ledger.md is a view`);
       assert.match(text, /^# Ledger: /);
       assert.match(text, /^verify: ok · /m);
     }
-    assert.match(ledger('components', 'gate'), /^\| S1 \| State \| [^|]+ \| unsettled \| pending \| /m);
-    assert.match(ledger('components', 'gate'), /^Used by: net$/m);
-    assert.match(ledger('systems', 'net'), /^\| gate \| member \| gate \| /m);
+    assert.match(ledger('parts', 'gate'), /^\| S1 \| State \| [^|]+ \| unsettled \| pending \| /m);
+    assert.match(ledger('parts', 'gate'), /^Used by: net$/m);
+    assert.match(ledger('compositions', 'net'), /^\| gate \| member \| gate \| /m);
     const index = read(join(r.root, 'index.md'));
     assert.ok(isView(index), 'index.md is a view');
     assert.match(index, /^\| gate \| gate \| charted \| member \|$/m);
@@ -1622,15 +1634,15 @@ describe('verify', () => {
     assert.match(brief.stdout, /^read: /m);
   });
 
-  it('--json is valid JSON with components and systems', () => {
-    writeComponent(r.root, 'gate', gate());
-    writeSystem(r.root, 'net');
+  it('--json is valid JSON with parts and compositions', () => {
+    writePart(r.root, 'gate', gate());
+    writeComposition(r.root, 'net');
     const json = verifyJson(r.run);
-    assert.match(json.verify, /^verify: ok · 1 component, 1 system · /);
-    assert.equal(json.route.pass, 'System');
-    assert.equal(json.route.target, 'systems/net');
-    assert.equal(json.components.length, 1);
-    const c = json.components[0];
+    assert.match(json.verify, /^verify: ok · 1 part, 1 composition · /);
+    assert.equal(json.route.pass, 'Try');
+    assert.equal(json.route.target, 'compositions/net');
+    assert.equal(json.parts.length, 1);
+    const c = json.parts[0];
     assert.equal(c.id, 'gate');
     assert.equal(c.title, 'Gate');
     assert.equal(c.tier, 'charted');
@@ -1641,19 +1653,19 @@ describe('verify', () => {
     assert.deepEqual(c.tripwires, []);
     assert.equal(c.route.pass, 'Draw');
     assert.deepEqual(c.answers, []);
-    assert.equal(json.systems.length, 1);
-    const s = json.systems[0];
+    assert.equal(json.compositions.length, 1);
+    const s = json.compositions[0];
     assert.equal(s.id, 'net');
     assert.deepEqual(s.cells.map(x => [x.property, x.scenario, x.mark]), [['A1', 'all-honest', 'pending']]);
     assert.deepEqual(s.propertyHeld, { A1: 'held' });
     assert.deepEqual(s.closureMissing, []);
-    assert.equal(s.route.pass, 'System');
+    assert.equal(s.route.pass, 'Try');
     assert.deepEqual(flagNames(s), ['blunder owed']);
   });
 
   it('exits 1 and prints verify: FAIL after a stray file', () => {
-    writeComponent(r.root, 'gate', gate());
-    writeFileSync(join(componentDir(r.root, 'gate'), 'stray.txt'), 'x\n');
+    writePart(r.root, 'gate', gate());
+    writeFileSync(join(partDir(r.root, 'gate'), 'stray.txt'), 'x\n');
     const v = r.run(['verify']);
     assert.equal(v.status, 1);
     assert.equal(lines(v.stdout)[0], `verify: FAIL · Gate · dossier ${version} · 1 tripwire: stray files (Gate: stray.txt)`);
@@ -1661,16 +1673,16 @@ describe('verify', () => {
     assert.match(v.stdout, /^fix: Gate: stray files \(stray\.txt\)$/m);
     assert.match(v.stdout, /^tripwire: Gate: stray files: stray\.txt$/m);
     const json = verifyJson(r.run);
-    assert.deepEqual(json.components[0].tripwires, [{ name: 'stray files', where: 'stray.txt' }]);
-    assert.equal(json.components[0].route.pass, 'Fix');
-    rmSync(join(componentDir(r.root, 'gate'), 'stray.txt'));
+    assert.deepEqual(json.parts[0].tripwires, [{ name: 'stray files', where: 'stray.txt' }]);
+    assert.equal(json.parts[0].route.pass, 'Fix');
+    rmSync(join(partDir(r.root, 'gate'), 'stray.txt'));
     assert.equal(r.run(['verify', '--brief']).status, 0);
   });
 
   it('an edited ledger or index is a view: verify fails nothing, and render writes it back from the records', () => {
-    writeComponent(r.root, 'gate', gate());
+    writePart(r.root, 'gate', gate());
     assert.equal(r.run(['render', '--brief']).status, 0);
-    const ledgerPath = join(componentDir(r.root, 'gate'), 'ledger.md'), indexPath = join(r.root, 'index.md');
+    const ledgerPath = join(partDir(r.root, 'gate'), 'ledger.md'), indexPath = join(r.root, 'index.md');
     const ledgerText = read(ledgerPath), indexText = read(indexPath);
     writeFileSync(ledgerPath, ledgerText.replace('unsettled', 'settled'));
     writeFileSync(indexPath, indexText.replace('| gate | gate | charted |', '| gate | gate | modeled |'));
@@ -1682,9 +1694,9 @@ describe('verify', () => {
     assert.match(read(indexPath), /^\| gate \| gate \| charted \|/m, 'the tier comes from the prose, not from the view');
   });
 
-  it('after a chart trial the S, E and M passages are drawn in a modeled component and checked in a charted one', () => {
-    writeComponent(r.root, 'gate', gate());
-    writeComponent(r.root, 'gatem', gate({ title: 'Gatem', tier: 'modeled', module: 'gatem' }));
+  it('after a chart trial the S, E and M passages are drawn in a modeled part and checked in a charted one', () => {
+    writePart(r.root, 'gate', gate());
+    writePart(r.root, 'gatem', gate({ title: 'Gatem', tier: 'modeled', module: 'gatem' }));
     for (const id of ['gate', 'gatem']) {
       assert.equal(r.run(['draw', id, '--brief']).status, 0);
       writeCall(r.root, id, 'chart.md', CHART_CALL);
@@ -1701,24 +1713,24 @@ describe('verify', () => {
     assert.equal(modeled.R3, 'checked', 'a conditional refusal needs no model');
     assert.equal(charted.A1, 'held', 'the chart holds an Always of a charted piece until a blunder catches it');
     assert.equal(modeled.A1, 'drawn');
-    assert.equal(componentOf(json, 'gate').route.pass, 'Encode');
-    assert.equal(componentOf(json, 'gatem').route.pass, 'Encode');
-    assert.ok(componentOf(json, 'gatem').route.why.some(w => /no model: run dossier scaffold/.test(w)));
-    assert.ok(componentOf(json, 'gate').marks.S1.chartCovered);
-    assert.equal(componentOf(json, 'gate').marks.S1.trials.length, 1);
+    assert.equal(partOf(json, 'gate').route.pass, 'Encode');
+    assert.equal(partOf(json, 'gatem').route.pass, 'Encode');
+    assert.ok(partOf(json, 'gatem').route.why.some(w => /no model: run dossier scaffold/.test(w)));
+    assert.ok(partOf(json, 'gate').marks.S1.chartCovered);
+    assert.equal(partOf(json, 'gate').marks.S1.trials.length, 1);
   });
 
-  it('reports a malformed actors file through the components while there is no system, and through the systems once there is one', () => {
-    writeComponent(r.root, 'gate', gate());
+  it('reports a malformed actors file through the parts while there is no composition, and through the compositions once there is one', () => {
+    writePart(r.root, 'gate', gate());
     writeFileSync(join(r.root, 'actors', 'actors.md'), ACTORS.replace('    kind: chain\n', '    kind: weather\n'));
     const malformed = 'actors.md: chain has kind "weather", not one of governance, multisig, keeper, user, public, chain, market, external';
     const alone = r.run(['verify']);
     assert.equal(alone.status, 1, alone.out);
     assert.ok(alone.stdout.includes(`\ntripwire: Gate: malformed actors: ${malformed}\n`), alone.stdout);
-    writeSystem(r.root, 'net');
+    writeComposition(r.root, 'net');
     const json = verifyJson(r.run);
-    assert.deepEqual(componentOf(json, 'gate').tripwires, [], 'the system reports the actors files');
-    assert.deepEqual(json.systems[0].tripwires, [{ name: 'malformed actors', where: malformed }]);
+    assert.deepEqual(partOf(json, 'gate').tripwires, [], 'the composition reports the actors files');
+    assert.deepEqual(json.compositions[0].tripwires, [{ name: 'malformed actors', where: malformed }]);
   });
 
   it('says no dossiers in an empty root', () => {
@@ -1728,17 +1740,17 @@ describe('verify', () => {
   });
 
   it('--brief names only the dossiers that owe something, and a dossier asked for by name', () => {
-    writeComponent(r.root, 'gate', gate());
-    writeComponent(r.root, 'bell', '# Bell\n\nTier: charted\nModule: bell\n\nThe Bell answers a ring and holds nothing.\n\n## States\n[S1] Quiet: the bell is still.\n\n## Events\n[E1] ring, from the public: someone rings the bell.\n\n## Moves\n[M1] When Quiet receives ring, it stays Quiet.\n\n## Words only\n[T1] This piece promises nothing eventual.\n');
+    writePart(r.root, 'gate', gate());
+    writePart(r.root, 'bell', '# Bell\n\nTier: charted\nModule: bell\n\nThe Bell answers a ring and holds nothing.\n\n## States\n[S1] Quiet: the bell is still.\n\n## Events\n[E1] ring, from the public: someone rings the bell.\n\n## Moves\n[M1] When Quiet receives ring, it stays Quiet.\n\n## Words only\n[T1] This piece promises nothing eventual.\n');
     assert.equal(r.run(['draw', 'bell', '--brief']).status, 0);
     writeCall(r.root, 'bell', 'chart.md', CHART_CALL);
     assert.equal(r.run(['trial', 'bell', 'chart.md'], { env: NO_TOOLCHAIN }).status, 0);
     // With its passages checked, the Bell owes a second read until a review names its prose.
-    assert.equal(componentOf(verifyJson(r.run), 'bell').route.pass, 'Review');
+    assert.equal(partOf(verifyJson(r.run), 'bell').route.pass, 'Review');
     const hash = r.run(['verify', 'bell']).stdout.match(/^Bell: .* · prose@([0-9a-f]{6})$/m)![1];
-    mkdirSync(join(r.root, 'components', 'bell', 'reviews'), { recursive: true });
-    writeFileSync(join(r.root, 'components', 'bell', 'reviews', '2026-11-07-review.md'), `prose@${hash}\n\nNo findings.\n`);
-    assert.equal(componentOf(verifyJson(r.run), 'bell').route.pass, 'Report');
+    mkdirSync(join(r.root, 'parts', 'bell', 'reviews'), { recursive: true });
+    writeFileSync(join(r.root, 'parts', 'bell', 'reviews', '2026-11-07-review.md'), `prose@${hash}\n\nNo findings.\n`);
+    assert.equal(partOf(verifyJson(r.run), 'bell').route.pass, 'Report');
     const brief = r.run(['verify', '--brief']);
     assert.equal(brief.status, 0, brief.out);
     assert.match(brief.stdout, /^Gate: /m);
@@ -1748,7 +1760,7 @@ describe('verify', () => {
   });
 
   it('trips malformed marker on a dossier.json that does not parse, at the root', () => {
-    writeComponent(r.root, 'gate', gate());
+    writePart(r.root, 'gate', gate());
     writeFileSync(join(r.root, 'dossier.json'), '{ "plugin": "0.1.0", }\n');
     const v = r.run(['verify']);
     assert.equal(v.status, 1, v.out);
@@ -1759,7 +1771,7 @@ describe('verify', () => {
     assert.doesNotMatch(v.stdout, /plugin updated/, 'no version read, no version moved');
     const json = verifyJson(r.run);
     assert.equal(json.tripwires[0].name, 'malformed marker');
-    assert.deepEqual(json.components[0].tripwires, [{ name: 'integrity unavailable', where: 'dossier.json does not read' }]);
+    assert.deepEqual(json.parts[0].tripwires, [{ name: 'integrity unavailable', where: 'dossier.json does not read' }]);
   });
 });
 
@@ -1767,31 +1779,31 @@ describe('where', () => {
   let r: Repo;
   beforeEach(() => {
     r = makeRepo();
-    writeComponent(r.root, 'gate', gate({ module: 'vault', pins: 'vault#observation:checkpoint-2026-11-01' }));
-    writeSystem(r.root, 'net');
+    writePart(r.root, 'gate', gate({ module: 'vault', pins: 'vault#observation:checkpoint-2026-11-01' }));
+    writeComposition(r.root, 'net');
   });
   afterEach(() => removeRepo(r));
   const where = (ref: string) => r.run(['where', ref]);
 
-  it('lists the systems a component is in', () => {
+  it('lists the compositions a part is in', () => {
     const w = where('gate');
     assert.equal(w.status, 0, w.out);
-    assert.match(lines(w.stdout)[0], /^component gate: module vault, tier charted, \d+ passages$/);
+    assert.match(lines(w.stdout)[0], /^part gate: module vault, tier charted, \d+ passages$/);
     assert.ok(w.stdout.includes('\n  in net as member: cells A1×all-honest\n'));
   });
 
-  it('answers a system: its members, properties, scenarios and cells', () => {
-    // The review skill locates the dossier it reads with where, a system among them (the review exercise
+  it('answers a composition: its members, properties, scenarios and cells', () => {
+    // The review skill locates the dossier it reads with where, a composition among them (the review exercise
     // of 2026-11-07 found where answered nothing for one).
     const w = where('net');
     assert.equal(w.status, 0, w.out);
-    assert.deepEqual(lines(w.stdout).slice(0, 3), ['system net: members gate as member', '  properties A1; scenarios all-honest', '  cells A1×all-honest']);
+    assert.deepEqual(lines(w.stdout).slice(0, 3), ['composition net: members gate as member', '  properties A1; scenarios all-honest', '  cells A1×all-honest']);
     // A dossier may be named by its path, as the other commands print it, and then only that kind answers.
-    assert.equal(where('systems/net').stdout, w.stdout);
-    assert.match(where('components/gate').stdout, /^component gate: module vault, tier charted, \d+ passages$/m);
-    const wrongKind = where('systems/gate');
+    assert.equal(where('compositions/net').stdout, w.stdout);
+    assert.match(where('parts/gate').stdout, /^part gate: module vault, tier charted, \d+ passages$/m);
+    const wrongKind = where('compositions/gate');
     assert.equal(wrongKind.status, 1);
-    assert.equal(wrongKind.stdout.trim(), `nothing under ${r.root} names systems/gate`);
+    assert.equal(wrongKind.stdout.trim(), `nothing under ${r.root} names compositions/gate`);
   });
 
   it('answers a scenario, an actor, a property and a knowledge ref', () => {
@@ -1809,20 +1821,20 @@ describe('where', () => {
     assert.match(property.stdout, /^property net#A1: cells A1×all-honest; members gate$/m);
     const quantity = where('vault#quantity:debt');
     assert.equal(quantity.status, 0, quantity.out);
-    assert.match(quantity.stdout, /^module vault is abstracted by component gate$/m);
+    assert.match(quantity.stdout, /^module vault is abstracted by part gate$/m);
     assert.ok(quantity.stdout.includes('\n  which is in net: cells A1×all-honest\n'));
     const pin = where('vault#observation:checkpoint-2026-11-01');
     assert.equal(pin.status, 0);
-    assert.match(pin.stdout, /^pinned by component gate$/m);
+    assert.match(pin.stdout, /^pinned by part gate$/m);
   });
 
-  it('names who pins a record, a member pin of a composition among them, and the guarantee a record backs', () => {
-    writeComponent(r.root, 'gate', gate({ module: 'vault', pins: 'vault#observation:checkpoint-2026-11-01' }).replace('## Words only', '## Guarantees\n[K1] The debt is tracked. Backing: record vault#quantity:debt.\n\n## Words only'));
-    writeFileSync(join(r.root, 'systems', 'net', 'composition.md'), '# Composition\n\n```yaml\nmembers:\n  - component: gate\n    role: member\n    pins: [vault#quantity:debt]\nwiring: []\nclosure: []\nscenarios: [all-honest]\n```\n');
+  it('names who pins a record, a member pin of a wiring among them, and the guarantee a record backs', () => {
+    writePart(r.root, 'gate', gate({ module: 'vault', pins: 'vault#observation:checkpoint-2026-11-01' }).replace('## Words only', '## Guarantees\n[K1] The debt is tracked. Backing: record vault#quantity:debt.\n\n## Words only'));
+    writeFileSync(join(r.root, 'compositions', 'net', 'wiring.md'), '# Wiring\n\n```yaml\nmembers:\n  - part: gate\n    role: member\n    pins: [vault#quantity:debt]\nwiring: []\nclosure: []\nscenarios: [all-honest]\n```\n');
     writeFileSync(join(r.root, 'actors', 'actors.md'), ACTORS.replace('    kind: public\n', '    kind: public\n    pins: [vault#quantity:debt]\n'));
     const w = where('vault#quantity:debt');
     assert.equal(w.status, 0, w.out);
-    assert.deepEqual(lines(w.stdout), ['pinned by actor public', 'pinned by member gate of system net', 'backs gate K1', 'module vault is abstracted by component gate', '  which is in net: cells A1×all-honest']);
+    assert.deepEqual(lines(w.stdout), ['pinned by actor public', 'pinned by member gate of composition net', 'backs gate K1', 'module vault is abstracted by part gate', '  which is in net: cells A1×all-honest']);
     assert.ok(!where('vault#observation:checkpoint-2026-11-01').stdout.includes('backs '), 'a record no guarantee names backs nothing');
   });
 
@@ -1860,16 +1872,16 @@ describe('import', () => {
   it('writes a compiling prose and a margin from the knowledge base', () => {
     const i = r.run(['import', 'vault']);
     assert.equal(i.status, 0, i.out);
-    assert.match(i.stdout, /^wrote components\/vault\/prose\.md \(\d+ events, \d+ guarantees, \d+ data placeholders\) and margin\.md$/m);
+    assert.match(i.stdout, /^wrote parts\/vault\/prose\.md \(\d+ events, \d+ guarantees, \d+ data placeholders\) and margin\.md$/m);
     assert.match(i.stdout, /^the draft compiles; replace the placeholders/m);
-    const dir = componentDir(r.root, 'vault');
+    const dir = partDir(r.root, 'vault');
     const prose = read(join(dir, 'prose.md'));
     assert.match(prose, /^# Vault\n/);
     assert.match(prose, /^Tier: modeled$/m);
     assert.match(prose, /^Module: vault$/m);
     assert.match(prose, /^Pins: vault#observation:checkpoint-2026-11-01$/m);
     assert.match(prose, /^\[E1\] borrow, from the Credit user: Borrow an amount of credit/m, 'the record\'s name as written');
-    assert.match(i.stdout, /^declare these senders in actors\/actors\.md unless they already are, or start a component for each contract among them: the Credit user$/m);
+    assert.match(i.stdout, /^declare these senders in actors\/actors\.md unless they already are, or start a part for each contract among them: the Credit user$/m);
     assert.match(prose, /^\[M1\] When Live receives borrow, it stays Live\.$/m);
     assert.match(prose, /^\[K\d+\] The cached specification declares debtEqualsCredit\. Backing: certora certora\/Vault\.spec#debtEqualsCredit at 1a2b0000000000000000000000000000000f9f8e\.$/m, 'at the full revision codebases.md records');
     assert.match(prose, /^\[K\d+\] debt equals free plus issued\. Backing: none\.$/m);
@@ -1882,12 +1894,12 @@ describe('import', () => {
     assert.equal(d.status, 0, d.out);
     assert.match(lines(d.stdout)[0], /^draw: vault · pass · /);
     assert.ok(!d.stdout.includes('does not compile'));
-    const c = componentOf(verifyJson(r.run), 'vault');
+    const c = partOf(verifyJson(r.run), 'vault');
     assert.equal(c.backing.K1.status, 'backed', 'the Certora rule is found in the source cache');
     assert.ok(Object.values(c.backing).some(b => b.status === 'assumed'), 'the recorded invariants are assumed');
     assert.ok(c.tripwires.some(t => t.name === 'sender is not declared'), 'until actors.md declares the sender');
     writeFileSync(join(r.root, 'actors', 'actors.md'), ACTORS.replace('actors:\n', 'actors:\n  - id: user\n    name: Credit user\n    kind: user\n'));
-    const declared = componentOf(verifyJson(r.run), 'vault');
+    const declared = partOf(verifyJson(r.run), 'vault');
     assert.ok(!declared.tripwires.some(t => t.name === 'sender is not declared'), `the sender names the actor declared under the record's name: ${JSON.stringify(declared.tripwires)}`);
   });
 
@@ -1905,39 +1917,39 @@ describe('import', () => {
     writeFileSync(manifest, read(manifest).replace('source_files:', `  - id: permission-lib\n    ref: ${sha}\n    cache_path: ${path}/\nsource_files:`));
     const res = r.run(['import', 'vault']);
     assert.equal(res.status, 0, res.out);
-    const dir = componentDir(r.root, 'vault');
+    const dir = partDir(r.root, 'vault');
     assert.ok(read(join(dir, 'margin.md')).includes(`revokeRoleEffect in certora/specs/AccessControl.spec at ${sha} (repository: permission-lib; review applicability)`));
     const prose = read(join(dir, 'prose.md'));
     assert.ok(!prose.includes('revokeRoleEffect'), 'a dependency\'s rule alone supplies no guarantee of the module');
     writeFileSync(join(dir, 'prose.md'), prose.replace('## Guarantees', `## Guarantees\n[K999] The role library declares a revocation rule. Backing: certora certora/specs/AccessControl.spec#revokeRoleEffect at ${sha}.`));
-    const cited = componentOf(verifyJson(r.run), 'vault').backing.K999;
+    const cited = partOf(verifyJson(r.run), 'vault').backing.K999;
     assert.equal(cited.status, 'backed');
     assert.equal(cited.path, `modules/vault/${path}/certora/specs/AccessControl.spec`);
   });
 
-  it('--as names the component', () => {
+  it('--as names the part', () => {
     const i = r.run(['import', 'vault', '--as', 'ledger']);
     assert.equal(i.status, 0, i.out);
-    const prose = read(join(componentDir(r.root, 'ledger'), 'prose.md'));
+    const prose = read(join(partDir(r.root, 'ledger'), 'prose.md'));
     assert.match(prose, /^# Ledger\n/);
     assert.match(prose, /^Module: vault$/m);
-    assert.ok(!existsSync(componentDir(r.root, 'vault')));
+    assert.ok(!existsSync(partDir(r.root, 'vault')));
   });
 
   it('refuses when prose.md exists', () => {
-    writeComponent(r.root, 'vault', gate({ title: 'Vault', module: 'vault' }));
+    writePart(r.root, 'vault', gate({ title: 'Vault', module: 'vault' }));
     const i = r.run(['import', 'vault']);
     assert.equal(i.status, 1);
-    assert.match(i.stderr, /components\/vault\/prose\.md exists; import writes only a fresh dossier/);
-    assert.equal(read(join(componentDir(r.root, 'vault'), 'prose.md')), gate({ title: 'Vault', module: 'vault' }));
-    assert.ok(!existsSync(join(componentDir(r.root, 'vault'), 'margin.md')));
+    assert.match(i.stderr, /parts\/vault\/prose\.md exists; import writes only a fresh dossier/);
+    assert.equal(read(join(partDir(r.root, 'vault'), 'prose.md')), gate({ title: 'Vault', module: 'vault' }));
+    assert.ok(!existsSync(join(partDir(r.root, 'vault'), 'margin.md')));
   });
 
   it('exits 2 for an unknown module and without a knowledge base', () => {
     const unknown = r.run(['import', 'nosuch']);
     assert.equal(unknown.status, 2);
     assert.match(unknown.stderr, /the knowledge base has no module nosuch \(it has adapter, breaker, oracle, timelock, token, vault\)/);
-    assert.ok(!existsSync(componentDir(r.root, 'nosuch')));
+    assert.ok(!existsSync(partDir(r.root, 'nosuch')));
     const bare = makeRepo({ withKnowledge: false });
     try {
       const i = bare.run(['import', 'vault']);

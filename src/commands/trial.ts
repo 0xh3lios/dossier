@@ -18,7 +18,7 @@ import { fileHash, sha256, short } from '../hash.ts';
 import { parseCall } from '../trials/calls.ts';
 import { executionDependencies, outside, planTrial } from '../trials/plan.ts';
 import { placeOutput, writeReceipt } from '../trials/receipt.ts';
-import { loadComponent, loadSystem, externalsOf, knowledgeOf, systemModuleText } from '../dossiers/load.ts';
+import { loadPart, loadComposition, externalsOf, knowledgeOf, compositionModuleText } from '../dossiers/load.ts';
 import { actorsHash, backingOf, moduleHash, scenarioHash } from '../verify/cells.ts';
 import { writeGenerated } from '../models/materialize.ts';
 import { readIntegrity, requireCurrent } from '../dossiers/integrity.ts';
@@ -26,10 +26,10 @@ import { currentManifest, publishAnswer } from '../dossiers/publication.ts';
 import { evidenceNotes, readEvidence, RUNNING } from '../trials/answers.ts';
 import type { AnswerRead, Snapshot, TrialAction, Verdict } from '../trials/answers.ts';
 import type { Now } from '../verify/lapse.ts';
-import { analyzeComponent, analyzeSystem } from '../verify/analyze.ts';
+import { analyzePart, analyzeComposition } from '../verify/analyze.ts';
 import { STANDS_IN } from '../verify/superseded.ts';
 import type { AnswerContext, Publication } from '../dossiers/publication.ts';
-import type { SystemProse } from '../prose/prose.ts';
+import type { CompositionProse } from '../prose/prose.ts';
 import { reachValues } from '../models/tla.ts';
 import { checkIR, loadRuntime } from '../chart/draw.ts';
 import * as tlc from '../trials/checkers/tlc.ts';
@@ -39,7 +39,7 @@ import type { CommandContext } from '../cli.ts';
 import type { Call } from '../trials/calls.ts';
 import type { Plan } from '../trials/plan.ts';
 import type { TrialResult } from '../trials/trials.ts';
-import type { ComponentLoad, LoadedKnowledge, SystemLoad } from '../dossiers/load.ts';
+import type { PartLoad, LoadedKnowledge, CompositionLoad } from '../dossiers/load.ts';
 import type { Located } from '../dossiers/root.ts';
 import type { TlcParsed } from '../trials/checkers/tlc.ts';
 import type { ApalacheRun } from '../trials/checkers/apalache.ts';
@@ -48,8 +48,8 @@ import type { AlloyParsed } from '../trials/checkers/alloy.ts';
 // A union whose members can be read through each other's fields; a field of
 // the other kind reads as absent.
 type Either<A, B> = (A & { [K in Exclude<keyof B, keyof A>]?: undefined }) | (B & { [K in Exclude<keyof A, keyof B>]?: undefined });
-// The dossier as loaded: a component or a system, as where.kind says.
-export type Loaded = Either<ComponentLoad, SystemLoad>;
+// The dossier as loaded: a part or a composition, as where.kind says.
+export type Loaded = Either<PartLoad, CompositionLoad>;
 // What the checker run left, whichever checker ran; Apalache's runs give lists.
 interface Ran {
   aborted?: string;
@@ -93,9 +93,9 @@ export async function main(command: string, args: string[], { root: pluginRoot, 
   if (!root) { console.error('dossier trial: no dossiers root here. Run dossier setup.'); return 2; }
   const positional = stripRootArgs(args).filter((a, i, all) => !a.startsWith('--') && !OPTIONS.includes(all[i - 1]));
   const [name, callArg] = positional;
-  if (!name || !callArg) { console.error('usage: dossier trial <component|system> <call.md>'); return 2; }
+  if (!name || !callArg) { console.error('usage: dossier trial <part|composition> <call.md>'); return 2; }
   const where = locate(root, name);
-  if (!where) { console.error(`dossier trial: no component or system named ${name} under ${root}`); return 2; }
+  if (!where) { console.error(`dossier trial: no part or composition named ${name} under ${root}`); return 2; }
   return execute({ root, where, name, callArg, timeoutSeconds, workers, limit, pluginRoot, version });
 }
 
@@ -132,22 +132,22 @@ export async function execute({ root, where, name, callArg = '', callText: given
 
   // The dossier, whole.
   const knowledge = knowledgeOf(root);
-  // A system without its retired members, as verify reads it: naming one does not compose.
-  const loaded: Loaded = where.kind === 'component' ? loadComponent(root, where.id) : loadSystem(root, where.id);
-  if (where.kind === 'system' && loaded.composed!.errors.length) return refuse(...loaded.composed!.errors.map(e => `composition: ${e}`));
-  const relevant = [dir, ...(loaded.composition?.members || []).map(m => join(root, 'components', m.component))];
+  // A composition without its retired members, as verify reads it: naming one does not compose.
+  const loaded: Loaded = where.kind === 'part' ? loadPart(root, where.id) : loadComposition(root, where.id);
+  if (where.kind === 'composition' && loaded.composed!.errors.length) return refuse(...loaded.composed!.errors.map(e => `wiring: ${e}`));
+  const relevant = [dir, ...(loaded.wiring?.members || []).map(m => join(root, 'parts', m.part))];
   try { for (const path of relevant) integrityPreflight(path); }
   catch (error) { return refuse((error as Error).message); }
   const escapes = [...call.executes, ...(call.base ? [call.base] : [])].map(path => outside(dir, path)).filter((problem): problem is string => Boolean(problem));
   if (escapes.length) return refuse(...escapes);
 
-  // Planning and execution read the same private copies. Generating a system
+  // Planning and execution read the same private copies. Generating a composition
   // here never changes its disposable review files, including on refusal.
   const inputDir = mkdtempSync(join(tmpdir(), 'dossier-trial-inputs-'));
   try {
   try { copyInputs(dir, inputDir, loaded, call); }
   catch (error) { return refuse((error as Error).message); }
-  const { plan, problems } = planTrial({ call, dossierDir: inputDir, kind: where.kind, ir: loaded.ir, systemProse: loaded.prose, scenarios: loaded.actors ? loaded.actors.scenarios : null, externals: externalsOf(root), module: where.kind === 'system' ? `model/generated/${loaded.composed!.module}.tla` : null, cells: where.kind === 'system' ? loaded.composed!.cells : null });
+  const { plan, problems } = planTrial({ call, dossierDir: inputDir, kind: where.kind, ir: loaded.ir, compositionProse: loaded.prose, scenarios: loaded.actors ? loaded.actors.scenarios : null, externals: externalsOf(root), module: where.kind === 'composition' ? `model/generated/${loaded.composed!.module}.tla` : null, cells: where.kind === 'composition' ? loaded.composed!.cells : null });
   if (problems.length) return refuse(...problems);
   // Every path is inside the dossier now; each must be a file there.
   const executed: Record<string, string> = {};
@@ -165,7 +165,7 @@ export async function execute({ root, where, name, callArg = '', callText: given
     shared: dependencies.shared,
     limitation: 'Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution.',
   };
-  // The loaded prose/IR/composition and these cited-record hashes describe the
+  // The loaded prose/IR/wiring and these cited-record hashes describe the
   // inputs before execution, never a mixture with records reread after a run.
   const snapshot = snapshotOf({ where, loaded, knowledge, call });
   if (plan.checker === 'tlc' && tlc.toolchain().error) return refuse(tlc.toolchain().error!);
@@ -234,7 +234,7 @@ export async function execute({ root, where, name, callArg = '', callText: given
       for (const [n, counts] of Object.entries(parsed.actions)) actions[n] = { ...(plan.tlaParsed!.actions[n] || {}), ...counts };
       for (const [n, act] of Object.entries(plan.tlaParsed!.actions)) if (!actions[n]) actions[n] = { ...act, generated: 0, distinct: 0 };
       extra = { tlc: parsed.version, violation: parsed.violation, trace: parsed.trace, states: parsed.states, actions, init: parsed.init, partial: o.partial, errors: parsed.errors, warnings: parsed.warnings, properties: Object.fromEntries(plan.enabled.map(n => [n, plan.tlaParsed!.definitions[n] ? plan.tlaParsed!.definitions[n].hash : null])), reach: { text: call.reach, constants: plan.cfgParsed!.constants, values: reachValues(plan.cfgParsed!.constants) } };
-      result = compareTlc(call, plan, parsed, outcomes, where.kind === 'system');
+      result = compareTlc(call, plan, parsed, outcomes, where.kind === 'composition');
       if (!parsed.completed && !parsed.violation) result = { result: 'aborted', reason: parsed.errors[0] || `TLC exited ${ran.exit} without completing` };
       rawOutput = (ran.stdout || '') + ((ran.stderr || '').trim() ? `\n--- stderr ---\n${ran.stderr}` : '');
     }
@@ -358,10 +358,10 @@ export async function execute({ root, where, name, callArg = '', callText: given
 
 // The present a recorded question's answer is compared with before a recheck runs it, as the runner
 // would take it now: the snapshot, and each file's hash as the runner's private copy would hold it,
-// prose.md and the generated system files among them; null for a file that is gone.
+// prose.md and the generated composition files among them; null for a file that is gone.
 export function presentNow(where: Located, loaded: Loaded, knowledge: LoadedKnowledge, call: Call): Now {
-  const generated: Record<string, string> = loaded.kind === 'system'
-    ? { [`model/generated/${loaded.composed!.module}.tla`]: systemModuleText(loaded), ...Object.fromEntries(Object.entries(loaded.composed!.cfgs || {}).map(([name, text]) => [`model/generated/${name}`, text])) }
+  const generated: Record<string, string> = loaded.kind === 'composition'
+    ? { [`model/generated/${loaded.composed!.module}.tla`]: compositionModuleText(loaded), ...Object.fromEntries(Object.entries(loaded.composed!.cfgs || {}).map(([name, text]) => [`model/generated/${name}`, text])) }
     : {};
   const file = (path: string): string | null => {
     if (path === 'prose.md') return sha256(loaded.text);
@@ -382,8 +382,8 @@ export function integrityPreflight(dir: string): void {
   const root = dirname(dirname(dir)), ref = relative(root, dir), kind = basename(dirname(dir)), id = basename(dir);
   // What exists now, so that an unbound entry whose question is gone, which the next publication
   // removes, does not block that publication.
-  const where: Located = { kind: kind === 'systems' ? 'system' : 'component', id, dir };
-  const present = answerContext(where, (kind === 'systems' ? loadSystem(root, id) : loadComponent(root, id)) as Loaded, dir).present;
+  const where: Located = { kind: kind === 'compositions' ? 'composition' : 'part', id, dir };
+  const present = answerContext(where, (kind === 'compositions' ? loadComposition(root, id) : loadPart(root, id)) as Loaded, dir).present;
   const evidence = readEvidence(dir, record.manifest.evidence, forgottenAnswers(parseDecisions(record.decisions).decisions), ref, present);
   const faults = evidenceNotes(evidence).map(n => `${n.name}: ${n.where}`);
   if (faults.length) throw new Error(`${ref}: ${faults.join('; ')}`);
@@ -392,25 +392,25 @@ export function integrityPreflight(dir: string): void {
 // The superseded answers among some answers, as verify finds them (ANSWER-SUPERSEDED): what a
 // publication asks of the entries it is about to leave.
 function supersededIn(where: Located, root: string, loaded: Loaded, knowledge: LoadedKnowledge, answers: AnswerRead[]): string[] {
-  const a = where.kind === 'component'
-    ? analyzeComponent({ root, id: where.id, loaded: { ...(loaded as ComponentLoad) }, knowledge, answers })
-    : analyzeSystem({ root, id: where.id, knowledge, answers });
+  const a = where.kind === 'part'
+    ? analyzePart({ root, id: where.id, loaded: { ...(loaded as PartLoad) }, knowledge, answers })
+    : analyzeComposition({ root, id: where.id, knowledge, answers });
   return a.supersededRemovable;
 }
 
 // What the evidence rules need from the dossier as it stands: the Givens each passage cites and a
-// component's compiled prose, which lapse reads, and the passages, scenarios and walks that exist and
+// part's compiled prose, which lapse reads, and the passages, scenarios and walks that exist and
 // whether an authored file is still there, which say whether a question is gone. With the root and
 // the knowledge base, also which answers are superseded, so that a publication drops them.
 export function answerContext(where: Located, loaded: Loaded, dir: string, analysis?: { root: string; knowledge: LoadedKnowledge }): AnswerContext {
   const fileExists = (path: string) => existsSync(join(dir, path));
   const superseded = analysis ? (answers: AnswerRead[]) => supersededIn(where, analysis.root, loaded, analysis.knowledge, answers) : undefined;
-  if (where.kind === 'component') {
+  if (where.kind === 'part') {
     const ir = loaded.ir!;
     const givens: Record<string, string[]> = Object.fromEntries([...ir.invariants, ...ir.onces, ...ir.withins].map(x => [x.id, x.givens || []]));
     return { givens: id => givens[id] || [], ir, present: { passages: ir.hashes || {}, scenarios: null, walks: null, fileExists }, superseded };
   }
-  const prose = loaded.prose as SystemProse;
+  const prose = loaded.prose as CompositionProse;
   const givens: Record<string, string[]> = Object.fromEntries(prose.properties.map(p => [p.id, p.givens || []]));
   return {
     givens: id => givens[id] || [],
@@ -435,7 +435,7 @@ function copyInputs(dir: string, target: string, loaded: Loaded, call: Call): vo
     if (stat.isDirectory()) {
       mkdirSync(destination, { recursive: true });
       for (const entry of readdirSync(source).sort()) {
-        if (loaded.kind === 'system' && path === 'model' && entry === 'generated') continue;
+        if (loaded.kind === 'composition' && path === 'model' && entry === 'generated') continue;
         copy(`${path}/${entry}`);
       }
     } else if (stat.isFile()) {
@@ -445,24 +445,24 @@ function copyInputs(dir: string, target: string, loaded: Loaded, call: Call): vo
   };
   if (existsSync(join(dir, 'model'))) copy('model');
   for (const path of [...call.executes, ...(call.base ? [call.base] : [])]) {
-    if (loaded.kind === 'system' && path.startsWith('model/generated/')) continue;
+    if (loaded.kind === 'composition' && path.startsWith('model/generated/')) continue;
     if (!existsSync(join(target, path))) copy(path);
   }
   // Match chart/external IR to exactly the prose bytes from which it compiled.
   if (call.executes.includes('prose.md')) writeFileSync(join(target, 'prose.md'), loaded.text);
-  if (loaded.kind === 'system') writeGenerated(target, loaded.composed, systemModuleText(loaded));
+  if (loaded.kind === 'composition') writeGenerated(target, loaded.composed, compositionModuleText(loaded));
 }
 
-// A witness's trace is compared step by step: a component's step is its state and then the
-// trace-data values; a system has no one state, so its step is the trace-data values alone.
-export function compareTlc(call: Call, plan: Plan, parsed: TlcParsed, outcomes: Record<string, string>, system: boolean): RunResult {
+// A witness's trace is compared step by step: a part's step is its state and then the
+// trace-data values; a composition has no one state, so its step is the trace-data values alone.
+export function compareTlc(call: Call, plan: Plan, parsed: TlcParsed, outcomes: Record<string, string>, composition: boolean): RunResult {
   const miscalls: string[] = [];
   for (const name of plan.enabled) {
     const expect = call.expect[name].expect;
     if (outcomes[name] !== expect) miscalls.push(`${name}: expected ${expect}, got ${outcomes[name] || 'nothing'}`);
     if (plan.witness === name && call.expect[name].trace) {
       const expected = call.expect[name].trace!;
-      const got = parsed.trace.filter(s => s.values).map(s => [...(system ? [] : [tlc.unquote(s.values!.state ?? '')]), ...call.traceData.map(v => tlc.unquote(s.values![v] ?? ''))].join('/'));
+      const got = parsed.trace.filter(s => s.values).map(s => [...(composition ? [] : [tlc.unquote(s.values!.state ?? '')]), ...call.traceData.map(v => tlc.unquote(s.values![v] ?? ''))].join('/'));
       if (got.join(' > ') !== expected.join(' > ')) miscalls.push(`${name}: expected the trace ${expected.join(' > ')}, got ${got.join(' > ') || 'no trace'}`);
     }
   }
@@ -470,12 +470,12 @@ export function compareTlc(call: Call, plan: Plan, parsed: TlcParsed, outcomes: 
 }
 
 // Hashes of everything the result rests on: passages, cited records, backing,
-// and for a system its members, composition, scenario and actors, with the
+// and for a composition its members, wiring, scenario and actors, with the
 // records its members and the actors it uses pin.
 export function snapshotOf({ where, loaded, knowledge, call }: { where: Located; loaded: Loaded; knowledge: LoadedKnowledge; call: Call }): Snapshot {
   const snap: Snapshot = { passages: {}, records: {}, backing: {} };
   const refs = new Set<string>();
-  if (where.kind === 'component') {
+  if (where.kind === 'part') {
     snap.passages = loaded.ir!.hashes || {};
     snap.ir = loaded.irHash;
     for (const p of loaded.ir!.pins || []) refs.add(p);
@@ -488,19 +488,19 @@ export function snapshotOf({ where, loaded, knowledge, call }: { where: Located;
     }
   } else {
     snap.passages = Object.fromEntries(loaded.prose.passages.filter(p => !p.retired).map(p => [p.id, p.hash]));
-    snap.composition = short(loaded.composition!.text, 16);
+    snap.wiring = short(loaded.wiring!.text, 16);
     // The module as the composer wrote it, extras.tla aside, as the call's scenario rests on it: a
     // change to the composer, or to an only when no property cites, moves it; another scenario's
     // constants do not.
     snap.module = moduleHash(loaded.composed!.tla, call.scenario!, loaded.extras);
     snap.members = {};
     for (const [id, m] of Object.entries(loaded.memberLoads || {})) if (m) { snap.members[id] = { prose: short(m.text, 16), backing: backingOf(m.ir, knowledge) }; for (const p of m.ir.pins || []) refs.add(p); }
-    for (const m of loaded.composition!.members) for (const p of m.pins) refs.add(p);
+    for (const m of loaded.wiring!.members) for (const p of m.pins) refs.add(p);
     const used = loaded.composed!.actors || [];
     for (const a of used) for (const p of (loaded.actors!.byId[a] && loaded.actors!.byId[a].pins) || []) refs.add(p);
-    // The scenario as this system's cells rest on it: the modes and windows of the actors it hears from and its members' starts.
-    snap.scenario = scenarioHash(loaded.actors!.scenarioById[call.scenario!], used, loaded.composition!.members.map(m => m.component));
-    // Only the actors the composition hears from, without their notes.
+    // The scenario as this composition's cells rest on it: the modes and windows of the actors it hears from and its members' starts.
+    snap.scenario = scenarioHash(loaded.actors!.scenarioById[call.scenario!], used, loaded.wiring!.members.map(m => m.part));
+    // Only the actors the wiring hears from, without their notes.
     snap.actors = actorsHash(loaded.actors!, used);
     snap.extras = loaded.extras ? short(loaded.extras, 16) : null;
   }
@@ -511,7 +511,7 @@ export function snapshotOf({ where, loaded, knowledge, call }: { where: Located;
   return snap;
 }
 
-// Machine paths become their names: each absolute path as given and as the file system resolves
+// Machine paths become their names: each absolute path as given and as the file composition resolves
 // it, so a root reached through a symbolic link (/tmp is /private/tmp on macOS) reads the same, the
 // longest first, so a trial's folder is $TRIAL before its root is $DOSSIERS; and only where a
 // whole path stands, never inside a longer one. Then TLC's banner loses what names the machine.
@@ -533,11 +533,11 @@ export function redact(values: unknown[], { trialDir, root, pluginRoot, inputDir
 const real = (path: string): string | null => { try { return realpathSync(path); } catch { return null; } };
 
 // TLC's banner says how many cores and how much heap the machine has, the process id, the
-// system, and the JVM's vendor and architecture; the JVM's version stays.
+// composition, and the JVM's vendor and architecture; the JVM's version stays.
 export function fingerprints(text: string): string {
   return text
     .replace(/ on \d+ cores with \d+MB heap and /g, ' on $CORES cores with $HEAP heap and ')
-    // A vendor may hold a comma, as "Azul Systems, Inc." does, so the fingerprint set's class ends it.
+    // A vendor may hold a comma, as "Azul Compositions, Inc." does, so the fingerprint set's class ends it.
     .replace(/\[pid: \d+\] \(([^,()]+), ([^()]+?) (\d[\w.+-]*) ([^,\s()]+), (\w*FPSet)\b/g, (_m, _os, _vendor, jdk, _arch, fpset) => `[pid: $PID] ($OS, $JDK_VENDOR ${jdk} $JDK_ARCH, ${fpset}`)
     .replace(/\[pid: \d+\] \(([^,()]+), ([^,()]+?) (\d[\w.+-]*) ([^,\s()]+), /g, (_m, _os, _vendor, jdk) => `[pid: $PID] ($OS, $JDK_VENDOR ${jdk} $JDK_ARCH, `);
 }

@@ -11,7 +11,7 @@ import { formatDecision, parseDecisions, retiredBy } from '../../src/dossiers/de
 import { committedPrefix, prefixHead, readIntegrity, validateIntegrity } from '../../src/dossiers/integrity.ts';
 import { acquirePublicationLock, inspectPublicationLock, LOCK, publishAnswer, publishDecisionLocked, recoverAnswer, recoverDecisions, recoverPublicationLock, validateBundle, withPublicationLock, writeIntegrity } from '../../src/dossiers/publication.ts';
 import type { PublicationOptions } from '../../src/dossiers/publication.ts';
-import { loadComponent } from '../../src/dossiers/load.ts';
+import { loadPart } from '../../src/dossiers/load.ts';
 import { locate } from '../../src/dossiers/root.ts';
 import { answerContext } from '../../src/commands/trial.ts';
 import { verifyAll } from '../../src/commands/verify.ts';
@@ -25,7 +25,7 @@ import { fingerprint } from '../conformance/files.ts';
 const plugin = fileURLToPath(new URL('../../', import.meta.url));
 const cli = join(plugin, 'src/cli.ts');
 const empty = () => ({ schema: 1 as const, evidence: {}, decisionHead: null });
-const decision = { time: '2026-11-05T00:00:00Z', verb: 'begin', args: ['charted'], words: 'Begin this component.' };
+const decision = { time: '2026-11-05T00:00:00Z', verb: 'begin', args: ['charted'], words: 'Begin this part.' };
 // The boundaries of a publication that writes an entry, in the order STORE-ANSWER gives: the
 // candidate (1), the manifest that binds it (2), the entry in place and the directory flushed (3),
 // the bundle moved to the local trials/ (4).
@@ -38,7 +38,7 @@ function temp(t: TestContext) {
 }
 // A dossier with an empty manifest and nothing else, for the tests of the manifest and the decisions.
 function bare(t: TestContext) {
-  const root = join(temp(t), 'dossiers'), dir = join(root, 'components/adapter');
+  const root = join(temp(t), 'dossiers'), dir = join(root, 'parts/adapter');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }));
   writeIntegrity(dir, empty());
@@ -60,7 +60,7 @@ function newRoot(root: string, marker: object = {}) {
   writeFileSync(join(root, 'actors/scenarios.md'), '# Scenarios\n\n```yaml\nscenarios:\n  - id: all-honest\n    modes: {}\n```\n');
 }
 
-// A small charted component, run through the real command once: a chart answer and an external answer
+// A small charted part, run through the real command once: a chart answer and an external answer
 // on its first prose, with their readings; then a chart trial on prose without A1, which replaces the
 // chart answer and leaves the external question, which expects A1, gone. Tests publish copies of these
 // bundles into fresh copies of the dossier.
@@ -70,7 +70,7 @@ after(() => { if (built) rmSync(built.work, { recursive: true, force: true }); }
 function template(): Template {
   if (built) return built;
   const work = mkdtempSync(join(tmpdir(), 'dossier-integrity-template-'));
-  const root = join(work, 'dossiers'), dir = join(root, 'components/gate');
+  const root = join(work, 'dossiers'), dir = join(root, 'parts/gate');
   const runner = join(work, 'runner.mjs');
   writeFileSync(runner, `#!${process.execPath}\nimport { readFileSync } from 'node:fs';\nconst input = JSON.parse(readFileSync(0, 'utf8'));\nconst outcomes = Object.fromEntries(Object.entries(input.call.expect).map(([name, o]) => [name, o.expect]));\nconsole.log(JSON.stringify({ outcomes, covers: Object.keys(outcomes) }));\n`);
   chmodSync(runner, 0o755);
@@ -104,8 +104,8 @@ function template(): Template {
 // .running/ as the runner leaves them when it starts to publish.
 function dossier(t: TestContext, { prose = 'first', records = 'none', waiting = [] }: { prose?: 'first' | 'second'; records?: 'none' | 'first'; waiting?: string[] } = {}) {
   const T = template(), work = temp(t);
-  const root = join(work, 'dossiers'), dir = join(root, 'components/gate');
-  cpSync(T.root, root, { recursive: true, filter: source => !/\/components\/gate\/(evidence|trials|calls)$/.test(source) });
+  const root = join(work, 'dossiers'), dir = join(root, 'parts/gate');
+  cpSync(T.root, root, { recursive: true, filter: source => !/\/parts\/gate\/(evidence|trials|calls)$/.test(source) });
   writeFileSync(join(dir, 'prose.md'), T.prose[prose]);
   if (records === 'none') writeIntegrity(dir, { ...empty(), decisionHead: JSON.parse(T.first['integrity.json']).decisionHead });
   else {
@@ -116,8 +116,8 @@ function dossier(t: TestContext, { prose = 'first', records = 'none', waiting = 
   return {
     work, root, dir,
     staging: (id: string) => join(dir, '.running', id),
-    context: () => answerContext(locate(root, 'gate')!, loadComponent(root, 'gate'), dir),
-    gate: () => verifyAll({ root, version: '0.1.0' }).components.find(c => c.id === 'gate')!,
+    context: () => answerContext(locate(root, 'gate')!, loadPart(root, 'gate'), dir),
+    gate: () => verifyAll({ root, version: '0.1.0' }).parts.find(c => c.id === 'gate')!,
   };
 }
 // The record's files with their bytes, modes and mtimes: what a publication that writes nothing must leave as it was.
@@ -140,7 +140,7 @@ after(() => { if (proved) rmSync(proved.work, { recursive: true, force: true });
 function inductive(): Inductive {
   if (proved) return proved;
   const work = mkdtempSync(join(tmpdir(), 'dossier-integrity-inductive-'));
-  const root = join(work, 'dossiers'), dir = join(root, 'components/gate'), before = join(work, 'before');
+  const root = join(work, 'dossiers'), dir = join(root, 'parts/gate'), before = join(work, 'before');
   newRoot(root);
   dossierAt(root)('decide', 'gate', 'begin', 'modeled', '--', 'Begin the gate.');
   writeFileSync(join(dir, 'prose.md'), '# Gate\n\nTier: modeled\nModule: gate\n\n## States\n[S1] Ready: waiting.\n\n## Events\n[E1] ping, from the public: a ping.\n\n## Moves\n[M1] When Ready receives ping, it stays Ready.\n\n## Always\n[A1] Always, {Ready}.\n\n## Words only\n[T1] This piece promises nothing eventual.\n');
@@ -159,13 +159,13 @@ function inductive(): Inductive {
 // A fresh copy of the gate before its inductive trial, a question with no answer yet, with that
 // trial's bundle waiting in .running/ as the runner leaves it when it starts to publish.
 function inductiveWaiting(t: TestContext) {
-  const I = inductive(), root = join(temp(t), 'dossiers'), dir = join(root, 'components/gate');
+  const I = inductive(), root = join(temp(t), 'dossiers'), dir = join(root, 'parts/gate');
   cpSync(I.before, root, { recursive: true });
   cpSync(join(I.dir, 'trials', I.trial), join(dir, '.running', I.trial), { recursive: true });
   return {
     root, dir, id: I.trial, staging: join(dir, '.running', I.trial),
-    context: () => answerContext(locate(root, 'gate')!, loadComponent(root, 'gate'), dir),
-    gate: () => verifyAll({ root, version: '0.1.0' }).components.find(c => c.id === 'gate')!,
+    context: () => answerContext(locate(root, 'gate')!, loadPart(root, 'gate'), dir),
+    gate: () => verifyAll({ root, version: '0.1.0' }).parts.find(c => c.id === 'gate')!,
   };
 }
 // A bundle's result.json edited, and its receipt sealed again over the edit, as a runner that wrote
@@ -223,10 +223,10 @@ test('prefix hashing binds earlier owner words, not only the final short-chain l
 
 test('the CLI preserves quoted owner words exactly, including surrounding whitespace', t => {
   const { root } = bare(t), words = '  Keep these exact words.\nIncluding this line.  ';
-  const run = (verb: string, supplied: string) => spawnSync(process.execPath, [cli, 'decide', '--root', root, 'components/new-piece', verb, ...(verb === 'begin' ? ['charted'] : []), '--', supplied], { encoding: 'utf8' });
+  const run = (verb: string, supplied: string) => spawnSync(process.execPath, [cli, 'decide', '--root', root, 'parts/new-piece', verb, ...(verb === 'begin' ? ['charted'] : []), '--', supplied], { encoding: 'utf8' });
   const begin = run('begin', words);
   assert.equal(begin.status, 0, begin.stderr);
-  const dir = join(root, 'components/new-piece');
+  const dir = join(root, 'parts/new-piece');
   const recorded = parseDecisions(readIntegrity(dir).decisions).decisions[0];
   assert.ok(!recorded.malformed);
   assert.equal(recorded.words, words);
@@ -559,10 +559,10 @@ for (const stage of decisionBoundaries) test(`interrupted decision publication: 
 const publisher = (root: string, id: string, boundary: string) => `
   import { publishAnswer } from ${JSON.stringify(new URL('../../src/dossiers/publication.ts', import.meta.url).href)};
   import { answerContext } from ${JSON.stringify(new URL('../../src/commands/trial.ts', import.meta.url).href)};
-  import { loadComponent } from ${JSON.stringify(new URL('../../src/dossiers/load.ts', import.meta.url).href)};
+  import { loadPart } from ${JSON.stringify(new URL('../../src/dossiers/load.ts', import.meta.url).href)};
   import { locate } from ${JSON.stringify(new URL('../../src/dossiers/root.ts', import.meta.url).href)};
-  const root = ${JSON.stringify(root)}, dir = root + '/components/gate', id = ${JSON.stringify(id)};
-  const publish = () => publishAnswer(dir, id, answerContext(locate(root, 'gate'), loadComponent(root, 'gate'), dir), { boundary: ${boundary} });
+  const root = ${JSON.stringify(root)}, dir = root + '/parts/gate', id = ${JSON.stringify(id)};
+  const publish = () => publishAnswer(dir, id, answerContext(locate(root, 'gate'), loadPart(root, 'gate'), dir), { boundary: ${boundary} });
 `;
 
 test('a killed publisher leaves a bound candidate and a dead lock; explicit recovery publishes it once', t => {

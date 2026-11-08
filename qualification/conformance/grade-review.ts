@@ -10,7 +10,7 @@ import { verifyAll } from '../../src/commands/verify.ts';
 
 export function gradeReview(workspace: string, before: Record<string, string>, reportPath: string) {
   const report = relative(workspace, resolve(workspace, reportPath));
-  assert.match(report, /^dossiers\/systems\/control\/reviews\/[^/]+\.md$/, 'one review file under the selected dossier');
+  assert.match(report, /^dossiers\/compositions\/control\/reviews\/[^/]+\.md$/, 'one review file under the selected dossier');
   const after = fingerprint(workspace);
   for (const [name, signature] of Object.entries(before)) {
     // Adding the sole report changes its existing ancestor directory mtimes.
@@ -29,14 +29,14 @@ export function gradeReview(workspace: string, before: Record<string, string>, r
   assert.equal(answer.summarySupported, false, 'the proposed summary overclaims proof and erases an accepted violation');
   assert.ok(Array.isArray(answer.limitations) && answer.limitations.length > 0);
   const verified = verifyAll({ root: join(workspace, 'dossiers'), version: '0.1.0', write: false });
-  const system = verified.systems.find(s => s.id === 'control');
-  assert.ok(system);
-  assert.deepEqual(system.tripwires, []);
+  const composition = verified.compositions.find(s => s.id === 'control');
+  assert.ok(composition);
+  assert.deepEqual(composition.tripwires, []);
   // The review names the prose it read, as spec/review.md asks (REVIEW-OWED), and verify reads it:
   // the dossier no longer owes a second read.
-  assert.equal(body.split('\n')[0].trim(), `prose@${proseHash(system.hashes)}`, 'the first line names the prose hash the verify line ends with');
-  assert.deepEqual(system.flags.filter(f => f.name === 'review owed'), [], 'the review clears the flag');
-  const expected = system.cells.map(c => ({ property: c.property, scenario: c.scenario, mark: c.mark, accepted: Boolean(c.accepted), proof: c.mark === 'proved' }));
+  assert.equal(body.split('\n')[0].trim(), `prose@${proseHash(composition.hashes)}`, 'the first line names the prose hash the verify line ends with');
+  assert.deepEqual(composition.flags.filter(f => f.name === 'review owed'), [], 'the review clears the flag');
+  const expected = composition.cells.map(c => ({ property: c.property, scenario: c.scenario, mark: c.mark, accepted: Boolean(c.accepted), proof: c.mark === 'proved' }));
   const key = (c: { property: string; scenario: string }) => `${c.property}|${c.scenario}`;
   const order = (a: { property: string; scenario: string }, b: { property: string; scenario: string }) => key(a).localeCompare(key(b));
   assert.deepEqual(answer.cells.sort(order), expected.sort(order), 'each claim matches its current evidence');

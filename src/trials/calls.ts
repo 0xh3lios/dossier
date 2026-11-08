@@ -4,8 +4,8 @@
 //   reach: words
 //   expect: one line per enabled property, the one Alloy command, or "checks: pass | fail <ids>"
 //   because: why, as a block
-//   property, scenario: the cell, for a system trial
-//   walk, scenario: the witness, for a system tlc trial, in place of property:
+//   property, scenario: the cell, for a composition trial
+//   walk, scenario: the witness, for a composition tlc trial, in place of property:
 //   mode, length, inv, init, cinit: for apalache
 //   blunder, base: for a blunder;  trace-data: for a witness;  runner: for external
 export const KINDS: string[] = ['chart', 'blunder', 'tlc', 'apalache', 'alloy', 'external'];
@@ -87,7 +87,7 @@ export function parseCall(text: string): Call {
   if (call.kind === 'apalache' && !['bounded', 'inductive'].includes(call.mode || '')) call.errors.push('an apalache call sets mode: bounded or mode: inductive');
   if (call.kind === 'apalache' && call.mode === 'bounded' && call.length === null && !lengthWritten) call.errors.push('a bounded apalache call sets length: <steps>');
   if (call.kind === 'external' && !call.runner) call.errors.push('an external call names its runner under runner:');
-  // A system trial names its cell, property: and scenario:, or its witness, walk: and scenario:.
+  // A composition trial names its cell, property: and scenario:, or its witness, walk: and scenario:.
   if (call.property && call.walk) call.errors.push('a call names property: or walk:, not both');
   else if (call.property && !call.scenario) call.errors.push('a cell names both property: and scenario:');
   else if (call.walk && !call.scenario) call.errors.push('a witness names both walk: and scenario:');

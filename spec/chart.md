@@ -2,7 +2,7 @@
 
 The chart is compiled from the prose. An agent interprets its diagnostics through [the shared process](process.md). Editing a file that draw writes changes no evidence.
 
-## What `dossier draw <component>` does
+## What `dossier draw <part>` does
 
 1. Compiles `prose.md` into the intermediate form, `chart/machine.json`: states as a tree, events with their fields, the context from the boundary, transitions with guards and changes, refusals, invariants, walks, every element with the passage ids it came from.
 2. Builds the XState machine from it, with guards and changes evaluated from the same expressions the prose holds.
@@ -43,11 +43,11 @@ because: |
   Every state is reachable, every move and refusal replays as said, every walk ends as said.
 ```
 
-`dossier trial <component> chart.md`. `checks: fail W3` is a call too, when a check is expected to fail and the call says why. After it, in a modeled component, the S, E, M, R and W passages are drawn, and so is each Always the chart explored. In a charted component, the S, E, M, R and W passages are checked, each Always the chart explored is held until a chart blunder catches it, and an Always that cites a Given is untried.
+`dossier trial <part> chart.md`. `checks: fail W3` is a call too, when a check is expected to fail and the call says why. After it, in a modeled part, the S, E, M, R and W passages are drawn, and so is each Always the chart explored. In a charted part, the S, E, M, R and W passages are checked, each Always the chart explored is held until a chart blunder catches it, and an Always that cites a Given is untried.
 
 ## Chart blunders
 
-A mutated machine under `chart/blunders/<name>.json`, a copy of `chart/machine.json` with one wrong: a guard set to null, a target changed, a change removed. A call of kind `blunder` executing it with `checks: fail <ids>` names the passages whose checks must fail. The prose's own checks run against the mutated machine. Each id the call names is caught where its check fails and hollow where it passes. No other id counts. A chart blunder counts toward an Always in a charted component. In a modeled one the model's blunder is what counts.
+A mutated machine under `chart/blunders/<name>.json`, a copy of `chart/machine.json` with one wrong: a guard set to null, a target changed, a change removed. A call of kind `blunder` executing it with `checks: fail <ids>` names the passages whose checks must fail. The prose's own checks run against the mutated machine. Each id the call names is caught where its check fails and hollow where it passes. No other id counts. A chart blunder counts toward an Always in a charted part. In a modeled one the model's blunder is what counts.
 
 ## Limits
 

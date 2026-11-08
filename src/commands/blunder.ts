@@ -3,18 +3,18 @@
 // Writes a blunder: a copy of the base module under model/blunders/<copy>.tla with its MODULE line
 // renamed and the one replacement applied, the configuration beside it that enables exactly the one
 // property, and the call calls/blunder-<copy>.md through the same code as dossier call. A
-// component's configuration is the base's own that enables the property; a system's is the cell's
+// part's configuration is the base's own that enables the property; a composition's is the cell's
 // generated one. An Alloy base, --base <Module>.als, is copied to model/blunders/<copy>.als and its
 // one check is the property. The agent chooses the wrong; the tool writes the files.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { findRoot, locate } from '../dossiers/root.ts';
 import { isRetired } from '../dossiers/decisions.ts';
-import { loadComponent, loadSystem, systemModuleText } from '../dossiers/load.ts';
+import { loadPart, loadComposition, compositionModuleText } from '../dossiers/load.ts';
 import { parseCfg } from '../models/tla.ts';
 import { parseAls } from '../models/alloy.ts';
 import { blunderCfgs, composeCall, readOptions, writeCall } from './call.ts';
-import { componentModule } from './scaffold.ts';
+import { partModule } from './scaffold.ts';
 
 const VALUED = ['--replace', '--with', '--wrong', '--property', '--scenario', '--base', '--reach', '--because'];
 const FLAGS = ['--all', '--force'];
@@ -32,8 +32,8 @@ export async function main(command: string, args: string[]): Promise<number> {
   if (repeated.length) { console.error(`dossier blunder: ${repeated.join(', ')} given more than once; a blunder is one replacement`); return 2; }
   const one = (key: string): string | null => (values[key] ? values[key][0] : null);
   const where = locate(root, name);
-  if (!where) { console.error(`dossier blunder: no component or system named ${name} under ${root}`); return 2; }
-  const ref = `${where.kind === 'component' ? 'components' : 'systems'}/${where.id}`;
+  if (!where) { console.error(`dossier blunder: no part or composition named ${name} under ${root}`); return 2; }
+  const ref = `${where.kind === 'part' ? 'parts' : 'compositions'}/${where.id}`;
   const refuse = (...lines: string[]) => { console.error(`dossier blunder: refused\n  ${lines.join('\n  ')}`); return 2; };
   if (isRetired(where.dir)) { console.error(`dossier blunder: ${ref} is retired; dossier decide ${ref} begin reopens it`); return 2; }
   if (!COPY.test(copy)) return refuse(`a blunder copy is named as a TLA+ module is, letters, digits and underscores, not "${copy}"`);
@@ -44,25 +44,25 @@ export async function main(command: string, args: string[]): Promise<number> {
   if (/[\r\n]/.test(wrong!)) return refuse('--wrong is one line');
   if (replace === replacement) return refuse('--with is the same text as --replace; a blunder changes the model');
   const force = flags.has('--force');
-  const isSystem = where.kind === 'system';
+  const isComposition = where.kind === 'composition';
   const callName = `blunder-${copy}`;
   if (existsSync(join(where.dir, 'calls', `${callName}.md`)) && !force) return refuse(`${ref}/calls/${callName}.md exists; --force replaces it`);
 
-  // The base: the component's module, the one --base names, or the system's generated module.
+  // The base: the part's module, the one --base names, or the composition's generated module.
   const property = one('--property'), scenario = one('--scenario'), baseOption = one('--base');
   let baseRel: string, baseName: string, baseText: string, alloy = false;
-  if (isSystem) {
-    const s = loadSystem(root, where.id);
+  if (isComposition) {
+    const s = loadComposition(root, where.id);
     const unread = [...s.prose.errors, ...s.prose.misnamed, ...s.composed.errors];
     if (unread.length) return refuse(`${ref} does not compose:`, ...unread.map(e => `  ${e}`));
     baseName = s.composed.module!;
     baseRel = `model/generated/${baseName}.tla`;
-    if (baseOption && ![baseName, `${baseName}.tla`, baseRel].includes(baseOption)) return refuse(`a system blunder copies its generated module, ${baseRel}, not ${baseOption}`);
-    baseText = systemModuleText(s);
+    if (baseOption && ![baseName, `${baseName}.tla`, baseRel].includes(baseOption)) return refuse(`a composition blunder copies its generated module, ${baseRel}, not ${baseOption}`);
+    baseText = compositionModuleText(s);
   } else {
-    const c = loadComponent(root, where.id);
+    const c = loadPart(root, where.id);
     if (!c.ir.ok) return refuse(`${ref} does not compile; run dossier draw ${where.id}`);
-    const file = baseOption ? (baseOption.includes('/') ? baseOption.replace(/^model\//, '') : /\.(tla|als)$/.test(baseOption) ? baseOption : `${baseOption}.tla`) : `${componentModule(c.ir)}.tla`;
+    const file = baseOption ? (baseOption.includes('/') ? baseOption.replace(/^model\//, '') : /\.(tla|als)$/.test(baseOption) ? baseOption : `${baseOption}.tla`) : `${partModule(where.id)}.tla`;
     if (file.includes('/') || !/\.(tla|als)$/.test(file)) return refuse(`--base names a module under model/, not ${baseOption}`);
     alloy = file.endsWith('.als');
     baseRel = `model/${file}`;
@@ -70,9 +70,9 @@ export async function main(command: string, args: string[]): Promise<number> {
     if (!existsSync(join(where.dir, baseRel))) return refuse(`${baseRel} does not exist${baseOption ? '' : `; run dossier scaffold ${where.id}`}`);
     baseText = readFileSync(join(where.dir, baseRel), 'utf8');
   }
-  if (alloy && scenario) return refuse('--scenario belongs to a system blunder');
-  if (!isSystem && scenario) return refuse('--scenario belongs to a system blunder');
-  if (isSystem && !scenario) return refuse('a system blunder names the scenario of the cell it must catch: --scenario <id>');
+  if (alloy && scenario) return refuse('--scenario belongs to a composition blunder');
+  if (!isComposition && scenario) return refuse('--scenario belongs to a composition blunder');
+  if (isComposition && !scenario) return refuse('a composition blunder names the scenario of the cell it must catch: --scenario <id>');
 
   // The copy: the base renamed, with the one replacement.
   let text = baseText;
@@ -97,8 +97,8 @@ export async function main(command: string, args: string[]): Promise<number> {
     if (!property) return refuse('a blunder names the property it must catch: --property <id>');
     caught = property;
     let source: string | null = null;
-    if (isSystem) {
-      const s = loadSystem(root, where.id);
+    if (isComposition) {
+      const s = loadComposition(root, where.id);
       if (!s.actors.scenarios.some(x => x.id === scenario)) return refuse(`scenario ${scenario} is not declared in actors/scenarios.md`);
       const cell = s.composed.cells.find(c => c.property === property && c.scenario === scenario);
       if (!cell) return refuse(`${property} × ${scenario} is not a cell of ${ref}`);
@@ -131,10 +131,10 @@ export async function main(command: string, args: string[]): Promise<number> {
   for (const f of stale) rmSync(join(dir, f));
   writeFileSync(copyFile, text);
   if (cfgName) writeFileSync(join(dir, cfgName), cfgText!);
-  const modules = readdirSync(join(where.dir, isSystem ? 'model/generated' : 'model')).filter(f => f.endsWith(alloy ? '.als' : '.tla') && !f.endsWith(alloy ? '.scaffold.als' : '.scaffold.tla'));
+  const modules = readdirSync(join(where.dir, isComposition ? 'model/generated' : 'model')).filter(f => f.endsWith(alloy ? '.als' : '.tla') && !f.endsWith(alloy ? '.scaffold.als' : '.scaffold.tla'));
   const request = {
     name: callName, kind: 'blunder', target: copy, scenario, reach: one('--reach'), because: one('--because'), blunder: wrong,
-    base: !isSystem && modules.length > 1 ? baseRel : null, force: true,
+    base: !isComposition && modules.length > 1 ? baseRel : null, force: true,
   };
   const composed = composeCall(root, where, request);
   if (composed.problems.length) {

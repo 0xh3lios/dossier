@@ -1,5 +1,5 @@
 {
-  "components": {
+  "parts": {
     "adapter": {
       "tier": "modeled",
       "marks": {
@@ -693,7 +693,7 @@
       ]
     }
   },
-  "systems": {
+  "compositions": {
     "control": {
       "cells": {
         "A1|all-honest": {

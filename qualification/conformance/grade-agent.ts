@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { compileComponent, checkIR, loadRuntime } from '../../src/chart/draw.ts';
+import { compilePart, checkIR, loadRuntime } from '../../src/chart/draw.ts';
 import { buildMachine } from '../../src/chart/machine.ts';
 import { TRIAL_ID } from '../../src/trials/trials.ts';
 import { completed } from '../../src/trials/answers.ts';
@@ -19,7 +19,7 @@ export async function gradeBudget(workspace: string) {
   const before = fingerprint(workspace);
   try {
     const answer = JSON.parse(readFileSync(join(workspace, 'answer.json'), 'utf8'));
-    assert.equal(answer.component, 'budget');
+    assert.equal(answer.part, 'budget');
     assert.equal(answer.checker, 'chart');
     assert.equal(answer.proof, false, 'a chart result is not inductive proof');
     assert.equal(answer.thirdPaymentAllowed, false);
@@ -28,8 +28,8 @@ export async function gradeBudget(workspace: string) {
     assert.ok(Array.isArray(answer.limitations) && answer.limitations.length > 0 && answer.limitations.every((x: unknown) => typeof x === 'string' && x.trim()), 'report limits');
     assert.ok(readFileSync(join(workspace, 'answer.md'), 'utf8').trim(), 'provide the human interpretation');
     const root = join(workspace, 'dossiers');
-    const dir = join(root, 'components/budget');
-    const { ir } = compileComponent(join(dir, 'prose.md'));
+    const dir = join(root, 'parts/budget');
+    const { ir } = compilePart(join(dir, 'prose.md'));
     assert.deepEqual(ir.errors, []);
     assert.equal(ir.tier, 'charted');
     assert.equal(ir.states.length, 1, 'one live operating state');
@@ -66,15 +66,15 @@ export async function gradeBudget(workspace: string) {
     // miscall is a tripwire, and a tripwire voids every answer the grade would rest on.
     const verified = verifyAll({ root, version: '0.1.0', write: false });
     assert.deepEqual(verified.tripwires, []);
-    const component = verified.components.find(c => c.id === 'budget');
-    assert.ok(component);
-    assert.deepEqual(component.tripwires, []);
+    const part = verified.parts.find(c => c.id === 'budget');
+    assert.ok(part);
+    assert.deepEqual(part.tripwires, []);
 
     assert.ok(typeof answer.trial === 'string' && TRIAL_ID.test(answer.trial), 'name a real trial id');
     const cited = answerOf(dir, answer.trial);
     assert.ok(cited, 'cite the trial that established a published answer: its entry in evidence/ names it');
     // The entry the trial established, as verify reads it under its integrity.json binding.
-    const found = component.answers.find(a => a.name === cited.name);
+    const found = part.answers.find(a => a.name === cited.name);
     assert.ok(found && found.entry && found.entry.established.trial === answer.trial, 'verify reads the cited answer from its bound entry');
     assert.deepEqual(found.problems, []);
     assert.ok(completed(found), 'the cited answer completed');
@@ -90,9 +90,9 @@ export async function gradeBudget(workspace: string) {
     assert.deepEqual(basis.snapshot.passages, ir.hashes, 'the answer rests on the current input');
     assert.ok(found.reading?.trim(), `interpret the published answer in evidence/${cited.name}.md; only a miscall requires a classification`);
 
-    assert.ok(component.decisions.every(d => !d.malformed && d.verb === 'begin'), 'no owner decisions were authorized');
-    assert.ok(Object.values(component.marks).every(m => m.mark !== 'proved' && m.owner !== 'settled' && m.owner !== 'rejected'), 'chart evidence never grants proof or owner decisions');
-    return { outcome: 'pass', component: 'budget', trial: answer.trial, entry: `evidence/${cited.name}.json`, checks: ['task semantics', 'current published chart answer', 'interpretation present', 'bounded claim', 'owner boundary', 'read-only grading'], manual: [`Read answer.md and evidence/${cited.name}.md for unsupported claims and meaningful limitations.`] };
+    assert.ok(part.decisions.every(d => !d.malformed && d.verb === 'begin'), 'no owner decisions were authorized');
+    assert.ok(Object.values(part.marks).every(m => m.mark !== 'proved' && m.owner !== 'settled' && m.owner !== 'rejected'), 'chart evidence never grants proof or owner decisions');
+    return { outcome: 'pass', part: 'budget', trial: answer.trial, entry: `evidence/${cited.name}.json`, checks: ['task semantics', 'current published chart answer', 'interpretation present', 'bounded claim', 'owner boundary', 'read-only grading'], manual: [`Read answer.md and evidence/${cited.name}.md for unsupported claims and meaningful limitations.`] };
   } finally {
     assert.deepEqual(fingerprint(workspace), before, 'the grader must be read-only');
   }

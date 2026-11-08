@@ -1,6 +1,6 @@
 ---
 name: keep
-description: Keep the dossiers. Abstract components from the records, draw and check them, compose them into systems, write properties and scenarios, run solver trials through the runner, and report the ledgers. Every turn starts from the verify line. Use when the team begins a component or a system, asks to check a claim (never, always, within N blocks, eventually), asks what happens under a malicious actor or an outage, widens a check, or asks where things stand: start a dossier for X, draw it, compose the supply system, check that X never Y, what if a keeper is offline, prove the conservation, where are we, refresh after the upgrade. Not for preparing a repository (setup) or for an independent second read (review).
+description: Keep the dossiers. Abstract parts from the records, draw and check them, wire them into compositions, write properties and scenarios, run solver trials through the runner, and report the ledgers. Every turn starts from the verify line. Use when the team begins a part or a composition, asks to check a claim (never, always, within N blocks, eventually), asks what happens under a malicious actor or an outage, widens a check, or asks where things stand: start a dossier for X, draw it, compose the supply system, check that X never Y, what if a keeper is offline, prove the conservation, where are we, refresh after the upgrade. Not for preparing a repository (setup) or for an independent second read (review).
 allowed-tools: Bash(dossier *)
 ---
 
@@ -10,12 +10,12 @@ allowed-tools: Bash(dossier *)
 
 Turn the user's request into checked work on the dossiers, using [the specification](../../spec/README.md) and [one process](../../spec/process.md). Owners settle meaning and accept risk. The agent authors inputs and readings. The tools execute checks and derive claims.
 
-Begin by running `dossier verify --brief`. After every edit to a component's `prose.md`, run `dossier draw <id> --brief` and read its line before going on. Read the page named by `read:` when its operation is unfamiliar. Follow the user's requested scope. The router identifies unmet obligations. Use `dossier render` for report materialization. For an interrupted publication, follow [publication and integrity](../../spec/storage.md).
+Begin by running `dossier verify --brief`. After every edit to a part's `prose.md`, run `dossier draw <id> --brief` and read its line before going on. Read the page named by `read:` when its operation is unfamiliar. Follow the user's requested scope. The router identifies unmet obligations. Use `dossier render` for report materialization. For an interrupted publication, follow [publication and integrity](../../spec/storage.md).
 
 | Task | Read |
 | --- | --- |
-| New or changed component | [Language](../../spec/language.md), [chart](../../spec/chart.md), then [models and trials](../../spec/models.md) for the declared tier |
-| System property or scenario | [Composition](../../spec/composition.md), [models and trials](../../spec/models.md) |
+| New or changed part | [Language](../../spec/language.md), [chart](../../spec/chart.md), then [models and trials](../../spec/models.md) for the declared tier |
+| Composition property or scenario | [Composition](../../spec/composition.md), [models and trials](../../spec/models.md) |
 | Refresh or what-if | [Process obligations](../../spec/process.md#obligations-by-task), then the relevant input and checker contract |
 | An answer, a tripwire or a status report | [Evidence](../../spec/evidence.md) and [artifact ownership](../../spec/artifacts.md) |
 | Asking a question again, or rechecking its answer | [Questions and answers](../../spec/evidence.md#questions-and-answers) |

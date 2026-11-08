@@ -2,13 +2,13 @@
 import { proseHash } from '../hash.ts';
 import { CALL_WAS_WRONG, MODEL_MISREAD, PROSE_AT_FAULT } from '../trials/answers.ts';
 import type { Passage } from '../prose/prose.ts';
-import type { Analysis, AnswerRow, ComponentAnalysis, SystemAnalysis } from './analyze.ts';
+import type { Analysis, AnswerRow, PartAnalysis, CompositionAnalysis } from './analyze.ts';
 import type { Note } from './tripwires.ts';
 
 // The next loop, why, and the page of the method that says how; target names the dossier at the root.
 export interface Route { pass: string; why: string[]; read: string; target?: string | null }
 
-const PAGE: Record<string, string> = { Fix: 'evidence.md', Write: 'language.md', Draw: 'chart.md', Encode: 'models.md', Compose: 'composition.md', System: 'process.md', Refresh: 'process.md', Review: 'review.md', Report: 'evidence.md' };
+const PAGE: Record<string, string> = { Fix: 'evidence.md', Write: 'language.md', Draw: 'chart.md', Encode: 'models.md', Compose: 'composition.md', Try: 'process.md', Refresh: 'process.md', Review: 'review.md', Report: 'evidence.md' };
 const pick = (pass: string, why: string[]): Route => ({ pass, why, read: `spec/${PAGE[pass]}` });
 
 // The current answers that wait on the prose: a miscall classified prose at fault while the passages are
@@ -22,7 +22,7 @@ function waitingOnProse(rows: AnswerRow[], hashes: Record<string, string> | unde
 const named = (rows: AnswerRow[]) => rows.map(t => `evidence/${t.entry}.json`).join(' ');
 
 // The lapsed passages, grouped by what moved under them beyond their own words: A2; A1 M1 (executed model/Timelock.tla).
-function lapsedWhy(ids: string[], marks: ComponentAnalysis['marks']): string {
+function lapsedWhy(ids: string[], marks: PartAnalysis['marks']): string {
   const groups = new Map<string, string[]>();
   for (const id of ids) {
     const parts = ((marks[id] && marks[id].lapsed) || []).filter(x => x !== `passage ${id}`);
@@ -32,7 +32,7 @@ function lapsedWhy(ids: string[], marks: ComponentAnalysis['marks']): string {
   return `lapsed: ${[...groups].map(([key, list]) => `${list.join(' ')}${key ? ` (${key})` : ''}`).join('; ')}`;
 }
 
-export function routeComponent(f: ComponentAnalysis): Route {
+export function routePart(f: PartAnalysis): Route {
   if (f.tripwires.length) return pick('Fix', f.tripwires.map(t => `${t.name} (${t.where})`));
   const { ir, prose, marks } = f;
   const active = prose.passages.filter(p => !p.retired);
@@ -86,10 +86,10 @@ export function routeComponent(f: ComponentAnalysis): Route {
   return pick('Report', ['nothing owed']);
 }
 
-export function routeSystem(f: SystemAnalysis): Route {
+export function routeComposition(f: CompositionAnalysis): Route {
   if (f.tripwires.length) return pick('Fix', f.tripwires.map(t => `${t.name} (${t.where})`));
   const why: string[] = [];
-  if (f.composition.members.length === 0) why.push('no members');
+  if (f.wiring.members.length === 0) why.push('no members');
   if (f.closureMissing.length) why.push(`closure open: ${f.closureMissing.join('; ')}`);
   if (why.length) return pick('Compose', why);
   const proseAtFault = waitingOnProse(f.answerRows, f.hashes);
@@ -111,22 +111,22 @@ export function routeSystem(f: SystemAnalysis): Route {
   // covers nothing: the owner decides again.
   const stale = violated.filter(c => c.acceptanceLapsed && c.acceptanceLapsed.length);
   if (stale.length) why.push(`acceptance lapsed: ${stale.map(c => `${c.property}×${c.scenario} (${c.acceptanceLapsed!.join(', ')})`).join(' ')}`);
-  if (why.length) return pick('System', why);
+  if (why.length) return pick('Try', why);
   if (f.reviewOwed) return pick('Review', [f.reviewOwed]);
   return pick('Report', ['nothing owed']);
 }
 
 // rootTrips: what is wrong at the root itself, dossier.json or index.md; it is fixed first.
-export function routeRoot(components: Analysis[], systems: Analysis[], rootTrips: Note[] = []): Route {
-  const all = [...components, ...systems];
+export function routeRoot(parts: Analysis[], compositions: Analysis[], rootTrips: Note[] = []): Route {
+  const all = [...parts, ...compositions];
   const trips = [...rootTrips.map(t => `${t.name} (${t.where})`), ...all.flatMap(a => a.tripwires.map(t => `${a.title}: ${t.name} (${t.where})`))];
   if (trips.length) return { ...pick('Fix', trips), target: rootTrips.length ? null : all.find(a => a.tripwires.length)!.ref };
   const routed = (pass: string, hits: Analysis[]) => ({ ...pick(pass, hits.map(a => `${a.title}: ${a.route.why.join('; ')}`)), target: hits[0].ref });
-  // A system with no members waits for its components: their prose and chart come before composing it.
-  const empty = (a: Analysis) => a.kind === 'system' && Boolean(a.composition) && a.composition.members.length === 0;
+  // A composition with no members waits for its parts: their prose and chart come before composing it.
+  const empty = (a: Analysis) => a.kind === 'composition' && Boolean(a.wiring) && a.wiring.members.length === 0;
   const by = (pass: string) => all.filter(a => a.route.pass === pass && !(pass === 'Compose' && empty(a)));
-  for (const pass of ['Refresh', 'Encode', 'Compose', 'System']) { const hits = by(pass); if (hits.length) return routed(pass, hits); }
-  const comp = all.filter(a => a.kind === 'component' && ['Write', 'Draw'].includes(a.route.pass));
+  for (const pass of ['Refresh', 'Encode', 'Compose', 'Try']) { const hits = by(pass); if (hits.length) return routed(pass, hits); }
+  const comp = all.filter(a => a.kind === 'part' && ['Write', 'Draw'].includes(a.route.pass));
   if (comp.length) return routed(comp[0].route.pass, comp);
   const waiting = all.filter(a => a.route.pass === 'Compose' && empty(a));
   if (waiting.length) return routed('Compose', waiting);

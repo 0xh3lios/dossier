@@ -22,4 +22,4 @@ The Source can send two fixed lots. It holds remaining, a count from 0 to 2, sta
 [X1] Seam with sink: credit carries the fixed lot into receive.
 
 ## Words only
-[T1] This component promises no eventual request.
+[T1] This part promises no eventual request.

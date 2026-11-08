@@ -70,7 +70,7 @@ code, .mono { font-family: var(--mono); font-size: var(--fs-s); }
 .live { font-size: var(--fs-s); color: var(--muted); }
 .live.is-live span { color: var(--good); }
 .live.is-offline span { color: var(--critical); }
-.main { min-height: 0; overflow: hidden; outline: none; }
+.main { grid-row: 3; min-height: 0; overflow: hidden; outline: none; }
 
 /* Controls */
 .btn, .react-aria-Button.btn { font: inherit; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--surface); color: var(--ink); cursor: pointer; min-height: 24px; }
@@ -177,7 +177,7 @@ code, .mono { font-family: var(--mono); font-size: var(--fs-s); }
 .col-name { width: 22%; } .col-kind { width: 11%; } .col-why { width: 32%; } .col-stand { width: 22%; } .col-flags { width: 13%; }
 .why { color: var(--ink-2); }
 
-/* Component view */
+/* Part view */
 .cv { display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(300px, 380px); height: 100%; }
 .sv { display: grid; grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(320px, 400px); height: 100%; }
 .cv.is-narrow { grid-template-columns: minmax(0, 1fr) minmax(290px, 360px); }
@@ -248,7 +248,7 @@ code, .mono { font-family: var(--mono); font-size: var(--fs-s); }
 .select .btn { min-width: 120px; justify-content: space-between; }
 .popover { background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r2); box-shadow: var(--shadow); max-height: 300px; overflow: auto; }
 
-/* System view */
+/* Composition view */
 .member { padding: 2px 0; }
 .radios { display: flex; flex-direction: column; gap: 1px; }
 .react-aria-Radio { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: var(--fs-s); cursor: pointer; padding: 1px 0; }

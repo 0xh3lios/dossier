@@ -18,10 +18,10 @@ export function basisNow(basis: Basis): Now {
   return { snapshot: basis.snapshot, file: path => files[path] ?? null };
 }
 
-// What moved under a component's answer on the passages given: each one's words and those of the
+// What moved under a part's answer on the passages given: each one's words and those of the
 // Givens it cites; the other passages its covers leaned on, gone or reworded, such as the walk that
 // showed a refusal-only event refused; for an answer that is not the chart's, the records the
-// component pins and its guarantees' backing, an external backing being external whatever its runs;
+// part pins and its guarantees' backing, an external backing being external whatever its runs;
 // and every file the answer executed or captured, prose.md aside, whose passages are compared one by one.
 export function movedUnder(answer: { checker: string; basis: Basis }, ids: readonly string[], leaned: readonly string[], now: Now, givens: (id: string) => readonly string[]): string[] {
   const then = answer.basis.snapshot, present = now.snapshot.passages;
@@ -47,10 +47,10 @@ export function movedUnder(answer: { checker: string; basis: Basis }, ids: reado
   return [...new Set(moved)];
 }
 
-// The present of a system, hashed the way a trial's snapshot was: a cell or a walk lapses where they differ.
+// The present of a composition, hashed the way a trial's snapshot was: a cell or a walk lapses where they differ.
 export interface PresentState {
   passages: Record<string, string>;
-  composition: string;
+  wiring: string;
   // The module the composer writes now, without extras.tla, as one scenario's cells rest on it
   // (moduleHash); null while it does not compose.
   module: (sid: string) => string | null;
@@ -65,15 +65,15 @@ export interface PresentState {
   inputs: Record<string, string | null>;
 }
 
-// What moved under a system's answer on one cell or walk: the passage and the Givens it cites, the
-// composition, the generated module as the scenario rests on it, the scenario, the actors,
+// What moved under a composition's answer on one cell or walk: the passage and the Givens it cites, the
+// wiring, the generated module as the scenario rests on it, the scenario, the actors,
 // extras.tla, each member's prose and its guarantees' backing, the records pinned, the generated
 // configuration the trial executed, and the other files it captured.
 export function lapsedParts(then: Basis, now: PresentState, propertyId: string, scenarioId: string, givens: readonly string[] = []): string[] {
   const s = then.snapshot;
   const moved: string[] = [];
   for (const id of [propertyId, ...givens]) if (s.passages[id] !== now.passages[id]) moved.push(`passage ${id}`);
-  if (s.composition !== now.composition) moved.push('composition');
+  if (s.wiring !== now.wiring) moved.push('wiring');
   if (s.module !== now.module(scenarioId)) moved.push('generated module');
   if (s.scenario !== now.scenario(scenarioId)) moved.push(`scenario ${scenarioId}`);
   if (s.actors !== now.actors) moved.push('actors');
@@ -104,21 +104,21 @@ export function lapsedParts(then: Basis, now: PresentState, propertyId: string, 
 const sameValues = (x: Record<string, string>, y: Record<string, string>) => [...new Set([...Object.keys(x), ...Object.keys(y)])].every(k => x[k] === y[k]);
 
 // What lapse reads of the dossier's prose as it stands: the Givens each passage cites, and a
-// component's compiled prose, which says which passages an answer touched; null for a system.
+// part's compiled prose, which says which passages an answer touched; null for a composition.
 export interface Prose { givens: (id: string) => string[]; ir: Ir | null }
 
 // What moved under a recorded answer since it was established, against the present: what a new trial
 // on the same question rests on, for a publication, or the dossier as it stands, for a recheck. Empty
-// when the answer has not lapsed. A component's answer is compared on every passage it touched, as
+// when the answer has not lapsed. A part's answer is compared on every passage it touched, as
 // its covers read it with the present prose, on the passages its question names, and on the passages
 // its covers leaned on; a chart's first on the prose's compilation, which its checks and gaps rest on
-// whole. A system's answer is compared on its cell or its walk.
+// whole. A composition's answer is compared on its cell or its walk.
 export function basisMoved(entry: Entry, now: Now, prose: Prose): string[] {
   const q = entry.question, then = entry.basis;
-  if (entry.dossier.startsWith('systems/')) {
+  if (entry.dossier.startsWith('compositions/')) {
     const s = now.snapshot;
     const present: PresentState = {
-      passages: s.passages, composition: s.composition ?? '', module: () => s.module ?? null, scenario: () => s.scenario ?? null,
+      passages: s.passages, wiring: s.wiring ?? '', module: () => s.module ?? null, scenario: () => s.scenario ?? null,
       actors: s.actors ?? '', extras: s.extras ?? null, members: s.members ?? {}, records: s.records,
       configs: Object.fromEntries(Object.keys(then.executed).flatMap(path => { const h = now.file(path); return h === null ? [] : [[path, h]]; })),
       inputs: Object.fromEntries(Object.keys(then.inputIdentity.files).map(path => [path, now.file(path)])),

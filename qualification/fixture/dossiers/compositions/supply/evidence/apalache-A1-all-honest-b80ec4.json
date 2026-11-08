@@ -1,0 +1,136 @@
+{
+  "schema": 1,
+  "dossier": "compositions/supply",
+  "question": {
+    "kind": "apalache",
+    "checker": "apalache",
+    "executes": [
+      "model/generated/Supply.tla"
+    ],
+    "expects": [
+      "Inv_A1"
+    ],
+    "property": "A1",
+    "scenario": "all-honest",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: apalache\nproperty: A1\nscenario: all-honest\nmode: inductive\ninv: Inv_A1\ncinit: ConstInit_all_honest\nexecutes:\n  - model/generated/Supply.tla\nreach: unbounded; TypeOK and A1 inductive\nexpect:\n  Inv_A1: holds\nbecause: |\n  A1 is preserved by every wired step: credit moves and HRD mints happen together.\n",
+    "reach": "unbounded; TypeOK and A1 inductive",
+    "expect": {
+      "Inv_A1": {
+        "expect": "holds"
+      }
+    },
+    "because": "A1 is preserved by every wired step: credit moves and HRD mints happen together."
+  },
+  "answer": {
+    "enabled": [
+      "Inv_A1"
+    ],
+    "outcomes": {
+      "Inv_A1": "holds"
+    },
+    "mode": "inductive",
+    "length": null,
+    "runs": [
+      {
+        "label": "step",
+        "outcome": "NoError",
+        "length": 1,
+        "exitcode": 0,
+        "violatedInvariant": null,
+        "errors": []
+      },
+      {
+        "label": "base",
+        "outcome": "NoError",
+        "length": 0,
+        "exitcode": 0,
+        "violatedInvariant": null,
+        "errors": []
+      }
+    ],
+    "trace": null,
+    "properties": {
+      "Inv_A1": "ed811e21"
+    },
+    "reach": {
+      "text": "unbounded; TypeOK and A1 inductive",
+      "values": {
+        "inductive": 1
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "1b854fdd",
+        "A2": "e8f5fa97",
+        "A3": "2b69812d",
+        "W1": "7ebabe90",
+        "T1": "5cf28469"
+      },
+      "records": {
+        "vault#observation:checkpoint-2026-11-01": "f53d903a45677849"
+      },
+      "backing": {},
+      "wiring": "613f91fd87ef47e8",
+      "module": "80039f34c3a995fc",
+      "members": {
+        "vault": {
+          "prose": "ad6f1070f6fac376",
+          "backing": {
+            "K1": "48fb01304d30b4b7",
+            "K2": "e8e54bc755943a68",
+            "K3": "bb4712dfb9f4915d",
+            "K4": "assumed"
+          }
+        },
+        "adapter": {
+          "prose": "58d831b706099361",
+          "backing": {
+            "K1": "7b42dc7c1831a88a"
+          }
+        },
+        "token": {
+          "prose": "69858faf20e7b8ea",
+          "backing": {
+            "K1": "9dbf540264cc615a"
+          }
+        }
+      },
+      "scenario": "32ef1d2c356c5b3a",
+      "actors": "ea02bc898e688534",
+      "extras": "979f4371be250e2e"
+    },
+    "executed": {
+      "model/generated/Supply.tla": "24d2e12c77558ccbad11b9e826307dfc0c0cf6e2b5ea66b6d13e9a985303e47e"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/generated/Supply.tla": "24d2e12c77558ccbad11b9e826307dfc0c0cf6e2b5ea66b6d13e9a985303e47e"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2338-apalache-ff05ff",
+    "at": "2026-11-08T23:38:01.134Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "apalache": "0.62.4"
+    },
+    "bundle": "a16f489f68d07e8c7580890b49f9a3f3034f760dcb7cb6cc44751e90cd544ecc"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

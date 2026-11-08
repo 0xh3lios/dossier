@@ -1,18 +1,18 @@
 # One process
 
-An agent turns an owner's request into scoped inputs, checks those inputs through the tools, interprets the evidence and reports what it establishes. Component, system, refresh and probe work use this process with different obligations. No workflow state file is required. The current inputs, evidence and decisions determine what remains.
+An agent turns an owner's request into scoped inputs, checks those inputs through the tools, interprets the evidence and reports what it establishes. Part, composition, refresh and probe work use this process with different obligations. No workflow state file is required. The current inputs, evidence and decisions determine what remains.
 
 ## Observe and select
 
 **PROC-OBSERVE.** Begin with `dossier verify --brief` and read its findings. A tripwire blocks new evidence work on the affected record until addressed. Report the blockage and continue unrelated work where possible. An owner's request selects scope before the suggested `next:` route.
 
-Locate the component, system, property, scenario or typed knowledge reference with `dossier where`. A request that names no property yet needs an explicit proposed scope. Notes in `margin.md` may preserve unfinished reasoning. They do not grant evidence, settle passages or choose which answer counts. An intake line is not required for correctness.
+Locate the part, composition, property, scenario or typed knowledge reference with `dossier where`. A request that names no property yet needs an explicit proposed scope. Notes in `margin.md` may preserve unfinished reasoning. They do not grant evidence, settle passages or choose which answer counts. An intake line is not required for correctness.
 
 ## Prepare
 
 **PROC-PREPARE.** Author only the inputs the request needs. Keep passage ids stable. State data ranges, actor assumptions, scenario and requested reach before execution. Resolve the applicable [language](language.md), [composition](composition.md), [model](models.md) and [checker](checkers/tlc.md) contracts.
 
-Draw a changed component to check its sentences against the chart. Drawing creates a diagnostic view. A chart claim needs a chart answer. Scaffold a component before model refinement. Scaffold a system to materialize its generated module and configurations. System generated files remain tool-owned.
+Draw a changed part to check its sentences against the chart. Drawing creates a diagnostic view. A chart claim needs a chart answer. Scaffold a part before model refinement. Scaffold a composition to materialize its generated module and configurations. A composition's generated files remain tool-owned.
 
 Every guarantee names its backing or explicitly says `none`. A missing backing remains an assumption or unresolved reference. Closure remains open until all required members are present. Neither an agent's explanation nor a successful checker makes an open composition closed.
 
@@ -22,7 +22,7 @@ Every guarantee names its backing or explicitly says `none`. A missing backing r
 
 **PROC-EXECUTE.** Run recorded checks through `dossier trial`. A refused call grants no evidence and creates no trial. An aborted trial covers nothing. A completed trial's answer goes through publication even when it differs from the prediction, and [the evidence rules](evidence.md#questions-and-answers) decide whether it is written, kept or refused. A trial that confirms the current answer writes no entry. The agent cannot repair a disagreement by editing the call, the entry or the bundle.
 
-For a system cell, use its property/scenario configuration or constant initialization exactly. An answer under one scenario does not become evidence for another merely because the agent chose a different label.
+For a composition cell, use its property/scenario configuration or constant initialization exactly. An answer under one scenario does not become evidence for another merely because the agent chose a different label.
 
 ## Interpret
 
@@ -54,11 +54,11 @@ Verify writes nothing. Use `dossier render` for the ledgers and the index, and `
 
 | Task | Additional inputs | Required outcome | What remains distinct |
 | --- | --- | --- | --- |
-| Component | Module records or procedure, prose, backing | Chart evidence, model evidence at the declared tier, readings, unresolved assumptions reported | A charted component does not owe model checks it cannot perform; Once/Within and Given-dependent claims are not proved by its chart |
-| System | Members, wiring, closure, actors, scenarios, properties/walks | Each claimed cell/walk has its own evidence, each property has a sensitivity blunder, violations are surfaced | Wiring is simultaneous; modes belong to actors; assumptions and closure must remain visible |
+| Part | Module records or procedure, prose, backing | Chart evidence, model evidence at the declared tier, readings, unresolved assumptions reported | A charted part does not owe model checks it cannot perform; Once/Within and Given-dependent claims are not proved by its chart |
+| Composition | Members, wiring, closure, actors, scenarios, properties/walks | Each claimed cell/walk has its own evidence, each property has a sensitivity blunder, violations are surfaced | Wiring is simultaneous; modes belong to actors; assumptions and closure must remain visible |
 | Refresh | Changed dependency and the answers it lapsed | Relevant inputs corrected and the lapsed questions asked again in dependency order | Never alter an entry to clear a lapse |
 | Probe | The owner's request and its scope | A reply supported by a chart diagnostic or a witness or property answer, with its limits | A diagnostic is not durable evidence; extending a claim changes the authored property |
 | Decision | Finding and owner words | Exact decision recorded and its effect reported | Acceptance, truth and evidence freshness remain separate |
 | Review | Inputs and evidence, without the keeper's conversation | Independent findings with artifact references and status | No decisions or input/evidence edits; one review file is the only intended write |
 
-A component followed by a system is one dependency-ordered task. A refreshed cell and a new cell use the same call, trial and reading operations. The router's `Write`, `Draw`, `Encode`, `Compose`, `System`, `Refresh`, `Fix`, `Review` and `Report` are suggestions about unmet obligations, not separate stores of progress.
+A part followed by a composition is one dependency-ordered task. A refreshed cell and a new cell use the same call, trial and reading operations. The router's `Write`, `Draw`, `Encode`, `Compose`, `Try`, `Refresh`, `Fix`, `Review` and `Report` are suggestions about unmet obligations, not separate stores of progress.

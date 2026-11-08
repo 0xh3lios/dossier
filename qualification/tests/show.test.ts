@@ -56,13 +56,13 @@ describe('dossier show', () => {
   after(() => rmSync(work, { recursive: true, force: true }));
 
   it('prints a violated TLC cell with its trace, each row holding only the values that changed', () => {
-    const name = entryNamed('systems/control', 'tlc-N1-executor-offline-');
-    const entry = read('systems/control', name);
+    const name = entryNamed('compositions/control', 'tlc-N1-executor-offline-');
+    const entry = read('compositions/control', name);
     const before = tree(root);
-    const r = run('show', 'systems/control', name);
+    const r = run('show', 'compositions/control', name);
     assert.equal(r.status, 0, r.stderr);
     assert.deepEqual(tree(root), before, 'show writes nothing');
-    assert.match(r.stdout, new RegExp(`^systems/control/evidence/${name}$`, 'm'));
+    assert.match(r.stdout, new RegExp(`^compositions/control/evidence/${name}$`, 'm'));
     assert.match(r.stdout, /^question: tlc on model\/generated\/Control\.tla, model\/generated\/N1_executor_offline\.cfg; N1 × executor-offline; expects N1, TypeOK$/m);
     assert.match(r.stdout, /^verdict: as-called$/m);
     assert.match(r.stdout, /^outcomes: .*N1 violated/m);
@@ -83,7 +83,7 @@ describe('dossier show', () => {
   });
 
   it('prints a witness with the trace the call predicted and the variables it compares', () => {
-    const name = entryNamed('components/vault', 'tlc-W1-');
+    const name = entryNamed('parts/vault', 'tlc-W1-');
     const r = run('show', 'vault', `evidence/${name}.json`);
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.stdout, /^outcomes: TypeOK holds, NotW1 violated$/m);
@@ -95,9 +95,9 @@ describe('dossier show', () => {
   });
 
   it('closes a liveness trace with its loop and prints the checker warnings', () => {
-    const name = entryNamed('systems/control', 'blunder-O1-all-honest-');
-    const trace = read('systems/control', name).answer.trace as TlcTraceStep[];
-    const r = run('show', 'systems/control', name);
+    const name = entryNamed('compositions/control', 'blunder-O1-all-honest-');
+    const trace = read('compositions/control', name).answer.trace as TlcTraceStep[];
+    const r = run('show', 'compositions/control', name);
     assert.equal(r.status, 0, r.stderr);
     const last = trace.at(-1)!;
     const closing = last.stuttering ? 'Stuttering' : `Back to state ${last.backTo}`;
@@ -106,12 +106,12 @@ describe('dossier show', () => {
   });
 
   it('prints an Apalache induction counterexample from its ITF states, and its runs', () => {
-    const name = entryNamed('systems/control', 'apalache-A1-all-honest-');
-    const entry = read('systems/control', name);
+    const name = entryNamed('compositions/control', 'apalache-A1-all-honest-');
+    const entry = read('compositions/control', name);
     const counter = { ...entry, answer: { ...entry.answer, result: 'miscalled', outcomes: { Inv_A1: 'violated' }, miscalls: ['Inv_A1: called holds, got violated'], runs: [{ label: 'step', outcome: 'Error', length: 1, exitcode: 12, violatedInvariant: null, errors: [] }, { label: 'base', outcome: 'NoError', length: 0, exitcode: 0, violatedInvariant: null, errors: [] }], trace: inductionTrace } };
-    writeFileSync(join(root, 'systems/control/evidence/apalache-A1-all-honest-000000.json'), JSON.stringify(counter, null, 2) + '\n');
+    writeFileSync(join(root, 'compositions/control/evidence/apalache-A1-all-honest-000000.json'), JSON.stringify(counter, null, 2) + '\n');
     try {
-      const r = run('show', 'systems/control', 'apalache-A1-all-honest-000000');
+      const r = run('show', 'compositions/control', 'apalache-A1-all-honest-000000');
       assert.equal(r.status, 0, r.stderr);
       assert.match(r.stdout, /^verdict: miscalled$/m);
       assert.match(r.stdout, /^outcomes: Inv_A1 violated$/m);
@@ -123,25 +123,25 @@ describe('dossier show', () => {
       assert.deepEqual(printed[0].values, { timelock_state: '"Scheduled"', timelock_early: 'FALSE', vault_debt: '0', vault_free: '3', vault_issued: '0', breaker_halted: 'FALSE' });
       assert.deepEqual(printed[1].values, { vault_debt: '1', vault_free: '4' });
       assert.deepEqual(printed.map(p => p.action), ['', '']);
-    } finally { rmSync(join(root, 'systems/control/evidence/apalache-A1-all-honest-000000.json')); }
-    const proved = run('show', 'systems/control', name);
+    } finally { rmSync(join(root, 'compositions/control/evidence/apalache-A1-all-honest-000000.json')); }
+    const proved = run('show', 'compositions/control', name);
     assert.match(proved.stdout, /^runs: step NoError, base NoError$/m);
     assert.doesNotMatch(proved.stdout, /\| State \|/, 'an answer with no trace prints no table');
   });
 
   it('prints the entry as it is with --json, and refuses an entry that is not there', () => {
-    const name = entryNamed('components/token', 'external-');
+    const name = entryNamed('parts/token', 'external-');
     const r = run('show', 'token', name, '--json');
     assert.equal(r.status, 0, r.stderr);
-    assert.equal(r.stdout, readFileSync(join(root, 'components/token/evidence', `${name}.json`), 'utf8'));
+    assert.equal(r.stdout, readFileSync(join(root, 'parts/token/evidence', `${name}.json`), 'utf8'));
     const plain = run('show', 'token', name);
     assert.match(plain.stdout, /^runner: replay$/m);
     assert.match(plain.stdout, /^evidence W1: ends state = Live, supply = 0; no problems$/m);
-    const chart = run('show', 'token', entryNamed('components/token', 'chart-'));
+    const chart = run('show', 'token', entryNamed('parts/token', 'chart-'));
     assert.match(chart.stdout, /^checks: \d+ passed, 0 failed of \d+$/m);
     const missing = run('show', 'token', 'tlc-A9-000000');
     assert.equal(missing.status, 2);
-    assert.match(missing.stderr, /no entry tlc-A9-000000 in components\/token\/evidence\/; it holds /);
+    assert.match(missing.stderr, /no entry tlc-A9-000000 in parts\/token\/evidence\/; it holds /);
   });
 
   it('writes ITF values as TLA+ writes them', () => {

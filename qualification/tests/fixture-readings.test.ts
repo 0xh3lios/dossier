@@ -21,7 +21,7 @@ const { ordinaryReading, recordReading, controlUnfairReading } = await import(pa
 // what the entry keeps, as the rebuild's readings take it, and the reading beside it. Harbor keeps no
 // trial's bundle, so the checker's output is not among them.
 function answers(): { dir: string; name: string; result: TrialResult; reading: string | null }[] {
-  return ['components', 'systems'].flatMap(kind => readdirSync(join(root, kind)).flatMap(id => {
+  return ['parts', 'compositions'].flatMap(kind => readdirSync(join(root, kind)).flatMap(id => {
     const dir = join(root, kind, id), folder = join(dir, 'evidence');
     return existsSync(folder) ? readdirSync(folder).filter(file => file.endsWith('.json')).sort().map(file => {
       const name = file.slice(0, -5), reading = join(folder, `${name}.md`);
@@ -41,7 +41,7 @@ test('PROC-INTERPRET: every answer Harbor publishes has the reading required by 
 });
 
 test('the rebuild reading path writes the answer\'s reading beside its entry without changing the published answer', t => {
-  const { dir, name, result } = answers().find(({ result }) => result.dossier === 'systems/control' && result.property === 'N1' && result.scenario === 'all-honest' && result.kind === 'tlc')!;
+  const { dir, name, result } = answers().find(({ result }) => result.dossier === 'compositions/control' && result.property === 'N1' && result.scenario === 'all-honest' && result.kind === 'tlc')!;
   const work = mkdtempSync(join(tmpdir(), 'dossier-fixture-reading-'));
   t.after(() => rmSync(work, { recursive: true, force: true }));
   mkdirSync(join(work, 'evidence'));
@@ -64,19 +64,19 @@ test('the rebuild reading path writes the answer\'s reading beside its entry wit
 
 test('routine readings retain liveness warnings and distinguish induction from finite checks', () => {
   const completed = answers();
-  const liveness = completed.find(({ result }) => result.dossier === 'systems/control' && result.property === 'O1' && result.kind === 'tlc')!.result;
+  const liveness = completed.find(({ result }) => result.dossier === 'compositions/control' && result.property === 'O1' && result.kind === 'tlc')!.result;
   const text = ordinaryReading(liveness);
   assert.ok(liveness.warnings?.length, 'the real trace carries the state-constraint warning');
   for (const warning of liveness.warnings!) assert.ok(text.includes(warning));
   assert.match(text, /must not be generalized to unconstrained behavior/);
-  const induction = completed.find(({ result }) => result.dossier === 'components/timelock' && result.mode === 'inductive')!.result;
+  const induction = completed.find(({ result }) => result.dossier === 'parts/timelock' && result.mode === 'inductive')!.result;
   assert.match(ordinaryReading(induction), /Both stored base and step checks pass/);
   assert.throws(() => ordinaryReading({ ...induction, runs: induction.runs!.filter(run => run.label !== 'base') }), /base and step/);
   assert.throws(() => ordinaryReading({ ...induction, runs: induction.runs!.map(run => ({ ...run, outcome: 'Error' })) }), /base and step/);
 });
 
 test('the rebuild cannot substitute a routine reading for a counterexample, witness, partial result or blunder', () => {
-  const ordinary = answers().find(({ result }) => result.dossier === 'components/adapter' && result.kind === 'tlc' && result.outcomes.A1 === 'holds')!.result;
+  const ordinary = answers().find(({ result }) => result.dossier === 'parts/adapter' && result.kind === 'tlc' && result.outcomes.A1 === 'holds')!.result;
   for (const change of [
     { result: 'miscalled' }, { result: 'aborted' }, { kind: 'blunder' },
     { walk: 'W1' }, { partial: ['A1'] }, { outcomes: { A1: 'violated' } },
@@ -85,7 +85,7 @@ test('the rebuild cannot substitute a routine reading for a counterexample, witn
 });
 
 test('Control unfair reading follows the recorded loop closure and refuses a changed loop meaning', () => {
-  const { result, reading: published } = answers().find(({ result }) => result.dossier === 'systems/control' && result.property === 'O1' && result.kind === 'blunder')!;
+  const { result, reading: published } = answers().find(({ result }) => result.dossier === 'compositions/control' && result.property === 'O1' && result.kind === 'blunder')!;
   // Harbor keeps the answer, not TLC's output: the answer's trace ends at the loop's closure as the
   // runner parsed it, and the reading quotes the line TLC closed the loop with.
   const quoted = (published || '').match(/^The output closes the loop with: (.+)$/m);
@@ -135,7 +135,7 @@ test('Control unfair reading accepts the real stuttering shape without inventing
   const output = observed.map(([action, state, remaining, free], index) => frame(2217, `${index + 1}: <${action}>\n/\\ timelock_state = "${state}"\n/\\ timelock_remaining = ${remaining}\n/\\ vault_free = ${free}\n/\\ vault_issued = 0`)).join('') + frame(2218, '13: Stuttering');
   const parsed = parseTlc(output);
   assert.deepEqual(parsed.trace.at(-1), { index: 13, stuttering: true });
-  const result = { dossier: 'systems/control', property: 'O1', result: 'as-called', outcomes: { O1: 'violated' }, trace: parsed.trace, warnings: ['Declaring state or action constraints during liveness checking is dangerous.'] };
+  const result = { dossier: 'compositions/control', property: 'O1', result: 'as-called', outcomes: { O1: 'violated' }, trace: parsed.trace, warnings: ['Declaring state or action constraints during liveness checking is dangerous.'] };
   const reading = controlUnfairReading(result, output);
   assert.match(reading, /State 12 repeats indefinitely: this is full-state stuttering/);
   assert.match(reading, /13: Stuttering/);

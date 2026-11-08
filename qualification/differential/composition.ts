@@ -1,35 +1,35 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseProse, parseSystemProse } from '../../src/prose/prose.ts';
+import { parseProse, parseCompositionProse } from '../../src/prose/prose.ts';
 import { compileIR } from '../../src/prose/ir.ts';
 import { loadRuntime } from '../../src/chart/draw.ts';
 import { buildMachine, leavesOf } from '../../src/chart/machine.ts';
 import type { ChartEvent, Snapshot } from '../../src/chart/machine.ts';
-import { composeSystem } from '../../src/models/compose.ts';
+import { composeMembers } from '../../src/models/compose.ts';
 import { parseTla } from '../../src/models/tla.ts';
 import { readActors } from '../../src/dossiers/actors.ts';
-import { readComposition } from '../../src/dossiers/composition.ts';
-import { runTlc } from './component.ts';
+import { readWiring } from '../../src/dossiers/wiring.ts';
+import { runTlc } from './part.ts';
 
-export type WiringKind = 'tick-data' | 'event-field';
-export function wiringInputs(seed: number, kind: WiringKind) {
+export type CompositionKind = 'tick-data' | 'event-field';
+export function compositionInputs(seed: number, kind: CompositionKind) {
   const limit = 1 + seed % 3, bound = 1 + (seed >>> 2) % 5, amount = 1 + (seed >>> 4) % 2;
   const tick = kind === 'tick-data';
   const source = `# Source\n\nIt holds n, a count from 0 to ${limit}.${tick ? ` It holds amount, a count from 1 to 2, starting at ${amount}.` : ''} It sends push to the Sink, carrying amount.\n\n## States\n[S1] Live: sends a bounded number of messages.\n\n## Events\n[E1] ${tick ? 'tick, from the chain: a block passes.' : 'send, from the operator: send a field. Carries amount, a count from 1 to 2.'}\n\n## Moves\n[M1] When Live receives ${tick ? 'tick' : 'send'} and {n < ${limit}}, it stays Live, n grows by 1${tick ? ', amount becomes 1' : ''}, sends push.\n[R1] In Live, ${tick ? 'tick' : 'send'} is refused when {n = ${limit}}.\n`;
   const sink = `# Sink\n\nIt holds total, a count from 0 to ${bound}.\n\n## States\n[S1] Live: receives only when the sum fits.\n\n## Events\n[E1] push, from the Source: receive a field. Carries amount, a count from 1 to 2.\n\n## Moves\n[M1] When Live receives push and {total + amount <= ${bound}}, it stays Live, total grows by amount.\n[R1] In Live, push is refused when {total + amount > ${bound}}.\n`;
   const watcher = `# Watcher\n\nIt holds clock, a count from 0 to ${limit}.\n\n## States\n[S1] Live: tracks ticks independently of delivery.\n\n## Events\n[E1] tick, from the chain: a block passes.\n\n## Moves\n[M1] When Live receives tick and {clock < ${limit}}, it stays Live, clock grows by 1.\n[R1] In Live, tick is refused when {clock = ${limit}}.\n`;
-  const composition = '# Composition\n\n```yaml\nmembers:\n  - component: source\n  - component: sink\n  - component: watcher\nwiring:\n  - effect: source.push\n    event: sink.push\nclosure: []\nscenarios: [all-honest]\n```\n';
+  const wiring = '# Wiring\n\n```yaml\nmembers:\n  - part: source\n  - part: sink\n  - part: watcher\nwiring:\n  - effect: source.push\n    event: sink.push\nclosure: []\nscenarios: [all-honest]\n```\n';
   const actors = '# Actors\n\n```yaml\nactors:\n  - id: chain\n    kind: chain\n  - id: operator\n    kind: user\n```\n';
   const prose = '# Wiring\nConcern: wiring\n\n## Always\n[A1] Always, {sink.total <= ' + bound + '}.\n';
-  return { seed, kind, members: { source, sink, watcher }, composition, actors, prose };
+  return { seed, kind, members: { source, sink, watcher }, wiring, actors, prose };
 }
 
-export async function compareWiring(seed: number, kind: WiringKind, directory: string, plugin: string, mutate?: (tla: string) => string) {
-  const inputs = wiringInputs(seed, kind);
+export async function compareComposition(seed: number, kind: CompositionKind, directory: string, plugin: string, mutate?: (tla: string) => string) {
+  const inputs = compositionInputs(seed, kind);
   mkdirSync(join(directory, 'actors'), { recursive: true });
   writeFileSync(join(directory, 'actors/actors.md'), inputs.actors);
-  writeFileSync(join(directory, 'composition.md'), inputs.composition);
+  writeFileSync(join(directory, 'wiring.md'), inputs.wiring);
   writeFileSync(join(directory, 'prose.md'), inputs.prose);
   const members = Object.fromEntries(Object.entries(inputs.members).map(([id, text]) => {
     writeFileSync(join(directory, `${id}.md`), text);
@@ -37,9 +37,9 @@ export async function compareWiring(seed: number, kind: WiringKind, directory: s
     assert.deepEqual(ir.errors, []);
     return [id, ir];
   }));
-  const actors = readActors(directory), composition = readComposition(directory);
-  assert.deepEqual(actors.errors, []); assert.deepEqual(composition.errors, []);
-  const compiled = composeSystem({ name: 'Wiring', prose: parseSystemProse(inputs.prose), composition, members, actors });
+  const actors = readActors(directory), wiring = readWiring(directory);
+  assert.deepEqual(actors.errors, []); assert.deepEqual(wiring.errors, []);
+  const compiled = composeMembers({ name: 'Wiring', prose: parseCompositionProse(inputs.prose), wiring, members, actors });
   assert.deepEqual(compiled.errors, []);
   const runtime = await loadRuntime(plugin);
   assert.ok(!runtime.error, runtime.error);
@@ -96,6 +96,6 @@ export async function compareWiring(seed: number, kind: WiringKind, directory: s
     if (state.diff_event !== 0) actualEdges.add(JSON.stringify([state.diff_previous, state.diff_event, current]));
   }
   assert.deepEqual([...actualStates].sort(), [...reached.keys()].sort(), 'simultaneous composition reachable states agree');
-  assert.deepEqual([...actualEdges].sort(), [...edges].sort(), 'simultaneous wiring and tick edges agree');
+  assert.deepEqual([...actualEdges].sort(), [...edges].sort(), 'simultaneous composition and tick edges agree');
   return { seed, kind, states: reached.size, edges: edges.size };
 }

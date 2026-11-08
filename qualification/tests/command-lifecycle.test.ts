@@ -12,7 +12,7 @@ import { getShortestPaths } from '@xstate/graph';
 import { commandEvents, commandExpectation, commandLifecycle, riskEvents, riskExpectation, riskLifecycle } from '../conformance/command-lifecycle.ts';
 import { fingerprint } from '../conformance/files.ts';
 import { sha256 } from '../../src/hash.ts';
-import { parseSystemProse } from '../../src/prose/prose.ts';
+import { parseCompositionProse } from '../../src/prose/prose.ts';
 import { bundleDigest } from '../../src/trials/receipt.ts';
 import { answerOf } from '../conformance/evidence.ts';
 import type { VerifyJson } from '../../src/commands/verify.ts';
@@ -73,8 +73,8 @@ function harness(t: TestContext, solver = false) {
   return { work, root, exec, run, observe, remember };
 }
 
-function componentAdapter(t: TestContext) {
-  const h = harness(t), dir = join(h.root, 'components/budget');
+function partAdapter(t: TestContext) {
+  const h = harness(t), dir = join(h.root, 'parts/budget');
   // The trial whose publication was interrupted once integrity.json bound its candidate.
   let serial = 0, interrupted = '', pendingCall = '';
   // A trial's bundle waits in .running/ until its publication ends, then moves to the local trials/.
@@ -146,11 +146,11 @@ function componentAdapter(t: TestContext) {
     } else if (type === 'READ') h.observe();
     else if (type === 'RENDER') {
       const record = readFileSync(join(dir, 'integrity.json'), 'utf8');
-      const status = h.observe().components[0].tripwires.length ? 1 : 0;
+      const status = h.observe().parts[0].tripwires.length ? 1 : 0;
       h.run(['render', '--brief'], status);
       assert.equal(readFileSync(join(dir, 'integrity.json'), 'utf8'), record, 'render never repairs or changes publication authority');
     } else throw new Error(type);
-    const observed = h.observe().components.find(c => c.id === 'budget')!;
+    const observed = h.observe().parts.find(c => c.id === 'budget')!;
     h.remember(['CHECK', 'ABORT', 'RETRY', 'REFRESH', 'RECOVER_ANSWER'].includes(type));
     return observed;
   };
@@ -164,7 +164,7 @@ test('XState paths execute real author/check, abort/retry, edit/refresh and inte
   const covered = new Set<string>();
   for (const target of targets) await t.test(target, t => {
     const path = paths.find(p => p.state.value === target)!;
-    const actor = createActor(commandLifecycle).start(), adapter = componentAdapter(t);
+    const actor = createActor(commandLifecycle).start(), adapter = partAdapter(t);
     const events = path.steps.map(s => s.event).filter(event => event.type !== 'xstate.init');
     for (const event of events) for (const step of [event, { type: 'READ' }, { type: 'RENDER' }]) {
       actor.send(step); covered.add(step.type);
@@ -188,7 +188,7 @@ test('XState paths execute real author/check, abort/retry, edit/refresh and inte
 test('a trial killed after each publication rename refuses a retry, and explicit recovery finishes its publication', async t => {
   const T0 = '2026-11-07T12:34:00.000Z', T1 = '2026-11-07T12:35:00.000Z';
   for (const kill of ['manifest', 'entry', 'bundle'] as const) await t.test(kill, t => {
-    const h = harness(t), dir = join(h.root, 'components/budget');
+    const h = harness(t), dir = join(h.root, 'parts/budget');
     h.run(['setup']); h.run(['decide', 'budget', 'begin', 'charted']);
     writeFileSync(join(dir, 'prose.md'), budget);
     mkdirSync(join(dir, 'calls'));
@@ -200,7 +200,7 @@ test('a trial killed after each publication rename refuses a retry, and explicit
     const id = bundles[0];
     assert.match(id, /^2026-11-07-1234-chart-[0-9a-f]{6}$/);
     const records = () => Object.fromEntries(Object.entries(fingerprint(dir)).filter(([path]) => path === 'integrity.json' || path === 'decisions.log' || path.startsWith('evidence/')));
-    const budgetOf = () => h.observe().components.find(c => c.id === 'budget')!;
+    const budgetOf = () => h.observe().parts.find(c => c.id === 'budget')!;
     let observed = budgetOf();
     if (kill === 'manifest') {
       assert.deepEqual(observed.tripwires.map(trip => trip.name), ['answer publication incomplete'], 'a bound candidate not yet in place is an incomplete publication');
@@ -247,8 +247,8 @@ test('XState risk paths on a copy of Harbor use real CLI decisions: an accepted 
     cpSync(join(plugin, 'qualification/fixture'), h.work, { recursive: true, preserveTimestamps: true });
     const machine = riskLifecycle('accepted'), actor = createActor(machine).start();
     const events = ['ACCEPT', move];
-    const dir = join(h.root, 'systems/control');
-    const target = () => h.observe().systems.find(s => s.id === 'control')!.cells.find(c => c.property === 'N1' && c.scenario === 'executor-offline')!;
+    const dir = join(h.root, 'compositions/control');
+    const target = () => h.observe().compositions.find(s => s.id === 'control')!.cells.find(c => c.property === 'N1' && c.scenario === 'executor-offline')!;
     const shipped = target();
     assert.deepEqual({ mark: shipped.mark, accepted: Boolean(shipped.accepted) }, riskExpectation(actor.getSnapshot().value), 'Harbor ships the violation accepted');
     h.remember();
@@ -257,7 +257,7 @@ test('XState risk paths on a copy of Harbor use real CLI decisions: an accepted 
       if (event === 'ACCEPT') {
         const shown = target();
         const line = h.run(['decide', 'control', 'risk', 'N1', 'executor-offline', '--', words]).trim();
-        const hash = parseSystemProse(readFileSync(join(dir, 'prose.md'), 'utf8')).byId.N1.hash;
+        const hash = parseCompositionProse(readFileSync(join(dir, 'prose.md'), 'utf8')).byId.N1.hash;
         assert.match(line, new RegExp(`^\\S+ risk N1@${hash} executor-offline ${shown.trial} "${words}" [0-9a-f]{8}$`), 'the decision names the trial whose violation the owner was shown');
       } else if (event === 'EDIT') {
         const path = join(dir, 'prose.md');
@@ -282,11 +282,11 @@ test('XState risk paths on a copy of Harbor use real CLI decisions: an accepted 
   }
 });
 
-test('XState fresh violation/accept/rerun/reach/edit/refresh path executes real bounded TLC trials', { skip: process.env.TLA_TOOLS ? false : 'TLA_TOOLS is not set: the live bounded system lifecycle requires TLC; chart/recovery and Harbor risk paths run without it' }, t => {
-  const h = harness(t, true), component = join(h.root, 'components/budget'), dir = join(h.root, 'systems/limit');
-  h.run(['setup']); h.run(['decide', 'budget', 'begin', 'charted']); writeFileSync(join(component, 'prose.md'), budget);
-  h.run(['decide', 'limit', 'begin', 'system']);
-  writeFileSync(join(dir, 'composition.md'), '# Composition\n```yaml\nmembers:\n  - component: budget\nwiring: []\nclosure: []\nscenarios: [all-honest]\n```\n');
+test('XState fresh violation/accept/rerun/reach/edit/refresh path executes real bounded TLC trials', { skip: process.env.TLA_TOOLS ? false : 'TLA_TOOLS is not set: the live bounded composition lifecycle requires TLC; chart/recovery and Harbor risk paths run without it' }, t => {
+  const h = harness(t, true), part = join(h.root, 'parts/budget'), dir = join(h.root, 'compositions/limit');
+  h.run(['setup']); h.run(['decide', 'budget', 'begin', 'charted']); writeFileSync(join(part, 'prose.md'), budget);
+  h.run(['decide', 'limit', 'begin', 'composition']);
+  writeFileSync(join(dir, 'wiring.md'), '# Wiring\n```yaml\nmembers:\n  - part: budget\nwiring: []\nclosure: []\nscenarios: [all-honest]\n```\n');
   writeFileSync(join(dir, 'prose.md'), '# Limit\nConcern: limit\n\n## Always\n[A1] Always, {budget.paid = 0}. Scenarios: all-honest.\n');
   const machine = riskLifecycle('pending'), actor = createActor(machine).start();
   // Through every risk event: a rerun that gives the same answer keeps the acceptance; a rerun at
@@ -318,14 +318,14 @@ test('XState fresh violation/accept/rerun/reach/edit/refresh path executes real 
       writeFileSync(path, readFileSync(path, 'utf8').replace('budget.paid = 0', 'budget.paid <= 1'));
     } else if (event === 'SHIFT') {
       // The member under the cell changes and the property's words do not: the budget starts with less balance.
-      const path = join(component, 'prose.md');
+      const path = join(part, 'prose.md');
       writeFileSync(path, readFileSync(path, 'utf8').replace('a count from 0 to 3, starting at 3', 'a count from 0 to 3, starting at 2'));
     }
     h.remember(published);
     for (const read of ['READ', 'RENDER']) {
       actor.send({ type: read });
       if (read === 'RENDER') h.run(['render', '--brief']);
-      const cell = h.observe().systems.find(s => s.id === 'limit')!.cells[0];
+      const cell = h.observe().compositions.find(s => s.id === 'limit')!.cells[0];
       assert.deepEqual({ mark: cell.mark, accepted: Boolean(cell.accepted) }, riskExpectation(actor.getSnapshot().value), events.slice(0, step + 1).join(' → '));
       if (event === 'REFRESH' || event === 'REACH') assert.ok(cell.acceptanceLapsed && cell.acceptanceLapsed.length, `the earlier acceptance names what moved: ${events.slice(0, step + 1).join(' → ')}`);
       assert.notEqual(cell.mark, 'proved'); h.remember();

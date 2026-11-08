@@ -1,4 +1,4 @@
-// The mark of every component passage, taking the first rule that applies.
+// The mark of every part passage, taking the first rule that applies.
 import { movedUnder } from './lapse.ts';
 import type { Ir } from '../prose/ir.ts';
 import type { OwnerState } from '../dossiers/decisions.ts';

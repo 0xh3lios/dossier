@@ -28,7 +28,7 @@ function put(dir: string, file: string, text: string): void {
 function bundle(t: TestContext): { dir: string; receipt: Receipt } {
   const dir = temporary(t);
   put(dir, 'call.md', 'kind: blunder\nexecutes:\n  - model/blunders/rogue.als\nreach: scope 2\nblunder: remove the authority restriction\nexpect:\n  A1: counterexample\nbecause: |\n  An unauthorized actor can send.\n');
-  put(dir, 'result.json', JSON.stringify({ id, dossier: 'components/gate', kind: 'blunder', checker: 'alloy', at, result: 'as-called', outcomes: { A1: 'counterexample' }, executed: {}, inputIdentity: { strategy: 'private-copy', files: {}, shared: [], limitation: 'A synthetic bundle reads no input.' } }) + '\n');
+  put(dir, 'result.json', JSON.stringify({ id, dossier: 'parts/gate', kind: 'blunder', checker: 'alloy', at, result: 'as-called', outcomes: { A1: 'counterexample' }, executed: {}, inputIdentity: { strategy: 'private-copy', files: {}, shared: [], limitation: 'A synthetic bundle reads no input.' } }) + '\n');
   put(dir, 'blunder.diff', '- fact Authorized\n+ // authority omitted\n');
   put(dir, 'alloy/instances/witness.xml', '<instance><atom label="Other$0"/></instance>\n');
   const output = placeOutput(dir, 'A1 has a counterexample within scope 2.\n');

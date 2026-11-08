@@ -21,4 +21,4 @@ The budget pays fixed lots from inventory. It holds capacity, a count from 0 to 
 [W1] Walk Exhaust: from Live, pay, pay, pay refused; ends Live with capacity 0, balance 1, paid 2.
 
 ## Words only
-[T1] This component states no eventual promise.
+[T1] This part states no eventual promise.

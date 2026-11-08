@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "evidence": {
+    "chart-64fcc7": "39442f627921280853adab149840c9015d1e096fb3a83ab4e0d5a38f4fd95fef",
+    "tlc-A1-N1-59ce72": "f3284299cc120ba215eeef620c7486b5060f3fbf47af456eb2ec8c3608eed076",
+    "tlc-O1-2be705": "06f8b1fd4fd37842d15bb0c791b7bae5273fa53ac64a15abe2268712747eb5c8",
+    "tlc-W2-c29421": "4a3891f0f62b74f11111f1cd5206fa5feba167a68cfeb35002d3d1114b1f0e4a",
+    "tlc-W1-37d5b8": "fe2badef6a1f8bbf9a5d842993958ea702c034aefe5d32fcf091fc246b238b12",
+    "apalache-A1-78bb75": "c43b998bb4022ff91404db738f5605087640a1d44387f4fe26448caa05606c48",
+    "blunder-A1-48f8c0": "9697e77ad967527b62ef013bbaf624ab8ebd6cdd4ddb2af2a57d179f3461fbd8",
+    "blunder-N1-0df476": "a3e75b6127f66a8028f7e5c6c7c86d8be9cd56723478ec50b8ea7a2ed36bc3ed",
+    "blunder-O1-06ff15": "93e2a0a66b14cd154465b93bfca1983f426679c28df4c30f8f999be2f36dd709"
+  },
+  "decisionHead": {
+    "algorithm": "sha256-prefix",
+    "bytes": 273,
+    "digest": "5a716e32b16a473eb3b03091672463172065a2741e77d638ad0d46b202a31fa6"
+  }
+}

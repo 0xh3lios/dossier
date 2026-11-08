@@ -17,7 +17,7 @@ A procedure is written in the same sentences as a contract, and the same checks 
 
 Splitting the surroundings this way puts each assumption with the one source that can break it. A counterexample then names the actor behind the bad state, whether it acted or failed to, and a fix has to address that actor. A longer delay guards against a malicious key, and a second keeper against an outage. Had the counterexample blamed the environment as a whole, nobody would know what to change.
 
-The checkers try every order in which the actors, the components and the chain can move, within the bounds, including orders no test was written for. A failure can come from how the parts behave together while each does what it was written to do, so a property of the whole is checked against all of them at once.
+The checkers try every order in which the actors, the parts and the chain can move, within the bounds, including orders no test was written for. A failure can come from how the parts behave together while each does what it was written to do, so a property of the whole is checked against all of them at once.
 
 The world around the code changes more often than the code. A signer is replaced, a parameter is voted through, a record is corrected. Each change lapses exactly the results that rested on it, and the agent reruns those.
 

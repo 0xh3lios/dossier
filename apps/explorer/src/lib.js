@@ -4,12 +4,12 @@ import { createContext, useContext, useEffect, useState } from 'react';
 export const api = {
   root: '/api/root',
   addresses: '/api/addresses',
-  component: id => `/api/component/${id}`,
-  run: id => `/api/component/${id}/run`,
-  explain: (id, at) => `/api/component/${id}/explain?at=${at}`,
-  trace: (id, entry) => `/api/component/${id}/trace/${entry}`,
-  system: id => `/api/system/${id}`,
-  systemTrace: (id, property, scenario) => `/api/system/${id}/trace/${property}/${scenario}`,
+  part: id => `/api/part/${id}`,
+  run: id => `/api/part/${id}/run`,
+  explain: (id, at) => `/api/part/${id}/explain?at=${at}`,
+  trace: (id, entry) => `/api/part/${id}/trace/${entry}`,
+  composition: id => `/api/composition/${id}`,
+  compositionTrace: (id, property, scenario) => `/api/composition/${id}/trace/${property}/${scenario}`,
 };
 
 const cache = new Map();
@@ -42,14 +42,14 @@ export function parseHash(hash = location.hash) {
   const [path, query = ''] = h.split('?');
   const parts = path.split('/').filter(Boolean);
   const params = Object.fromEntries(new URLSearchParams(query));
-  if (parts[0] === 'c' && parts[1]) return { view: 'component', id: parts[1], params };
-  if (parts[0] === 's' && parts[1]) return { view: 'system', id: parts[1], params };
+  if (parts[0] === 'part' && parts[1]) return { view: 'part', id: parts[1], params };
+  if (parts[0] === 'composition' && parts[1]) return { view: 'composition', id: parts[1], params };
   return { view: 'board', id: null, params };
 }
 export function hrefFor(route) {
   // Colons stay readable in addresses: play=walk:W1:2, cell=A1:all-honest.
   const q = Object.entries(route.params || {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v).replace(/%3A/gi, ':')}`).join('&');
-  const base = route.view === 'component' ? `#/c/${route.id}` : route.view === 'system' ? `#/s/${route.id}` : '#/';
+  const base = route.view === 'part' ? `#/part/${route.id}` : route.view === 'composition' ? `#/composition/${route.id}` : '#/';
   return q ? `${base}?${q}` : base;
 }
 export function useRoute() {
@@ -98,7 +98,7 @@ const FAMILY = {
 export const ICON = { good: '✓', warning: '○', serious: '△', critical: '✕', neutral: '·' };
 export const familyOf = word => FAMILY[word] || 'neutral';
 export const KIND = { S: 'State', E: 'Event', M: 'Move', R: 'Refusal', A: 'Always', O: 'Once', N: 'Within', G: 'Given', W: 'Walk', X: 'Seam', K: 'Guarantee', T: 'Words only' };
-export const PASSES = ['Fix', 'Write', 'Draw', 'Encode', 'Compose', 'System', 'Refresh', 'Review', 'Report'];
+export const PASSES = ['Fix', 'Write', 'Draw', 'Encode', 'Compose', 'Try', 'Refresh', 'Review', 'Report'];
 // A mark that leaves something open: one of the warning, serious or critical families. The one
 // definition the prose list's filter uses.
 export const isOpenMark = mark => ['warning', 'serious', 'critical'].includes(familyOf(mark));
@@ -141,3 +141,8 @@ export const marksByDossier = dossiers => Object.fromEntries((dossiers || []).ma
 const seenKey = root => `dossier-explorer:seen:${root}`;
 export function loadSeen(root) { try { return JSON.parse(localStorage.getItem(seenKey(root)) || 'null'); } catch { return null; } }
 export function saveSeen(root, marks) { try { localStorage.setItem(seenKey(root), JSON.stringify(marks)); } catch { /* storage may be unavailable */ } }
+
+// A dossier's title, when it says more than its id does: `Timelock` adds nothing to `timelock`,
+// nor `AllocatorRounding` to `dss-allocator-rounding`, while `Two-key exit budget` does.
+const squash = s => String(s).replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+export const titleBeyondId = (title, id) => (title && !squash(id).includes(squash(title)) ? title : null);

@@ -11,7 +11,7 @@ import type { Call } from './calls.ts';
 import type { Cfg, TlaDefinition, TlaModule } from '../models/tla.ts';
 import type { Als, AlsCommand, AlsParagraph } from '../models/alloy.ts';
 import type { Ir } from '../prose/ir.ts';
-import type { ComponentProse, SystemProse } from '../prose/prose.ts';
+import type { PartProse, CompositionProse } from '../prose/prose.ts';
 import type { Scenario } from '../dossiers/actors.ts';
 import type { ExternalRunner } from '../dossiers/root.ts';
 
@@ -42,10 +42,10 @@ export interface PlanInput {
   dossierDir: string;
   kind: string;
   ir?: Ir | null;
-  systemProse?: SystemProse | ComponentProse | null;
+  compositionProse?: CompositionProse | PartProse | null;
   scenarios?: Scenario[] | null;
   externals?: Record<string, ExternalRunner>;
-  // For a system: the generated module, as the call names it (model/generated/<Concern>.tla), and the cells the composition claims.
+  // For a composition: the generated module, as the call names it (model/generated/<Concern>.tla), and the cells the wiring claims.
   module?: string | null;
   cells?: { property: string; scenario: string }[] | null;
 }
@@ -76,49 +76,49 @@ export function outside(dossierDir: string, rel: string, key = 'executes'): stri
   return null;
 }
 
-export function planTrial({ call, dossierDir, kind, ir, systemProse, scenarios, externals = {}, module = null, cells = null }: PlanInput): { plan: Plan; problems: string[] } {
+export function planTrial({ call, dossierDir, kind, ir, compositionProse, scenarios, externals = {}, module = null, cells = null }: PlanInput): { plan: Plan; problems: string[] } {
   const problems: string[] = [];
   const plan: Plan = { checker: null, enabled: [] };
   // Nothing is read until every path the call names is inside the dossier.
   const escapes = [...call.executes.map(rel => outside(dossierDir, rel)), ...(call.base ? [outside(dossierDir, call.base, 'base')] : [])].filter((x): x is string => Boolean(x));
   if (escapes.length) return { plan, problems: escapes };
   const tlaFiles = call.executes.filter(x => x.endsWith('.tla')), cfgFiles = call.executes.filter(x => x.endsWith('.cfg')), alsFiles = call.executes.filter(x => x.endsWith('.als')), jsonFiles = call.executes.filter(x => x.endsWith('.json'));
-  const isSystem = kind === 'system';
-  const modelHome = isSystem ? 'model/generated/' : 'model/';
-  const system = isSystem ? systemProse as SystemProse | null | undefined : null;
+  const isComposition = kind === 'composition';
+  const modelHome = isComposition ? 'model/generated/' : 'model/';
+  const composition = isComposition ? compositionProse as CompositionProse | null | undefined : null;
   // A walk runs under the scenario it names, all-honest when it names none; its configuration is written for that one.
-  const walk = call.walk && system ? (system.walks || []).find(w => w.id === call.walk) : undefined;
+  const walk = call.walk && composition ? (composition.walks || []).find(w => w.id === call.walk) : undefined;
   const walkScenario = walk ? walk.scenario || 'all-honest' : call.scenario;
 
-  const knownProperty = Boolean(call.property && system && system.properties.some(p => p.id === call.property));
+  const knownProperty = Boolean(call.property && composition && composition.properties.some(p => p.id === call.property));
   const knownScenario = Boolean(call.scenario && scenarios && scenarios.some(s => s.id === call.scenario));
-  // A system cell, as opposed to a witness or a blunder: the property and the scenario both read.
-  const cell = isSystem && knownProperty && knownScenario && call.kind !== 'blunder';
+  // A composition cell, as opposed to a witness or a blunder: the property and the scenario both read.
+  const cell = isComposition && knownProperty && knownScenario && call.kind !== 'blunder';
 
-  // A system trial names its cell, property: and scenario:, or a tlc trial its witness, walk: and scenario:.
+  // A composition trial names its cell, property: and scenario:, or a tlc trial its witness, walk: and scenario:.
   if (call.property || call.scenario || call.walk) {
-    if (!isSystem) {
-      if (call.property || call.scenario) problems.push('property: and scenario: belong to a system trial');
-      if (call.walk) problems.push('walk: belongs to a system trial');
+    if (!isComposition) {
+      if (call.property || call.scenario) problems.push('property: and scenario: belong to a composition trial');
+      if (call.walk) problems.push('walk: belongs to a composition trial');
     } else {
-      if (call.property && !knownProperty) problems.push(`property ${call.property} is not a passage of this system`);
-      if (call.walk && !walk) problems.push(`walk ${call.walk} is not a walk of this system`);
+      if (call.property && !knownProperty) problems.push(`property ${call.property} is not a passage of this composition`);
+      if (call.walk && !walk) problems.push(`walk ${call.walk} is not a walk of this composition`);
       else if (walk && call.scenario && walkScenario !== call.scenario) problems.push(`walk ${call.walk} runs under ${walkScenario}, not ${call.scenario}`);
       if (!knownScenario) problems.push(`scenario ${call.scenario} is not declared in actors/scenarios.md`);
-      if (call.walk && call.kind === 'blunder') problems.push('a system blunder names the property it must catch under property:, not a walk');
-      else if (call.walk && call.kind !== 'tlc') problems.push('a system witness is a tlc trial');
+      if (call.walk && call.kind === 'blunder') problems.push('a composition blunder names the property it must catch under property:, not a walk');
+      else if (call.walk && call.kind !== 'tlc') problems.push('a composition witness is a tlc trial');
       // A configuration for a scenario the property no longer claims is not a cell.
-      if (cell && cells && !cells.some(c => c.property === call.property && c.scenario === call.scenario)) problems.push(`${call.property} × ${call.scenario} is not a cell of this system: ${call.property} does not claim ${call.scenario}`);
+      if (cell && cells && !cells.some(c => c.property === call.property && c.scenario === call.scenario)) problems.push(`${call.property} × ${call.scenario} is not a cell of this composition: ${call.property} does not claim ${call.scenario}`);
     }
-  } else if (isSystem && call.kind === 'tlc') problems.push('a system trial names its cell, property: and scenario:, or its witness, walk: and scenario:');
-  else if (isSystem && ['apalache', 'blunder'].includes(call.kind!)) problems.push('a system trial names its cell: property: and scenario:');
-  // A system cell or witness runs the module the composer wrote, never a copy beside it.
-  const runsGenerated = isSystem && (call.kind === 'tlc' || call.kind === 'apalache');
-  const generatedProblem = (tla: string) => (runsGenerated && (module ? tla !== module : !tla.startsWith('model/generated/')) ? [`a system trial executes the generated module${module ? `, ${module}` : ' under model/generated/'}`] : []);
+  } else if (isComposition && call.kind === 'tlc') problems.push('a composition trial names its cell, property: and scenario:, or its witness, walk: and scenario:');
+  else if (isComposition && ['apalache', 'blunder'].includes(call.kind!)) problems.push('a composition trial names its cell: property: and scenario:');
+  // A composition cell or witness runs the module the composer wrote, never a copy beside it.
+  const runsGenerated = isComposition && (call.kind === 'tlc' || call.kind === 'apalache');
+  const generatedProblem = (tla: string) => (runsGenerated && (module ? tla !== module : !tla.startsWith('model/generated/')) ? [`a composition trial executes the generated module${module ? `, ${module}` : ' under model/generated/'}`] : []);
 
   if (call.kind === 'chart' || (call.kind === 'blunder' && jsonFiles.length)) {
     plan.checker = 'chart';
-    if (isSystem) problems.push('a chart trial belongs to a component');
+    if (isComposition) problems.push('a chart trial belongs to a part');
     if (call.kind === 'chart' && !call.executes.includes('prose.md')) problems.push('a chart trial executes prose.md');
     if (call.kind === 'blunder') {
       if (jsonFiles.length !== 1 || !jsonFiles[0].startsWith('chart/blunders/')) problems.push('a chart blunder executes exactly one machine under chart/blunders/');
@@ -162,7 +162,7 @@ export function planTrial({ call, dossierDir, kind, ir, systemProse, scenarios, 
     // The values a witness's trace compares are variables of the module, never a name that would read as empty.
     const undeclared = call.traceData.filter(v => !plan.tlaParsed!.variables.includes(v));
     if (undeclared.length) problems.push(`trace-data names ${undeclared.join(', ')}, which ${tlaFiles[0]} does not declare as ${undeclared.length === 1 ? 'a variable' : 'variables'}`);
-    if (isSystem && plan.witness && call.expect[plan.witness] && call.expect[plan.witness].trace && !call.traceData.length) problems.push('a system witness that expects a trace names the variables of each step under trace-data:');
+    if (isComposition && plan.witness && call.expect[plan.witness] && call.expect[plan.witness].trace && !call.traceData.length) problems.push('a composition witness that expects a trace names the variables of each step under trace-data:');
     if (call.kind === 'blunder') {
       if (!tlaFiles[0].startsWith('model/blunders/')) problems.push('a blunder module lives under model/blunders/');
       if (enabled.length !== 1) problems.push('a blunder configuration enables exactly one property, the one it must catch');
@@ -171,15 +171,15 @@ export function planTrial({ call, dossierDir, kind, ir, systemProse, scenarios, 
       const base = blunderBase(call, dossierDir, modelHome, '.tla', tlaFiles[0], plan, problems);
       if (base && enabled.length === 1 && !/^NotW\d+$/.test(enabled[0]) && Object.hasOwn(plan.tlaParsed.definitions, enabled[0])) problems.push(...sameQuestion(dossierDir, tlaFiles[0], base, { property: enabled[0], cfg: { ...configuration(dossierDir, cfgFiles[0]), home: modelHome } }));
     } else if (tlaFiles[0].startsWith('model/blunders/')) problems.push('only a blunder trial executes a module under model/blunders/');
-    // A system witness runs the walk's own configuration, which the composer writes under the walk's scenario;
+    // A composition witness runs the walk's own configuration, which the composer writes under the walk's scenario;
     // a cell runs its own, <Property>_<scenario>.cfg, and no other scenario's.
-    const witnessCfg = isSystem && call.kind === 'tlc' && call.walk && walkScenario ? `model/generated/${call.walk}_${ident(walkScenario)}.cfg` : null;
+    const witnessCfg = isComposition && call.kind === 'tlc' && call.walk && walkScenario ? `model/generated/${call.walk}_${ident(walkScenario)}.cfg` : null;
     const cellCfg = cell && call.kind === 'tlc' ? `model/generated/${call.property}_${ident(call.scenario!)}.cfg` : null;
-    if (witnessCfg && cfgFiles[0] !== witnessCfg) problems.push(`a system witness executes ${witnessCfg}`);
+    if (witnessCfg && cfgFiles[0] !== witnessCfg) problems.push(`a composition witness executes ${witnessCfg}`);
     else if (cellCfg && cfgFiles[0] !== cellCfg) problems.push(`the cell ${call.property} × ${call.scenario} executes ${cellCfg}`);
-    else if (isSystem && call.kind === 'tlc' && !cfgFiles[0].startsWith('model/generated/')) problems.push('a system TLC trial executes a configuration under model/generated/');
-    if (isSystem && call.property && !enabled.some(n => propertyId(n) === call.property)) problems.push(`the configuration does not enable ${call.property}`);
-    if (isSystem && call.kind === 'tlc' && call.walk && !enabled.includes(`Not${call.walk}`)) problems.push(`the configuration does not enable Not${call.walk}`);
+    else if (isComposition && call.kind === 'tlc' && !cfgFiles[0].startsWith('model/generated/')) problems.push('a composition TLC trial executes a configuration under model/generated/');
+    if (isComposition && call.property && !enabled.some(n => propertyId(n) === call.property)) problems.push(`the configuration does not enable ${call.property}`);
+    if (isComposition && call.kind === 'tlc' && call.walk && !enabled.includes(`Not${call.walk}`)) problems.push(`the configuration does not enable Not${call.walk}`);
     return { plan, problems };
   }
 
@@ -189,8 +189,8 @@ export function planTrial({ call, dossierDir, kind, ir, systemProse, scenarios, 
     if (!existsSync(plan.tla)) { problems.push(`${tlaFiles[0]} does not exist`); return { plan, problems }; }
     plan.tlaParsed = parseTla(readFileSync(plan.tla, 'utf8'));
     problems.push(...generatedProblem(tlaFiles[0]));
-    // A system's scenario reaches Apalache through cinit: alone; a configuration's constants could say otherwise.
-    if (isSystem && cfgFiles.length) problems.push('a system Apalache trial executes its module alone: the scenario comes from cinit:');
+    // A composition's scenario reaches Apalache through cinit: alone; a configuration's constants could say otherwise.
+    if (isComposition && cfgFiles.length) problems.push('a composition Apalache trial executes its module alone: the scenario comes from cinit:');
     const names = Object.keys(call.expect);
     const inv = call.inv || (names.length === 1 ? names[0] : null);
     if (!inv) problems.push('an Apalache call names its invariant under inv: or as the single expect line');
@@ -203,7 +203,7 @@ export function planTrial({ call, dossierDir, kind, ir, systemProse, scenarios, 
     if (call.cinit && !plan.tlaParsed.definitions[call.cinit]) problems.push(`${tlaFiles[0]} does not define ${call.cinit}`);
     for (const [n, o] of Object.entries(call.expect)) if (!['holds', 'violated'].includes(o.expect)) problems.push(`${n}: an Apalache call expects holds or violated, not "${o.expect}"`);
     plan.inv = inv; plan.mode = call.mode; plan.length = call.length; plan.init = call.init; plan.cinit = call.cinit; plan.enabled = inv ? [inv] : [];
-    if (isSystem && call.property && inv && propertyId(inv) !== call.property) problems.push(`${inv} is not the cell's property ${call.property}`);
+    if (isComposition && call.property && inv && propertyId(inv) !== call.property) problems.push(`${inv} is not the cell's property ${call.property}`);
     if (call.kind === 'blunder') {
       if (!tlaFiles[0].startsWith('model/blunders/')) problems.push('a blunder module lives under model/blunders/');
       if (inv && call.expect[inv] && call.expect[inv].expect !== 'violated') problems.push(`a blunder expects ${inv} violated`);
@@ -214,9 +214,9 @@ export function planTrial({ call, dossierDir, kind, ir, systemProse, scenarios, 
       if (base && inv && !/^NotW\d+$/.test(inv) && Object.hasOwn(plan.tlaParsed.definitions, inv)) problems.push(...sameQuestion(dossierDir, tlaFiles[0], base, { property: inv, start, cinit: call.cinit && Object.hasOwn(plan.tlaParsed.definitions, call.cinit) ? call.cinit : null, configured }));
     } else if (tlaFiles[0].startsWith('model/blunders/')) problems.push('only a blunder trial executes a module under model/blunders/');
     // The scenario's constants are ConstInit_<scenario>, exactly: another scenario's would run another cell.
-    if (isSystem && knownScenario) {
+    if (isComposition && knownScenario) {
       const cinit = constInitOf(call.scenario!);
-      if (!call.cinit) problems.push(`a system Apalache trial names cinit: ${cinit}, the constants of scenario ${call.scenario}`);
+      if (!call.cinit) problems.push(`a composition Apalache trial names cinit: ${cinit}, the constants of scenario ${call.scenario}`);
       else if (call.cinit !== cinit) problems.push(`cinit ${call.cinit} does not match scenario ${call.scenario}: name ${cinit}`);
     }
     return { plan, problems };

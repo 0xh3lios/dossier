@@ -125,7 +125,7 @@ test('apalache.run: the check argv, the module directory as cwd, the configured 
   // a bounded check from Init: no --init, no --next, no --config; length 0 is a real bound
   const base = apalache.run({ tla: join(model, 'Smoke.tla'), inv: 'Inv', length: 0, trialDir, env });
   assert.deepEqual(base.argv, [launcher, 'check', '--inv=Inv', '--length=0', '--no-deadlock', `--out-dir=${outDir}`, 'Smoke.tla']);
-  // a system cell's cfg lives under model/cfgs/, named from the module directory
+  // a composition cell's cfg lives under model/cfgs/, named from the module directory
   const cell = apalache.run({ tla: join(model, 'Smoke.tla'), cfg: join(model, 'cfgs', 'A1_all-honest.cfg'), inv: 'A1', length: 3, trialDir, env });
   assert.deepEqual(cell.argv!.slice(2), ['--inv=A1', '--length=3', '--config=cfgs/A1_all-honest.cfg', '--no-deadlock', `--out-dir=${outDir}`, 'Smoke.tla']);
   // without JAVA the launcher is run as found, with the caller's PATH

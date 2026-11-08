@@ -1,0 +1,223 @@
+{
+  "schema": 1,
+  "dossier": "parts/oracle",
+  "question": {
+    "kind": "blunder",
+    "checker": "tlc",
+    "executes": [
+      "model/blunders/idlelanes.tla",
+      "model/blunders/idlelanes_N1.cfg"
+    ],
+    "expects": [
+      "N1"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: blunder\nblunder: the chain ticks while a post is due\nexecutes:\n  - model/blunders/idlelanes.tla\n  - model/blunders/idlelanes_N1.cfg\nreach: stale up to 3\nexpect:\n  N1: violated\nbecause: |\n  With the wrong in place the property fails on a short path; the property is not hollow.\n",
+    "reach": "stale up to 3",
+    "expect": {
+      "N1": {
+        "expect": "violated"
+      }
+    },
+    "because": "With the wrong in place the property fails on a short path; the property is not hollow."
+  },
+  "answer": {
+    "enabled": [
+      "N1"
+    ],
+    "outcomes": {
+      "N1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "N1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "price": "2",
+          "state": "\"Fresh\"",
+          "w2_at": "0",
+          "w1_at": "0",
+          "last": "2",
+          "n1_ticks": "0",
+          "stale": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "M1_Tick",
+        "values": {
+          "price": "2",
+          "state": "\"Stale\"",
+          "w2_at": "1",
+          "w1_at": "1",
+          "last": "2",
+          "n1_ticks": "1",
+          "stale": "1"
+        }
+      },
+      {
+        "index": 3,
+        "action": "M2_Tick",
+        "values": {
+          "price": "2",
+          "state": "\"Stale\"",
+          "w2_at": "0",
+          "w1_at": "0",
+          "last": "2",
+          "n1_ticks": "2",
+          "stale": "2"
+        }
+      }
+    ],
+    "states": {
+      "generated": 3,
+      "distinct": 3,
+      "queued": 0,
+      "depth": 3
+    },
+    "actions": {
+      "M1_Tick": {
+        "move": "M1",
+        "event": "tick",
+        "targets": [
+          "Stale"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 2
+      },
+      "M2_Tick": {
+        "move": "M2",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 1,
+        "generated": 2
+      },
+      "M3_Tick": {
+        "move": "M3",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 0,
+        "generated": 0
+      },
+      "M4_PostA": {
+        "move": "M4",
+        "event": "post-a",
+        "targets": [
+          "Fresh"
+        ],
+        "stays": false,
+        "distinct": 0,
+        "generated": 0
+      },
+      "M5_PostB": {
+        "move": "M5",
+        "event": "post-b",
+        "targets": [
+          "Fresh"
+        ],
+        "stays": false,
+        "distinct": 0,
+        "generated": 0
+      }
+    },
+    "init": {
+      "accepted": 2,
+      "generated": 2
+    },
+    "partial": [],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "N1": "a4ae7304"
+    },
+    "reach": {
+      "text": "stale up to 3",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "5cbde622",
+        "S2": "e39575ad",
+        "E1": "5961722a",
+        "E2": "c3af7dd7",
+        "E3": "1098b779",
+        "M1": "b7b4049c",
+        "M2": "8cffb858",
+        "M3": "c96205f9",
+        "M4": "3db4ddee",
+        "M5": "11ceae28",
+        "R1": "78889aa1",
+        "A1": "ec31db11",
+        "A2": "ef269f93",
+        "N1": "90e0de0a",
+        "G1": "c51dd0f1",
+        "G2": "9e2b7e6a",
+        "G3": "daa3b18d",
+        "G4": "582ce021",
+        "W1": "e17bda2b",
+        "W2": "a766854d",
+        "K1": "6cce6743",
+        "T1": "15d27da3"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "54717f13065bd868",
+          "path": "modules/oracle/behavior/invariants.md"
+        }
+      },
+      "ir": "3d3203cd035d3b6f"
+    },
+    "executed": {
+      "model/blunders/idlelanes.tla": "ccfd56aaacc345401108b98ca8382a3b5ad8702caf41c9103d74b469e9b9f192",
+      "model/blunders/idlelanes_N1.cfg": "6c89ecffad8c2715c5fe249136f6a25d166d3dd75a38f005c5dea19fd1491631"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/blunders/idlelanes.tla": "ccfd56aaacc345401108b98ca8382a3b5ad8702caf41c9103d74b469e9b9f192",
+        "model/blunders/idlelanes_N1.cfg": "6c89ecffad8c2715c5fe249136f6a25d166d3dd75a38f005c5dea19fd1491631"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2337-blunder-abc576",
+    "at": "2026-11-08T23:37:53.500Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "5d5b181c4e7f7e3a016011f678abe61f27de3663917b9b98e0f4c5ed75c211fb"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

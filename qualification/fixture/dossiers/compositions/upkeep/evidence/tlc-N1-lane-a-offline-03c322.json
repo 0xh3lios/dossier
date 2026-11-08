@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "dossier": "compositions/upkeep",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/generated/N1_lane_a_offline.cfg",
+      "model/generated/Upkeep.tla"
+    ],
+    "expects": [
+      "N1",
+      "TypeOK"
+    ],
+    "property": "N1",
+    "scenario": "lane-a-offline",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nproperty: N1\nscenario: lane-a-offline\nexecutes:\n  - model/generated/Upkeep.tla\n  - model/generated/N1_lane_a_offline.cfg\nreach: stale up to 3; price and last up to 4; clock up to 2; effects up to 4\nexpect:\n  TypeOK: holds\n  N1: holds\nbecause: |\n  Lane B alone is prompt enough.\n",
+    "reach": "stale up to 3; price and last up to 4; clock up to 2; effects up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "N1": {
+        "expect": "holds"
+      }
+    },
+    "because": "Lane B alone is prompt enough."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "N1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "N1": "holds"
+    },
+    "violation": null,
+    "trace": [],
+    "states": {
+      "generated": 56,
+      "distinct": 31,
+      "queued": 0,
+      "depth": 8
+    },
+    "actions": {
+      "Lane_a": {
+        "distinct": 0,
+        "generated": 0
+      },
+      "Lane_b": {
+        "distinct": 16,
+        "generated": 38
+      },
+      "TickStep": {
+        "distinct": 14,
+        "generated": 17
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "88ed033d",
+      "N1": "a4ae7304"
+    },
+    "reach": {
+      "text": "stale up to 3; price and last up to 4; clock up to 2; effects up to 4",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_chain": "\"honest\"",
+        "Mode_lane_a": "\"offline\"",
+        "Mode_lane_b": "\"honest\"",
+        "From_lane_a": "0",
+        "Until_lane_a": "0",
+        "From_lane_b": "0",
+        "Until_lane_b": "0",
+        "Start_oracle_state": "\"Fresh\"",
+        "Start_oracle_stale": "0"
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_chain": "honest",
+        "Mode_lane_a": "offline",
+        "Mode_lane_b": "honest",
+        "From_lane_a": 0,
+        "Until_lane_a": 0,
+        "From_lane_b": 0,
+        "Until_lane_b": 0,
+        "Start_oracle_state": "Fresh",
+        "Start_oracle_stale": 0
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "266374aa",
+        "N1": "649b2ec4",
+        "G1": "155c7d2b",
+        "G2": "e0813f7f",
+        "G3": "9367edd6",
+        "G4": "416bbd6d",
+        "T1": "a25aba5c"
+      },
+      "records": {},
+      "backing": {},
+      "wiring": "bae35b592cdbc44f",
+      "module": "11df5abc4be92d4b",
+      "members": {
+        "oracle": {
+          "prose": "b7da5a952322a306",
+          "backing": {
+            "K1": "54717f13065bd868"
+          }
+        }
+      },
+      "scenario": "32424822f0f28b4e",
+      "actors": "064e352e3b207b1e",
+      "extras": null
+    },
+    "executed": {
+      "model/generated/Upkeep.tla": "fb86a84fdfea62cc5a770e44ea39b87d3804c739ff2a9fd11dc3a1cf675a35bb",
+      "model/generated/N1_lane_a_offline.cfg": "5e2d691e51c30aa5157afcbfeff059b762a5decab8f64f2df142a3da23130ea6"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/generated/N1_lane_a_offline.cfg": "5e2d691e51c30aa5157afcbfeff059b762a5decab8f64f2df142a3da23130ea6",
+        "model/generated/Upkeep.tla": "fb86a84fdfea62cc5a770e44ea39b87d3804c739ff2a9fd11dc3a1cf675a35bb"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2340-tlc-79faf2",
+    "at": "2026-11-08T23:40:13.788Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "adb39d10531599a39254b9ff53cfc3b82b90433875bbe697344b9901e6432676"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

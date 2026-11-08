@@ -1,7 +1,7 @@
 // The board: every dossier, grouped by the next step verify routes it to.
 import { useMemo, useState } from 'react';
 import { Cell, Column, Input, Link, Row, SearchField, Switch, Table, TableBody, TableHeader, ToggleButton, ToggleButtonGroup } from 'react-aria-components';
-import { PASSES, useApp } from './lib.js';
+import { PASSES, titleBeyondId, useApp } from './lib.js';
 import { Badge } from './bits.jsx';
 
 const ORDER = ['proved', 'checked', 'implied', 'drawn', 'pending', 'untried', 'held', 'hollow', 'lapsed', 'miscalled', 'violated', 'violated, acceptance lapsed', 'violated, accepted', 'open', 'owed', 'unresolved', 'assumed'];
@@ -28,7 +28,7 @@ export function Board() {
       <div className="toolbar">
         <SearchField className="search is-inline" aria-label="Filter dossiers" value={q} onChange={setQ}><Input placeholder="Filter" /></SearchField>
         <ToggleButtonGroup className="seg" aria-label="Kind" selectionMode="single" disallowEmptySelection selectedKeys={[kind]} onSelectionChange={k => setKind([...k][0])}>
-          <ToggleButton id="all">All</ToggleButton><ToggleButton id="component">Components</ToggleButton><ToggleButton id="system">Systems</ToggleButton>
+          <ToggleButton id="all">All</ToggleButton><ToggleButton id="part">Parts</ToggleButton><ToggleButton id="composition">Compositions</ToggleButton>
         </ToggleButtonGroup>
         <Switch className="switch" isSelected={openOnly} onChange={setOpenOnly}><span className="switch-track" aria-hidden="true" />Open items</Switch>
         <span className="top-gap" />
@@ -54,17 +54,17 @@ export function Board() {
               <TableBody items={list}>
                 {d => {
                   const counts = countMarks(d.marks);
-                  const href = d.kind === 'system' ? `#/s/${d.id}` : `#/c/${d.id}`;
+                  const href = d.kind === 'composition' ? `#/composition/${d.id}` : `#/part/${d.id}`;
                   return (
                     <Row id={href.slice(1)}>
                       <Cell>
                         {changed.has(d.id) && <span className="dot-changed" title="changed"><span className="sr-only">changed</span></span>}
-                        <Link href={href} className="t-strong">{d.title}</Link> <span className="mono muted">{d.id}</span>
+                        <Link href={href} className="t-strong">{d.id}</Link>{titleBeyondId(d.title, d.id) ? <> <span className="muted">{d.title}</span></> : null}
                       </Cell>
-                      <Cell>{d.kind === 'system' ? `system · ${d.members?.length} members` : d.tier}</Cell>
+                      <Cell>{d.kind === 'composition' ? `composition · ${d.members?.length} members` : d.tier}</Cell>
                       <Cell><span className="why">{d.route?.why?.[0] || ''}</span>{d.route?.why?.length > 1 && <span className="muted"> +{d.route.why.length - 1}</span>}</Cell>
                       <Cell>
-                        {d.kind === 'component' && d.summary && <span className="muted">{d.summary.settled}/{d.summary.passages} settled </span>}
+                        {d.kind === 'part' && d.summary && <span className="muted">{d.summary.settled}/{d.summary.passages} settled </span>}
                         {ORDER.filter(m => counts[m]).map(m => <Badge key={m} word={m} label={`${counts[m]} ${m}`} small />)}
                       </Cell>
                       <Cell>

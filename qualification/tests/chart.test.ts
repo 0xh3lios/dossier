@@ -16,7 +16,7 @@ import { SENT_CAP, buildMachine, inState, leavesOf } from '../../src/chart/machi
 import { describePath, explore, pathTo, strayed } from '../../src/chart/explore.ts';
 import { runChecks } from '../../src/chart/checks.ts';
 import { gridMarkdown } from '../../src/chart/picture.ts';
-import { checkIR, compileComponent, draw, findModule, loadRuntime, summarize } from '../../src/chart/draw.ts';
+import { checkIR, compilePart, draw, findModule, loadRuntime, summarize } from '../../src/chart/draw.ts';
 import type { Ir } from '../../src/prose/ir.ts';
 import type { ChartEvent, Snapshot } from '../../src/chart/machine.ts';
 import type { ChartPath } from '../../src/chart/explore.ts';
@@ -136,8 +136,8 @@ before(async () => {
 });
 after(() => rmSync(root, { recursive: true, force: true }));
 
-const component = (id: string, text: string) => {
-  const dir = join(root, 'components', id);
+const part = (id: string, text: string) => {
+  const dir = join(root, 'parts', id);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'prose.md'), text);
   return dir;
@@ -157,55 +157,55 @@ describe('the runtime', () => {
 
 describe('draw', () => {
   it('writes the chart files, passes every check and summarizes', async () => {
-    component('timelock', TIMELOCK);
-    const r = await draw({ root, component: 'timelock' });
+    part('timelock', TIMELOCK);
+    const r = await draw({ root, part: 'timelock' });
     assert.equal(r.ok, true, r.errors && r.errors.join('; '));
     assert.equal(r.outcome, 'pass');
-    assert.deepEqual(r.files, ['components/timelock/chart/machine.json', 'components/timelock/chart/grid.md']);
+    assert.deepEqual(r.files, ['parts/timelock/chart/machine.json', 'parts/timelock/chart/grid.md']);
     assert.deepEqual(r.removed, []);
-    assert.deepEqual(readdirSync(join(root, 'components', 'timelock', 'chart')).sort(), ['grid.md', 'machine.json'], 'no Mermaid picture is written');
-    assert.deepEqual(JSON.parse(readFileSync(join(root, 'components', 'timelock', 'chart', 'machine.json'), 'utf8')), JSON.parse(JSON.stringify(irOf(TIMELOCK))));
-    assert.equal(readFileSync(join(root, 'components', 'timelock', 'chart', 'grid.md'), 'utf8'), gridMarkdown(r.ir!));
+    assert.deepEqual(readdirSync(join(root, 'parts', 'timelock', 'chart')).sort(), ['grid.md', 'machine.json'], 'no Mermaid picture is written');
+    assert.deepEqual(JSON.parse(readFileSync(join(root, 'parts', 'timelock', 'chart', 'machine.json'), 'utf8')), JSON.parse(JSON.stringify(irOf(TIMELOCK))));
+    assert.equal(readFileSync(join(root, 'parts', 'timelock', 'chart', 'grid.md'), 'utf8'), gridMarkdown(r.ir!));
     const summary = summarize(r);
     assert.match(summary, /^draw: timelock · pass · 27 of 27 checks · \d+ states explored\n/);
-    assert.match(summary, /\n  wrote components\/timelock\/chart\/machine\.json\n/);
+    assert.match(summary, /\n  wrote parts\/timelock\/chart\/machine\.json\n/);
     assert.doesNotMatch(summary, /fail /);
     assert.equal(r.versions!.xstate, rt.versions!.xstate);
   });
 
-  it('reports a component that does not exist or does not compile', async () => {
-    const missing = await draw({ root, component: 'nowhere' });
-    assert.match(missing.error!, /no prose\.md under components\/nowhere\//);
-    assert.match(summarize(missing), /^draw: .*· error · no prose\.md under components\/nowhere\//);
-    component('broken', TIMELOCK.replace('[M1] When Idle receives schedule', '[M1] When Lost receives schedule'));
-    const broken = await draw({ root, component: 'broken' });
+  it('reports a part that does not exist or does not compile', async () => {
+    const missing = await draw({ root, part: 'nowhere' });
+    assert.match(missing.error!, /no prose\.md under parts\/nowhere\//);
+    assert.match(summarize(missing), /^draw: .*· error · no prose\.md under parts\/nowhere\//);
+    part('broken', TIMELOCK.replace('[M1] When Idle receives schedule', '[M1] When Lost receives schedule'));
+    const broken = await draw({ root, part: 'broken' });
     assert.equal(broken.ok, false);
     assert.ok(broken.errors!.includes('M1 names state Lost, which no State passage declares'));
     assert.match(summarize(broken), /^draw: broken · does not compile\n  M1 names state Lost/);
-    assert.equal(existsSync(join(root, 'components', 'broken', 'chart')), false, 'nothing is written for a prose that does not compile');
+    assert.equal(existsSync(join(root, 'parts', 'broken', 'chart')), false, 'nothing is written for a prose that does not compile');
   });
 
   it('can check without writing', async () => {
-    component('quiet', TIMELOCK);
-    const r = await draw({ root, component: 'quiet', write: false });
+    part('quiet', TIMELOCK);
+    const r = await draw({ root, part: 'quiet', write: false });
     assert.equal(r.outcome, 'pass');
     assert.deepEqual(r.files, []);
-    assert.equal(existsSync(join(root, 'components', 'quiet', 'chart')), false);
-    assert.equal(compileComponent(join(root, 'components', 'quiet', 'prose.md')).ir.ok, true);
+    assert.equal(existsSync(join(root, 'parts', 'quiet', 'chart')), false);
+    assert.equal(compilePart(join(root, 'parts', 'quiet', 'prose.md')).ir.ok, true);
   });
 
   it('removes only what an earlier draw wrote under the retired names, and only when it writes', async () => {
-    const dir = component('stale', TIMELOCK), chart = join(dir, 'chart');
+    const dir = part('stale', TIMELOCK), chart = join(dir, 'chart');
     mkdirSync(chart, { recursive: true });
     writeFileSync(join(chart, 'chart.mmd'), 'stateDiagram-v2\n');
-    const quiet = await draw({ root, component: 'stale', write: false });
+    const quiet = await draw({ root, part: 'stale', write: false });
     assert.deepEqual(quiet.removed, []);
     assert.ok(existsSync(join(chart, 'chart.mmd')), 'a draw that writes nothing removes nothing');
-    assert.deepEqual((await draw({ root, component: 'stale' })).removed, ['components/stale/chart/chart.mmd']);
+    assert.deepEqual((await draw({ root, part: 'stale' })).removed, ['parts/stale/chart/chart.mmd']);
     // A folder or a link under a retired name is not a picture draw wrote: it stays, and so does the link's target.
     mkdirSync(join(chart, 'chart.mmd'));
     symlinkSync(join(dir, 'prose.md'), join(chart, 'walks.mmd'));
-    const kept = await draw({ root, component: 'stale' });
+    const kept = await draw({ root, part: 'stale' });
     assert.equal(kept.outcome, 'pass');
     assert.deepEqual(kept.removed, []);
     assert.doesNotMatch(summarize(kept), /removed/);
@@ -289,7 +289,7 @@ describe('the checks on a wrong prose', () => {
       .replace('from Waiting with remaining 1, cancel', 'from Waiting with remaining 2, cancel'));
     assert.equal(r.outcome, 'pass', failed(r).map(c => c.name).join('; '));
     assert.deepEqual(r.gaps, [{ pair: 'Waiting × cancel', message: 'nothing says what cancel does at Waiting {"remaining":1}' }]);
-    assert.match(summarize({ component: 'timelock', ok: true, files: [], ...r }), /\n  unsaid under condition: nothing says what cancel does at Waiting/);
+    assert.match(summarize({ part: 'timelock', ok: true, files: [], ...r }), /\n  unsaid under condition: nothing says what cancel does at Waiting/);
   });
 
   it('fails determinism when two guards overlap', async () => {
@@ -439,12 +439,12 @@ describe('explore', () => {
     const r = await checkIR({ root, ir: irOf(TIMELOCK), limit: 3 });
     assert.deepEqual({ ...r, versions: undefined }, { outcome: 'fail', checks: [], passed: 0, failed: 0, covers: [], gaps: [], refusalIds: [], explored: 4, limitHit: true, exceeded, versions: undefined });
     assert.equal(r.error, undefined, 'the run happened; it failed');
-    component('timelock', TIMELOCK);
-    const drawn = await draw({ root, component: 'timelock', limit: 3, write: false });
+    part('timelock', TIMELOCK);
+    const drawn = await draw({ root, part: 'timelock', limit: 3, write: false });
     assert.equal(drawn.ok, true);
     assert.equal(drawn.outcome, 'fail');
     assert.equal(summarize(drawn), `draw: timelock · fail · ${exceeded}`);
-    const full = await draw({ root, component: 'timelock', write: false });
+    const full = await draw({ root, part: 'timelock', write: false });
     assert.equal(full.limitHit, undefined, 'an exploration the limit does not cut short saw every state');
     assert.doesNotMatch(summarize(full), /limit|sampled/);
   });
@@ -502,7 +502,7 @@ describe('an expression the chart cannot evaluate', () => {
     assert.equal(r.outcome, 'fail');
     assert.deepEqual(r.checks, [{ ids: ['M1'], name: 'M1: can be evaluated', status: 'failed', message }]);
     assert.deepEqual(r.covers, []);
-    assert.equal(summarize({ component: 'ratio', ok: true, files: [], ...r }), `draw: ratio · fail · ${message}`);
+    assert.equal(summarize({ part: 'ratio', ok: true, files: [], ...r }), `draw: ratio · fail · ${message}`);
   });
 
   it('fails the run on a change that cannot be evaluated', async () => {
@@ -524,18 +524,18 @@ describe('the draw command', () => {
   const run = (...args: string[]) => { const r = spawnSync(bin, [args[0], '--root', root, ...args.slice(1)], { encoding: 'utf8' }); return { status: r.status, stdout: r.stdout, stderr: r.stderr }; };
 
   it('refuses a --limit that is not a whole number of states, before anything runs', () => {
-    component('limited', TIMELOCK);
+    part('limited', TIMELOCK);
     for (const [args, said] of [[['abc'], ', not "abc"'], [['0'], ', not "0"'], [['-5'], ', not "-5"'], [['2.5'], ', not "2.5"'], [[], '']] as [string[], string][]) {
       const r = run('draw', 'limited', '--limit', ...args);
       assert.equal(r.status, 2, args.join(' '));
       assert.equal(r.stderr, `dossier draw: --limit takes a whole number of states, at least 1${said}\n`);
       assert.equal(r.stdout, '');
     }
-    assert.equal(existsSync(join(root, 'components', 'limited', 'chart')), false, 'nothing was drawn');
+    assert.equal(existsSync(join(root, 'parts', 'limited', 'chart')), false, 'nothing was drawn');
   });
 
-  it('refuses a retired component, and says which begin reopens it', () => {
-    const dir = component('gone', TIMELOCK);
+  it('refuses a retired part, and says which begin reopens it', () => {
+    const dir = part('gone', TIMELOCK);
     writeFileSync(join(dir, 'decisions.log'), '2026-11-01T00:00:00Z begin modeled "x" 00000000\n');
     const begun = readFileSync(join(dir, 'decisions.log'), 'utf8').trim();
     const log = `${begun}\n2026-11-02T00:00:00Z retire "done" ${createHash('sha256').update(begun).digest('hex').slice(0, 8)}\n`;
@@ -543,14 +543,14 @@ describe('the draw command', () => {
     writeFileSync(join(dir, 'integrity.json'), JSON.stringify({ schema: 1, evidence: {}, decisionHead: prefixHead(log) }) + '\n');
     const r = run('draw', 'gone');
     assert.equal(r.status, 2);
-    assert.equal(r.stderr, 'dossier draw: components/gone is retired; dossier decide components/gone begin reopens it\n');
+    assert.equal(r.stderr, 'dossier draw: parts/gone is retired; dossier decide parts/gone begin reopens it\n');
     assert.equal(existsSync(join(dir, 'chart')), false);
   });
 
   it('says one state, and more than one states', async () => {
     const one = await check('# One\nTier: charted\nModule: one\n\n## States\n[S1] Only: it.\n\n## Events\n[E1] go, from the user: x.\n\n## Moves\n[M1] When Only receives go, it stays Only.\n\n## Words only\n[T1] The piece promises nothing eventual.\n');
     assert.equal(one.explored, 1);
-    assert.match(summarize({ component: 'one', ok: true, files: [], ...one }), /^draw: one · pass · \d+ of \d+ checks · 1 state explored$/);
+    assert.match(summarize({ part: 'one', ok: true, files: [], ...one }), /^draw: one · pass · \d+ of \d+ checks · 1 state explored$/);
   });
 });
 

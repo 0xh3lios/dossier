@@ -44,25 +44,25 @@ describe('redact', () => {
     const base = mkdtempSync(join(tmpdir(), 'dossier-redact-'));
     try {
       const real = join(realpathSync(base), 'repo');
-      mkdirSync(join(real, 'dossiers', 'components', 'gate', '.running', 'x'), { recursive: true });
+      mkdirSync(join(real, 'dossiers', 'parts', 'gate', '.running', 'x'), { recursive: true });
       const link = join(base, 'link');
       symlinkSync(real, link);
       const root = join(link, 'dossiers');
-      const trialDir = join(root, 'components', 'gate', '.running', 'x');
-      const [given, resolved, longer] = redact([`-metadir ${trialDir}/states`, `Parsing file ${join(real, 'dossiers', 'components', 'gate', 'model', 'Gate.tla')}`, `${root}-old/prose.md`], { trialDir, root, pluginRoot: '/nowhere/plugin', env: {} });
+      const trialDir = join(root, 'parts', 'gate', '.running', 'x');
+      const [given, resolved, longer] = redact([`-metadir ${trialDir}/states`, `Parsing file ${join(real, 'dossiers', 'parts', 'gate', 'model', 'Gate.tla')}`, `${root}-old/prose.md`], { trialDir, root, pluginRoot: '/nowhere/plugin', env: {} });
       assert.equal(given, '-metadir $TRIAL/states');
-      assert.equal(resolved, 'Parsing file $DOSSIERS/components/gate/model/Gate.tla', 'the path as the file system resolves it');
+      assert.equal(resolved, 'Parsing file $DOSSIERS/parts/gate/model/Gate.tla', 'the path as the file composition resolves it');
       assert.equal(longer, `${root}-old/prose.md`, 'another folder that only begins like the root');
       assert.deepEqual(redact(['java -version'], { trialDir, root, pluginRoot: '/nowhere/plugin', env: { JAVA: 'java' } }), ['java -version'], 'a bare command is no path');
     } finally { rmSync(base, { recursive: true, force: true }); }
   });
 
-  it('takes out of TLC\'s banner the cores, the heap, the process, the system and the JVM\'s vendor and architecture, and keeps its version', () => {
+  it('takes out of TLC\'s banner the cores, the heap, the process, the composition and the JVM\'s vendor and architecture, and keeps its version', () => {
     const banner = 'Running breadth-first search Model-Checking with fp 87 and seed 8830817409892069689 with 1 worker on 10 cores with 3641MB heap and 64MB offheap memory [pid: 37753] (Mac OS X 26.7.2 aarch64, Eclipse Adoptium 21.0.13 x86_64, MSBDiskFPSet, DiskStateQueue).';
     assert.equal(fingerprints(banner), 'Running breadth-first search Model-Checking with fp 87 and seed 8830817409892069689 with 1 worker on $CORES cores with $HEAP heap and 64MB offheap memory [pid: $PID] ($OS, $JDK_VENDOR 21.0.13 $JDK_ARCH, MSBDiskFPSet, DiskStateQueue).');
     const linux = 'with 4 workers on 16 cores with 7282MB heap and 64MB offheap memory [pid: 12] (Linux 6.8.0-45-generic amd64, Oracle Corporation 21.0.2 amd64, MSBDiskFPSet, DiskStateQueue).';
     assert.equal(fingerprints(linux), 'with 4 workers on $CORES cores with $HEAP heap and 64MB offheap memory [pid: $PID] ($OS, $JDK_VENDOR 21.0.2 $JDK_ARCH, MSBDiskFPSet, DiskStateQueue).');
-    for (const vendor of ['Azul Systems, Inc.', 'Red Hat, Inc.']) {
+    for (const vendor of ['Azul Compositions, Inc.', 'Red Hat, Inc.']) {
       const banner = `with 1 worker on 8 cores with 2048MB heap and 64MB offheap memory [pid: 4242] (Linux 6.8.0-45-generic amd64, ${vendor} 17.0.12 amd64, OffHeapDiskFPSet, DiskStateQueue).`;
       assert.equal(fingerprints(banner), 'with 1 worker on $CORES cores with $HEAP heap and 64MB offheap memory [pid: $PID] ($OS, $JDK_VENDOR 17.0.12 $JDK_ARCH, OffHeapDiskFPSet, DiskStateQueue).', vendor);
     }

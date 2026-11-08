@@ -1,4 +1,4 @@
-// Draw one component: compile the prose, build the machine, explore, check,
+// Draw one part: compile the prose, build the machine, explore, check,
 // and write the intermediate form and the grid. Unrecorded; the chart trial records the same run.
 import { existsSync, lstatSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -9,7 +9,7 @@ import { Unevaluable, buildMachine, unevaluableIn } from './machine.ts';
 import { explore } from './explore.ts';
 import { runChecks } from './checks.ts';
 import { gridMarkdown } from './picture.ts';
-import type { ComponentProse } from '../prose/prose.ts';
+import type { PartProse } from '../prose/prose.ts';
 import type { Ir } from '../prose/ir.ts';
 import type { XState } from './machine.ts';
 import type { XStateGraph } from './explore.ts';
@@ -24,9 +24,9 @@ export interface Runtime { error?: string; xstate?: XState; graph?: XStateGraph;
 // unevaluable names a condition or a change that cannot be evaluated at an explored snapshot; the
 // run then fails with that one failed check, named by its passage.
 export interface ChartRun extends Partial<ChartChecks> { error?: string; exceeded?: string; limitHit?: boolean; unevaluable?: string; versions?: Record<string, string> }
-// What draw reports for one component: files are the chart's files it wrote, and removed the
+// What draw reports for one part: files are the chart's files it wrote, and removed the
 // retired pictures it found and removed.
-export interface DrawResult extends ChartRun { component: string; ok?: boolean; errors?: string[]; files?: string[]; removed?: string[]; ir?: Ir }
+export interface DrawResult extends ChartRun { part: string; ok?: boolean; errors?: string[]; files?: string[]; removed?: string[]; ir?: Ir }
 
 const pluginRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
@@ -57,7 +57,7 @@ export async function loadRuntime(root: string): Promise<Runtime> {
   return { xstate, graph, versions: { xstate: x.version, '@xstate/graph': g.version } };
 }
 
-export function compileComponent(prosePath: string): { prose: ComponentProse; ir: Ir } {
+export function compilePart(prosePath: string): { prose: PartProse; ir: Ir } {
   const prose = parseProse(readFileSync(prosePath, 'utf8'));
   return { prose, ir: compileIR(prose) };
 }
@@ -81,22 +81,22 @@ export async function checkIR({ root, ir, machineIR = ir, limit = 20000 }: { roo
   }
 }
 
-export async function draw({ root, component, limit = 20000, write = true }: { root: string; component: string; limit?: number; write?: boolean }): Promise<DrawResult> {
-  const dir = join(root, 'components', component);
+export async function draw({ root, part, limit = 20000, write = true }: { root: string; part: string; limit?: number; write?: boolean }): Promise<DrawResult> {
+  const dir = join(root, 'parts', part);
   const prosePath = join(dir, 'prose.md');
-  if (!existsSync(prosePath)) return { component, error: `no prose.md under components/${component}/` };
-  const { ir } = compileComponent(prosePath);
-  const out = { component, ok: ir.ok, errors: ir.errors, files: [] as string[], removed: [] as string[] };
+  if (!existsSync(prosePath)) return { part, error: `no prose.md under parts/${part}/` };
+  const { ir } = compilePart(prosePath);
+  const out = { part, ok: ir.ok, errors: ir.errors, files: [] as string[], removed: [] as string[] };
   if (!ir.ok) return out;
   const chartDir = join(dir, 'chart');
   if (write) {
     mkdirSync(chartDir, { recursive: true });
     const files = { 'machine.json': JSON.stringify(ir, null, 2) + '\n', 'grid.md': gridMarkdown(ir) };
-    for (const [name, text] of Object.entries(files)) { writeFileSync(join(chartDir, name), text); out.files.push(`components/${component}/chart/${name}`); }
+    for (const [name, text] of Object.entries(files)) { writeFileSync(join(chartDir, name), text); out.files.push(`parts/${part}/chart/${name}`); }
     // Only a regular file, as draw wrote it: a link or a folder under a retired name is left alone.
     for (const name of RETIRED_PICTURES) {
       const path = join(chartDir, name);
-      if (lstatSync(path, { throwIfNoEntry: false })?.isFile()) { unlinkSync(path); out.removed.push(`components/${component}/chart/${name}`); }
+      if (lstatSync(path, { throwIfNoEntry: false })?.isFile()) { unlinkSync(path); out.removed.push(`parts/${part}/chart/${name}`); }
     }
   }
   const result = await checkIR({ root, ir, limit });
@@ -105,10 +105,10 @@ export async function draw({ root, component, limit = 20000, write = true }: { r
 }
 
 export function summarize(result: DrawResult): string {
-  if (result.error) return `draw: ${result.component || ''} · error · ${result.error}`;
-  if (!result.ok) return [`draw: ${result.component} · does not compile`, ...result.errors!.map(e => `  ${e}`)].join('\n');
+  if (result.error) return `draw: ${result.part || ''} · error · ${result.error}`;
+  if (!result.ok) return [`draw: ${result.part} · does not compile`, ...result.errors!.map(e => `  ${e}`)].join('\n');
   const stop = result.exceeded || result.unevaluable;
-  const lines = [stop ? `draw: ${result.component} · fail · ${stop}` : `draw: ${result.component} · ${result.outcome} · ${result.passed} of ${result.checks!.length} checks · ${result.explored} ${result.explored === 1 ? 'state' : 'states'} explored`];
+  const lines = [stop ? `draw: ${result.part} · fail · ${stop}` : `draw: ${result.part} · ${result.outcome} · ${result.passed} of ${result.checks!.length} checks · ${result.explored} ${result.explored === 1 ? 'state' : 'states'} explored`];
   if (!stop) for (const c of result.checks!.filter(c => c.status === 'failed')) lines.push(`  fail ${c.name}${c.message ? ` · ${c.message}` : ''}`);
   for (const g of result.gaps!.slice(0, 5)) lines.push(`  unsaid under condition: ${g.message}`);
   if (result.gaps!.length > 5) lines.push(`  ... ${result.gaps!.length - 5} more gaps`);

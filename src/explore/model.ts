@@ -1,34 +1,34 @@
 // What the explorer's pages read, taken from verify's analysis of the root: the board, the addresses
-// the palette reaches, one component, one system, each answer in evidence/ and the traces they hold.
+// the palette reaches, one part, one composition, each answer in evidence/ and the traces they hold.
 // It reshapes what verify concluded and computes no standing of its own.
 import { toLabel } from '../prose/expr.ts';
 import { itfText } from '../commands/show.ts';
 import { cellWords } from '../verify/render.ts';
 import { cap, ident } from '../models/tla.ts';
 import type { Verified } from '../commands/verify.ts';
-import type { ComponentAnalysis, SystemAnalysis } from '../verify/analyze.ts';
+import type { PartAnalysis, CompositionAnalysis } from '../verify/analyze.ts';
 import type { Note } from '../verify/tripwires.ts';
 import type { Expr, Value } from '../prose/expr.ts';
 import type { Backing } from '../prose/prose.ts';
 import type { Answer } from '../trials/answers.ts';
 import type { Meanings } from './meanings.ts';
 
-type Analysis = ComponentAnalysis | SystemAnalysis;
+type Analysis = PartAnalysis | CompositionAnalysis;
 const label = (x: Expr | null | undefined) => (x == null ? null : toLabel(x));
 const literal = (x: Expr | null | undefined): Value | null => (x == null ? null : x.t === 'lit' || x.t === 'int' || x.t === 'bool' ? x.v : 'name' in x ? x.name : toLabel(x));
 const withMeans = (notes: Note[], meanings: Meanings) => notes.map(n => ({ ...n, means: meanings.flag(n.name) }));
 const decisionsOf = (a: Analysis) => a.decisions.map(d => ('malformed' in d ? { line: d.line, malformed: true, raw: d.raw } : { line: d.line, time: d.time, verb: d.verb, args: d.args || [], words: d.words || '' }));
 
-// Who sends an event: a member component, an actor, or a name the root does not know.
-function senderOf(a: ComponentAnalysis, sender: string | null) {
+// Who sends an event: a member part, an actor, or a name the root does not know.
+function senderOf(a: PartAnalysis, sender: string | null) {
   if (!sender) return null;
-  const c = a.componentOf(sender);
-  if (c) return { kind: 'component', id: c };
+  const c = a.partOf(sender);
+  if (c) return { kind: 'part', id: c };
   const actor = a.actorOf(sender);
   if (actor) return { kind: 'actor', id: actor.id };
   return { kind: 'unknown', id: sender };
 }
-const systemsOf = (v: Verified, id: string) => v.systems.filter(s => s.composition.members.some(m => m.component === id)).map(s => s.id);
+const compositionsOf = (v: Verified, id: string) => v.compositions.filter(s => s.wiring.members.some(m => m.part === id)).map(s => s.id);
 const backingRef = (b: Backing | null) => (!b ? null : b.kind === 'record' ? b.ref : b.kind === 'external' ? b.runner : b.kind === 'none' ? null : `${b.path} ${b.rule}`);
 
 // ---------- Evidence ----------
@@ -62,45 +62,45 @@ export function evidenceOf(a: Analysis) {
 
 // ---------- The root ----------
 export function rootModel(v: Verified, root: string, version: string, meanings: Meanings) {
-  const compact = (a: ComponentAnalysis) => Object.fromEntries(Object.entries(a.marks).map(([k, m]) => [k, m.mark]));
+  const compact = (a: PartAnalysis) => Object.fromEntries(Object.entries(a.marks).map(([k, m]) => [k, m.mark]));
   const dossiers = [
-    ...v.components.map(a => ({ kind: 'component', id: a.id, title: a.title, tier: a.tier, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, inSystems: systemsOf(v, a.id), marks: compact(a) })),
-    ...v.systems.map(a => ({ kind: 'system', id: a.id, title: a.title, tier: 'system', route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, members: a.composition.members.map(m => m.component), marks: Object.fromEntries(a.cells.map(c => [`${c.property}/${c.scenario}`, cellWords(c)])) })),
+    ...v.parts.map(a => ({ kind: 'part', id: a.id, title: a.title, tier: a.tier, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, inCompositions: compositionsOf(v, a.id), marks: compact(a) })),
+    ...v.compositions.map(a => ({ kind: 'composition', id: a.id, title: a.title, tier: 'composition', route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, members: a.wiring.members.map(m => m.part), marks: Object.fromEntries(a.cells.map(c => [`${c.property}/${c.scenario}`, cellWords(c)])) })),
   ];
-  const components = v.components.map(a => ({
+  const parts = v.parts.map(a => ({
     id: a.id, title: a.title, tier: a.tier,
     events: a.ir.events.map(e => ({ name: e.name, sender: e.sender, from: senderOf(a, e.sender) })),
     effects: a.ir.effects.map(e => e.name),
     seams: a.ir.seams.map(s => ({ id: s.id, piece: s.piece, body: s.body })),
   }));
-  const systems = v.systems.map(a => ({ id: a.id, title: a.title, members: a.composition.members.map(m => m.component), wiring: a.composition.wiring, free: a.composition.free }));
+  const compositions = v.compositions.map(a => ({ id: a.id, title: a.title, members: a.wiring.members.map(m => m.part), wiring: a.wiring.wiring, free: a.wiring.free }));
   const actors = v.actors.actors.map(x => ({ id: x.id, name: x.name || x.id, kind: x.kind, modes: x.modes, pins: x.pins, notes: x.notes }));
   const scenarios = v.actors.scenarios.map(s => ({ id: s.id, modes: s.modes, windows: s.windows, start: s.start, strongerThan: s.strongerThan, notes: s.notes }));
-  return { root, version, route: v.route, tripwires: v.tripwires, dossiers, components, systems, actors, scenarios, legend: meanings.legend };
+  return { root, version, route: v.route, tripwires: v.tripwires, dossiers, parts, compositions, actors, scenarios, legend: meanings.legend };
 }
 
 // Every address the palette reaches: dossiers, passages, doubts, walks, cells and answers.
 export function addresses(v: Verified) {
   const out: { group: string; label: string; sub: string; href: string }[] = [];
   const snip = (t: string) => String(t || '').replace(/\s+/g, ' ').slice(0, 90);
-  for (const a of v.components) {
-    out.push({ group: 'Components', label: a.title, sub: `${a.id} · ${a.tier}`, href: `#/c/${a.id}` });
-    for (const p of a.prose.passages.filter(p => !p.retired)) out.push({ group: 'Passages', label: `${a.id} ${p.id}`, sub: snip(p.text), href: `#/c/${a.id}?sel=${p.id}` });
-    for (const d of a.doubts) out.push({ group: 'Doubts', label: `${a.id} ${d.id}`, sub: `${d.status} · on ${d.on.join(' ')}`, href: `#/c/${a.id}?sel=${d.on[0] || ''}&tab=play&play=doubt:${d.id}:a:0` });
-    for (const w of a.ir.walks) out.push({ group: 'Walks', label: `${a.id} ${w.id}`, sub: w.name || '', href: `#/c/${a.id}?tab=play&play=walk:${w.id}:0` });
-    for (const x of a.answers) out.push({ group: 'Evidence', label: `${a.id} ${x.name}`, sub: x.entry?.established.trial || '', href: `#/c/${a.id}?tab=evidence&entry=${x.name}` });
+  for (const a of v.parts) {
+    out.push({ group: 'Parts', label: a.id, sub: `${a.title} · ${a.tier}`, href: `#/part/${a.id}` });
+    for (const p of a.prose.passages.filter(p => !p.retired)) out.push({ group: 'Passages', label: `${a.id} ${p.id}`, sub: snip(p.text), href: `#/part/${a.id}?sel=${p.id}` });
+    for (const d of a.doubts) out.push({ group: 'Doubts', label: `${a.id} ${d.id}`, sub: `${d.status} · on ${d.on.join(' ')}`, href: `#/part/${a.id}?sel=${d.on[0] || ''}&tab=play&play=doubt:${d.id}:a:0` });
+    for (const w of a.ir.walks) out.push({ group: 'Walks', label: `${a.id} ${w.id}`, sub: w.name || '', href: `#/part/${a.id}?tab=play&play=walk:${w.id}:0` });
+    for (const x of a.answers) out.push({ group: 'Evidence', label: `${a.id} ${x.name}`, sub: x.entry?.established.trial || '', href: `#/part/${a.id}?tab=evidence&entry=${x.name}` });
   }
-  for (const a of v.systems) {
-    out.push({ group: 'Systems', label: a.title, sub: `${a.id} · ${a.composition.members.length} members`, href: `#/s/${a.id}` });
-    for (const p of a.prose.passages.filter(p => !p.retired)) out.push({ group: 'Passages', label: `${a.id} ${p.id}`, sub: snip(p.text), href: `#/s/${a.id}?tab=properties&sel=${p.id}` });
-    for (const c of a.cells) out.push({ group: 'Cells', label: `${a.id} ${c.property} ${c.scenario}`, sub: c.mark, href: `#/s/${a.id}?cell=${c.property}:${c.scenario}` });
-    for (const x of a.answers) out.push({ group: 'Evidence', label: `${a.id} ${x.name}`, sub: x.entry?.established.trial || '', href: `#/s/${a.id}?tab=evidence&entry=${x.name}` });
+  for (const a of v.compositions) {
+    out.push({ group: 'Compositions', label: a.id, sub: `${a.title} · ${a.wiring.members.length} members`, href: `#/composition/${a.id}` });
+    for (const p of a.prose.passages.filter(p => !p.retired)) out.push({ group: 'Passages', label: `${a.id} ${p.id}`, sub: snip(p.text), href: `#/composition/${a.id}?tab=properties&sel=${p.id}` });
+    for (const c of a.cells) out.push({ group: 'Cells', label: `${a.id} ${c.property} ${c.scenario}`, sub: c.mark, href: `#/composition/${a.id}?cell=${c.property}:${c.scenario}` });
+    for (const x of a.answers) out.push({ group: 'Evidence', label: `${a.id} ${x.name}`, sub: x.entry?.established.trial || '', href: `#/composition/${a.id}?tab=evidence&entry=${x.name}` });
   }
   return out;
 }
 
-// ---------- One component ----------
-export function componentModel(v: Verified, a: ComponentAnalysis, meanings: Meanings) {
+// ---------- One part ----------
+export function partModel(v: Verified, a: PartAnalysis, meanings: Meanings) {
   const ir = a.ir;
   const marks = Object.fromEntries(Object.entries(a.marks).map(([pid, m]) => {
     const kind = a.prose.byId[pid]?.kind || pid[0];
@@ -110,8 +110,8 @@ export function componentModel(v: Verified, a: ComponentAnalysis, meanings: Mean
   const sections: { name: string | null; passages: typeof passages }[] = [];
   for (const p of passages) { const last = sections.at(-1); if (last && last.name === p.section) last.passages.push(p); else sections.push({ name: p.section, passages: [p] }); }
   return {
-    kind: 'component', id: a.id, title: a.title, tier: a.tier, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires,
-    reviewOwed: a.reviewOwed, inSystems: systemsOf(v, a.id), boundary: a.prose.boundary?.text || a.prose.lead.join(' '),
+    kind: 'part', id: a.id, title: a.title, tier: a.tier, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires,
+    reviewOwed: a.reviewOwed, inCompositions: compositionsOf(v, a.id), boundary: a.prose.boundary?.text || a.prose.lead.join(' '),
     sections, marks,
     chart: {
       initial: ir.initial,
@@ -148,8 +148,8 @@ function traceRows(trace: Answer['trace']) {
   return [];
 }
 
-// An answer's trace on one component, each step mapped onto the move its action encodes (M<n>_<Event>).
-export function componentTrace(a: ComponentAnalysis, entryName: string) {
+// An answer's trace on one part, each step mapped onto the move its action encodes (M<n>_<Event>).
+export function partTrace(a: PartAnalysis, entryName: string) {
   const x = a.answers.find(r => r.name === entryName);
   const e = x?.entry;
   if (!e) return null;
@@ -174,16 +174,16 @@ export function componentTrace(a: ComponentAnalysis, entryName: string) {
   return { entry: entryName, question: e.question, outcomes: e.answer.outcomes || {}, result: e.answer.result, reach: e.answer.reach?.text || null, because: e.call.because?.trim() || null, reading: x!.reading, steps };
 }
 
-// ---------- One system ----------
-export function systemModel(v: Verified, a: SystemAnalysis, meanings: Meanings) {
-  const claimed = a.composition.scenarios;
+// ---------- One composition ----------
+export function compositionModel(v: Verified, a: CompositionAnalysis, meanings: Meanings) {
+  const claimed = a.wiring.scenarios;
   const scenarioIds = [...new Set([...claimed, ...a.cells.map(c => c.scenario)])];
   return {
-    kind: 'system', id: a.id, title: a.title, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed,
-    members: a.composition.members.map(m => ({ id: m.component, role: m.role, pins: m.pins })),
-    wiring: a.composition.wiring, free: a.composition.free, closure: a.composition.closure, closureMissing: a.closureMissing,
-    // Why the composition does not compose, as the composer says, for a system whose graph is empty.
-    errors: [...new Set([...a.composition.errors, ...a.composed.errors])],
+    kind: 'composition', id: a.id, title: a.title, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed,
+    members: a.wiring.members.map(m => ({ id: m.part, role: m.role, pins: m.pins })),
+    wiring: a.wiring.wiring, free: a.wiring.free, closure: a.wiring.closure, closureMissing: a.closureMissing,
+    // Why the wiring does not compose, as the composer says, for a composition whose graph is empty.
+    errors: [...new Set([...a.wiring.errors, ...a.composed.errors])],
     scenarios: scenarioIds.map(s => { const sc = v.actors.scenarioById[s]; return sc ? { id: sc.id, modes: sc.modes, windows: sc.windows, start: sc.start, strongerThan: sc.strongerThan, notes: sc.notes, claimed: claimed.includes(s) } : { id: s, missing: true }; }),
     passages: a.prose.passages.filter(p => !p.retired).map(p => ({ id: p.id, kind: p.kind, section: p.section, text: p.text, owner: a.owner[p.id] || null, held: a.propertyHeld[p.id] || null })),
     cells: a.cells.map(c => ({
@@ -212,11 +212,11 @@ export function actorOfAction(actorIds: string[], senders: string[], chain: stri
 }
 
 // A cell's trace, each step split by member and named by the actor or member that moved, where one did.
-export function systemTrace(v: Verified, a: SystemAnalysis, property: string, scenario: string) {
+export function compositionTrace(v: Verified, a: CompositionAnalysis, property: string, scenario: string) {
   const cell = a.cells.find(c => c.property === property && c.scenario === scenario);
   if (!cell?.trace) return null;
-  const split = memberOfVariable(a.composition.members.map(m => m.component));
-  const actorOf = actorOfAction(a.composed.actors || [], a.composed.components || [], v.actors.actors.find(x => x.kind === 'chain')?.id ?? null);
+  const split = memberOfVariable(a.wiring.members.map(m => m.part));
+  const actorOf = actorOfAction(a.composed.actors || [], a.composed.parts || [], v.actors.actors.find(x => x.kind === 'chain')?.id ?? null);
   let before: Record<string, Value> | null = null;
   const steps = traceRows(cell.trace).map(r => {
     const values = r.values || {};

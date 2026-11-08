@@ -1,6 +1,6 @@
 # Recheck in CI
 
-Run `dossier recheck` in a CI job, so the build fails when a checker no longer gives the answers your dossiers hold. A dossier is the folder that holds one component's or one system's record. Each trial runs a checker on a call through `dossier trial`, and its answer goes to an entry under the dossier's `evidence/`, one entry per question. Recheck asks each entry's question again, in a private workspace, and writes nothing. [How a claim earns its mark](../explanation/evidence.md#one-answer-per-question) explains questions and answers, and what a recheck confirms.
+Run `dossier recheck` in a CI job, so the build fails when a checker no longer gives the answers your dossiers hold. A dossier is the folder that holds one part's or one composition's record. Each trial runs a checker on a call through `dossier trial`, and its answer goes to an entry under the dossier's `evidence/`, one entry per question. Recheck asks each entry's question again, in a private workspace, and writes nothing. [How a claim earns its mark](../explanation/evidence.md#one-answer-per-question) explains questions and answers, and what a recheck confirms.
 
 Recheck needs the toolchain the answers came from. The plugin ships an installer, `qualification/install-toolchain.mjs`, that downloads TLC, Apalache and Alloy at pinned versions and refuses a download whose SHA-256 differs from the one it pins. [Toolchain](../reference/toolchain.md#the-installer) lists the versions.
 
@@ -68,7 +68,7 @@ Recheck itself exits 0 when it lists answers as `not run`, so the job's last lin
 - `aborted`: the checker did not finish, and the question has no completed answer. A later trial whose checker finishes clears it.
 - `question gone`: something the question named, such as a walk or a file, no longer exists. The next publication in that dossier removes the entry.
 - `answer superseded`: answers to other questions now stand in for this one. The next publication in that dossier removes it. One that holds a counterexample is removed only after the owner's `forget` names it, as [Record a decision](record-a-decision.md#the-verbs) shows. The forget deletes nothing itself, so the job stays red until that next publication.
-- `its records do not verify`: the dossier, or for a system one of its members, has a tripwire. Recheck names the dossier once and asks none of its questions. Fix the tripwire as [Marks](../reference/marks.md#tripwires) says.
+- `its records do not verify`: the dossier, or for a composition one of its members, has a tripwire. Recheck names the dossier once and asks none of its questions. Fix the tripwire as [Marks](../reference/marks.md#tripwires) says.
 - `its call did not run here`: the checker or an external runner could not run on the CI machine. Install the checker, or declare the runner in `dossier.json` with a command that works there.
 
 The job checks out what is committed, so each reason clears once the change that clears it is committed. [Commands and skills](../reference/commands.md#the-command) gives recheck's options and exit codes.

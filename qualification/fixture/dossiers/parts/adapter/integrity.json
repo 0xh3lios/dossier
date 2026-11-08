@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "evidence": {
+    "chart-64fcc7": "33888bcad06ee4b02340c8bc13430016e36f9e5c94e515019f52f79f3fdfe945",
+    "tlc-A1-1d90d3": "f54efeda93dac61531dfb13ef6edb0aa6ffe9b50a991fbca8abe24d065f663fa",
+    "tlc-W2-f022fb": "bd36c0277faa6797f5e65295ba657780820c9e3b94cbc0ff285b2bc6577aa11e",
+    "tlc-W1-fb78f0": "a7a6960ab7e5d3493b3c44c9961f1ed712bc35f497494b25def3500e017abda4",
+    "blunder-A1-cf3362": "9346360bca69ad376ca1682af73ec81682a277a316632ea3f37dc6f22dd270bd",
+    "external-W1-W2-98c5aa": "d026c7d567702559fe730dec1557fd9176a7b6d76bcdf919fd5899760b976cac"
+  },
+  "decisionHead": {
+    "algorithm": "sha256-prefix",
+    "bytes": 210,
+    "digest": "1310370934691d825f59e36d3c9e625af15ba76cd29aa36577cbdd4b6e68f846"
+  }
+}

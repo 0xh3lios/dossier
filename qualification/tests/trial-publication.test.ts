@@ -32,11 +32,11 @@ const T0 = '2026-11-07T12:34:00.000Z', T1 = '2026-11-07T12:35:00.000Z', T2 = '20
 function fixture(t: TestContext) {
   const repo = mkdtempSync(join(tmpdir(), 'dossier-trial-publication-'));
   t.after(() => rmSync(repo, { recursive: true, force: true }));
-  const root = join(repo, 'dossiers'), dir = join(root, 'components/gate');
+  const root = join(repo, 'dossiers'), dir = join(root, 'parts/gate');
   const write = (path: string, text: string) => { const full = join(repo, path); mkdirSync(dirname(full), { recursive: true }); writeFileSync(full, text); return full; };
   write('dossiers/dossier.json', JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }));
-  write('dossiers/components/gate/integrity.json', JSON.stringify(empty));
-  write('dossiers/components/gate/prose.md', prose);
+  write('dossiers/parts/gate/integrity.json', JSON.stringify(empty));
+  write('dossiers/parts/gate/prose.md', prose);
   write('dossiers/actors/actors.md', '# Actors\n\n```yaml\nactors:\n  - id: public\n    kind: public\n    modes: [honest, malicious]\n```\n');
   write('dossiers/actors/scenarios.md', '# Scenarios\n\n```yaml\nscenarios:\n  - id: all-honest\n    modes: {}\n```\n');
   const run = (args: string[], env: NodeJS.ProcessEnv = {}) => spawnSync(process.execPath, [cli, args[0], '--root', root, ...args.slice(1)], { cwd: repo, env: { ...process.env, DOSSIER_ROOT: '', ...env }, encoding: 'utf8' });
@@ -47,10 +47,10 @@ function fixture(t: TestContext) {
     return path;
   };
   const model = () => {
-    write('dossiers/components/gate/model/Gate.tla', moduleText);
-    write('dossiers/components/gate/model/Gate.cfg', 'INIT Init\nNEXT Next\nINVARIANT A1\n');
-    write('dossiers/components/gate/model/Helper.tla', '---- MODULE Helper ----\nEXTENDS Naturals\nHelperOK == TRUE\n====\n');
-    write('dossiers/components/gate/calls/check.md', tlcCall);
+    write('dossiers/parts/gate/model/Gate.tla', moduleText);
+    write('dossiers/parts/gate/model/Gate.cfg', 'INIT Init\nNEXT Next\nINVARIANT A1\n');
+    write('dossiers/parts/gate/model/Helper.tla', '---- MODULE Helper ----\nEXTENDS Naturals\nHelperOK == TRUE\n====\n');
+    write('dossiers/parts/gate/calls/check.md', tlcCall);
   };
   const result = (where = dir) => {
     const ids = readdirSync(join(where, 'trials'));
@@ -59,11 +59,11 @@ function fixture(t: TestContext) {
     assert.deepEqual([bundle.problems, bundle.stray], [[], []]);
     return bundle.result!;
   };
-  const system = () => {
-    const s = 'dossiers/systems/net';
+  const composition = () => {
+    const s = 'dossiers/compositions/net';
     write(`${s}/integrity.json`, JSON.stringify(empty));
     write(`${s}/prose.md`, '# Net\n\nConcern: net\n\n## Always\n[A1] Always, {gate.Ready}.\n');
-    write(`${s}/composition.md`, '# Composition\n\n```yaml\nmembers:\n  - component: gate\n    role: member\nwiring: []\nclosure: []\nscenarios: [all-honest]\n```\n');
+    write(`${s}/wiring.md`, '# Wiring\n\n```yaml\nmembers:\n  - part: gate\n    role: member\nwiring: []\nclosure: []\nscenarios: [all-honest]\n```\n');
     return join(repo, s);
   };
   // The answers the runner published, by entry name, and one of them read.
@@ -75,7 +75,7 @@ function fixture(t: TestContext) {
   // call can run again in a later minute without meeting its earlier bundle's name.
   const clock = write('clock.mjs', 'const RealDate = Date;\nglobalThis.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : [process.env.DOSSIER_QUAL_NOW])); } };\n');
   const at = (time: string) => ({ NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --import=${pathToFileURL(clock).href}`.trim(), DOSSIER_QUAL_NOW: time });
-  return { repo, root, dir, write, run, executable, external, model, result, system, entries, entry, record, at };
+  return { repo, root, dir, write, run, executable, external, model, result, composition, entries, entry, record, at };
 }
 
 test('concurrent commands atomically reserve one staging leaf and execute once', async t => {
@@ -96,7 +96,7 @@ const RealDate = Date; globalThis.Date = class extends RealDate { constructor(..
 `);
   const log = join(f.repo, 'executions');
   f.external(`import {appendFileSync} from 'node:fs'; appendFileSync(process.env.RUN_LOG,'run\\n'); console.log(JSON.stringify({outcomes:{check:'pass'}}));`);
-  f.write('dossiers/components/gate/calls/check.md', externalCall);
+  f.write('dossiers/parts/gate/calls/check.md', externalCall);
   const launch = () => {
     const child = spawn(process.execPath, ['--import', hook, cli, 'trial', '--root', f.root, 'gate', 'check.md'], { env: { ...process.env, BARRIER: barriers, RELEASE: join(f.repo, 'release'), RUN_LOG: log }, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = ''; child.stdout.on('data', chunk => out += chunk); child.stderr.on('data', chunk => out += chunk);
@@ -116,11 +116,11 @@ const RealDate = Date; globalThis.Date = class extends RealDate { constructor(..
   assert.equal(existsSync(join(f.dir, '.running')), false);
 });
 
-test('a refused system call leaves generated views and the entire root untouched', t => {
-  const f = fixture(t), s = f.system();
+test('a refused composition call leaves generated views and the entire root untouched', t => {
+  const f = fixture(t), s = f.composition();
   assert.equal(f.run(['scaffold', 'net']).status, 0);
   writeFileSync(join(s, 'model/generated/Net.tla'), 'reviewer has an old generated view\n');
-  f.write('dossiers/systems/net/calls/wrong.md', tlcCall.replace('model/Gate.tla', 'model/generated/Net.tla').replace('model/Gate.cfg', 'model/generated/A1_all_honest.cfg') + 'property: A9\nscenario: all-honest\n');
+  f.write('dossiers/compositions/net/calls/wrong.md', tlcCall.replace('model/Gate.tla', 'model/generated/Net.tla').replace('model/Gate.cfg', 'model/generated/A1_all_honest.cfg') + 'property: A9\nscenario: all-honest\n');
   const before = fingerprint(f.root);
   const r = f.run(['trial', 'net', 'wrong.md']);
   assert.equal(r.status, 2, r.stderr);
@@ -129,7 +129,7 @@ test('a refused system call leaves generated views and the entire root untouched
 });
 
 for (const escape of ['parent', 'destination', 'stale']) test(`materialization refuses a ${escape} symlink before writing or deleting`, t => {
-  const f = fixture(t), s = f.system(), outside = join(f.repo, 'outside');
+  const f = fixture(t), s = f.composition(), outside = join(f.repo, 'outside');
   mkdirSync(outside);
   writeFileSync(join(outside, 'Net.tla'), 'outside bytes');
   const gen = join(s, 'model/generated');
@@ -151,12 +151,12 @@ test('materializer rejects escaping generated names before changing its director
 test('an edited entry blocks a new execution without any writes, while an edited or deleted local bundle blocks nothing', t => {
   const f = fixture(t), log = join(f.repo, 'executions');
   f.external(`import {appendFileSync} from 'node:fs'; appendFileSync(process.env.RUN_LOG,'run\\n'); console.log(JSON.stringify({outcomes:{check:'pass'}}));`);
-  f.write('dossiers/components/gate/calls/first.md', externalCall);
+  f.write('dossiers/parts/gate/calls/first.md', externalCall);
   const first = f.run(['trial', 'gate', 'first.md'], { RUN_LOG: log });
   assert.equal(first.status, 0, first.stderr);
   const [name] = f.entries(), path = join(f.dir, 'evidence', `${name}.json`), original = readFileSync(path, 'utf8');
   writeFileSync(path, original.replace('"check": "pass"', '"check": "fail"'));
-  f.write('dossiers/components/gate/calls/next.md', externalCall.replace('the named prose', 'a second call'));
+  f.write('dossiers/parts/gate/calls/next.md', externalCall.replace('the named prose', 'a second call'));
   const before = fingerprint(f.root);
   const second = f.run(['trial', 'gate', 'next.md'], { RUN_LOG: log });
   assert.equal(second.status, 2, second.stderr);
@@ -170,7 +170,7 @@ test('an edited entry blocks a new execution without any writes, while an edited
   assert.equal(third.status, 0, third.stderr);
   assert.match(third.stdout, new RegExp(`^answer: evidence/${name}\\.json · replaced the recorded answer$`, 'm'), 'a new reach is a new answer to the same question');
   rmSync(join(f.dir, 'trials'), { recursive: true });
-  f.write('dossiers/components/gate/calls/last.md', externalCall.replace('the named prose', 'a third call'));
+  f.write('dossiers/parts/gate/calls/last.md', externalCall.replace('the named prose', 'a third call'));
   const fourth = f.run(['trial', 'gate', 'last.md'], { RUN_LOG: log });
   assert.equal(fourth.status, 0, fourth.stderr);
   assert.equal(readFileSync(log, 'utf8'), 'run\nrun\nrun\n');
@@ -179,14 +179,14 @@ test('an edited entry blocks a new execution without any writes, while an edited
 test('a confirming rerun writes no byte of the record, however often it runs, and consumes its call', t => {
   const f = fixture(t);
   f.external(echo);
-  f.write('dossiers/components/gate/calls/check.md', externalCall);
+  f.write('dossiers/parts/gate/calls/check.md', externalCall);
   const first = f.run(['trial', 'gate', 'check.md']);
   assert.equal(first.status, 0, first.stderr);
   const name = first.stdout.match(/^answer: evidence\/(\S+)\.json · published$/m)![1];
   writeFileSync(join(f.dir, 'evidence', `${name}.md`), 'The runner observed the named prose as called.\n');
   const before = f.record();
   for (let rerun = 1; rerun <= 10; rerun++) {
-    f.write('dossiers/components/gate/calls/check.md', externalCall.replace('the runner observes this file', `the runner observes this file, again (${rerun})`));
+    f.write('dossiers/parts/gate/calls/check.md', externalCall.replace('the runner observes this file', `the runner observes this file, again (${rerun})`));
     const r = f.run(['trial', 'gate', 'check.md']);
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.stdout, new RegExp(`^answer: evidence/${name}\\.json · kept: the same answer on an unchanged basis; nothing is written$`, 'm'));
@@ -200,11 +200,11 @@ test('a refused publication leaves the entries and the pending call untouched; o
   const f = fixture(t);
   f.external(echo);
   const fails = (because: string) => externalCall.replace('check: pass', 'check: fail').replace('the runner observes this file', because);
-  f.write('dossiers/components/gate/calls/fails.md', fails('the runner finds the fault'));
+  f.write('dossiers/parts/gate/calls/fails.md', fails('the runner finds the fault'));
   const first = f.run(['trial', 'gate', 'fails.md'], f.at(T0));
   assert.equal(first.status, 0, first.stderr);
   const name = first.stdout.match(/^answer: evidence\/(\S+)\.json · published$/m)![1];
-  f.write('dossiers/components/gate/calls/again.md', fails('the fault is still there'));
+  f.write('dossiers/parts/gate/calls/again.md', fails('the fault is still there'));
   const before = f.record(), call = readFileSync(join(f.dir, 'calls/again.md'), 'utf8');
   // The runner now says pass, on the same basis: a violation would disappear without anyone deciding it.
   const refused = f.run(['trial', 'gate', 'again.md'], { ...f.at(T0), OUTCOME_check: 'pass' });
@@ -230,11 +230,11 @@ test('a refused publication leaves the entries and the pending call untouched; o
 test('an unclassified miscall is not replaced; once its reading classifies it, the pending call publishes and the classification moves into previous', t => {
   const f = fixture(t);
   f.external(echo);
-  f.write('dossiers/components/gate/calls/pass.md', externalCall);
+  f.write('dossiers/parts/gate/calls/pass.md', externalCall);
   const first = f.run(['trial', 'gate', 'pass.md'], { ...f.at(T0), OUTCOME_check: 'fail' });
   assert.equal(first.status, 1, first.stdout + first.stderr);
   const name = first.stdout.match(/^answer: evidence\/(\S+)\.json · published$/m)![1];
-  f.write('dossiers/components/gate/calls/fail.md', externalCall.replace('check: pass', 'check: fail').replace('the runner observes this file', 'the runner finds the fault the first call missed'));
+  f.write('dossiers/parts/gate/calls/fail.md', externalCall.replace('check: pass', 'check: fail').replace('the runner observes this file', 'the runner finds the fault the first call missed'));
   const before = f.record();
   const refused = f.run(['trial', 'gate', 'fail.md'], { ...f.at(T0), OUTCOME_check: 'fail' });
   assert.equal(refused.status, 2, refused.stdout + refused.stderr);
@@ -256,7 +256,7 @@ test('a classified miscall that an equal answer replaces on a moved basis does n
   const f = fixture(t);
   f.external(echo);
   const t1 = (because: string) => externalCall.replace('check: pass', 'T1: pass').replace('the runner observes this file', because);
-  f.write('dossiers/components/gate/calls/t1.md', t1('the runner observes T1'));
+  f.write('dossiers/parts/gate/calls/t1.md', t1('the runner observes T1'));
   const first = f.run(['trial', 'gate', 't1.md'], { ...f.at(T0), OUTCOME_T1: 'fail' });
   assert.equal(first.status, 1, first.stdout + first.stderr);
   const name = first.stdout.match(/^answer: evidence\/(\S+)\.json · published$/m)![1];
@@ -264,7 +264,7 @@ test('a classified miscall that an equal answer replaces on a moved basis does n
   writeFileSync(join(f.dir, 'evidence', `${name}.md`), 'The runner found T1 failing; the call promised a pass the words never made.\nclassification: call was wrong\n');
   // T1, which the question names, is reworded: the basis under the miscall moved.
   writeFileSync(join(f.dir, 'prose.md'), prose.replace('[T1] This piece promises nothing eventual.', '[T1] This piece promises nothing eventual, ever.'));
-  f.write('dossiers/components/gate/calls/again.md', t1('the runner observes T1 as reworded'));
+  f.write('dossiers/parts/gate/calls/again.md', t1('the runner observes T1 as reworded'));
   const again = f.run(['trial', 'gate', 'again.md'], { ...f.at(T1), OUTCOME_T1: 'fail' });
   assert.equal(again.status, 1, again.stdout + again.stderr);
   assert.match(again.stdout, new RegExp(`^answer: evidence/${name}\\.json · replaced the recorded answer$`, 'm'));
@@ -272,7 +272,7 @@ test('a classified miscall that an equal answer replaces on a moved basis does n
   assert.deepEqual([entry.answer.result, entry.answer.outcomes, entry.previous], ['miscalled', { T1: 'fail' }, null], 'an equal answer: the miscall it replaced does not become previous');
   assert.deepEqual(entry.replaced, { trial: missed.established.trial, moved: ['passage T1'] });
   assert.equal(existsSync(join(f.dir, 'evidence', `${name}.md`)), false, 'the reading went, and its classification with it');
-  const gate = JSON.parse(f.run(['verify', '--json']).stdout).components.find((c: { id: string }) => c.id === 'gate');
+  const gate = JSON.parse(f.run(['verify', '--json']).stdout).parts.find((c: { id: string }) => c.id === 'gate');
   assert.deepEqual(gate.tripwires, [{ name: 'miscall unclassified', where: `evidence/${name}.json` }], 'the new miscall needs a classification of its own');
 });
 
@@ -282,7 +282,7 @@ test('a call redrafted while its trial runs stays pending: publication consumes 
   const f = fixture(t);
   const call = join(f.dir, 'calls', 'check.md'), redrafted = externalCall.replace('the runner observes this file', 'the runner observes this file, as redrafted');
   f.external(`import {readFileSync,writeFileSync} from 'node:fs'; readFileSync(0, 'utf8'); writeFileSync(process.env.CALL, process.env.REDRAFTED); console.log(JSON.stringify({outcomes:{check:'pass'}}));`);
-  f.write('dossiers/components/gate/calls/check.md', externalCall);
+  f.write('dossiers/parts/gate/calls/check.md', externalCall);
   const r = f.run(['trial', 'gate', 'check.md'], { CALL: call, REDRAFTED: redrafted });
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /^answer: evidence\/\S+\.json · published$/m, 'the answer to the call as the trial captured it is published');
@@ -293,25 +293,25 @@ test('a call redrafted while its trial runs stays pending: publication consumes 
 test('a question that no longer exists is removed by the next publication with its reading and its manifest line, and not by a refused one', t => {
   const f = fixture(t);
   f.external(echo);
-  f.write('dossiers/components/gate/calls/a1.md', externalCall.replace('check: pass', 'A1: pass').replace('the runner observes this file', 'the runner observes A1'));
+  f.write('dossiers/parts/gate/calls/a1.md', externalCall.replace('check: pass', 'A1: pass').replace('the runner observes this file', 'the runner observes A1'));
   const a1 = f.run(['trial', 'gate', 'a1.md']);
   assert.equal(a1.status, 0, a1.stdout + a1.stderr);
   const gone = a1.stdout.match(/^answer: evidence\/(\S+)\.json · published$/m)![1];
   assert.match(gone, /^external-A1-[0-9a-f]{6}$/);
   writeFileSync(join(f.dir, 'evidence', `${gone}.md`), 'The runner observed A1.\n');
   const fails = (because: string) => externalCall.replace('check: pass', 'check: fail').replace('the runner observes this file', because);
-  f.write('dossiers/components/gate/calls/fails.md', fails('the runner finds the fault'));
+  f.write('dossiers/parts/gate/calls/fails.md', fails('the runner finds the fault'));
   assert.equal(f.run(['trial', 'gate', 'fails.md']).status, 0);
   writeFileSync(join(f.dir, 'prose.md'), prose.replace('## Always\n[A1] Always, {Ready}.\n\n', ''));
-  const gate = () => JSON.parse(f.run(['verify', '--json']).stdout).components.find((c: { id: string }) => c.id === 'gate');
+  const gate = () => JSON.parse(f.run(['verify', '--json']).stdout).parts.find((c: { id: string }) => c.id === 'gate');
   assert.ok(gate().flags.some((flag: { name: string; where: string }) => flag.name === 'question gone' && flag.where.includes(`evidence/${gone}.json`)));
   // A refused publication removes nothing.
-  f.write('dossiers/components/gate/calls/again.md', fails('the fault is still there'));
+  f.write('dossiers/parts/gate/calls/again.md', fails('the fault is still there'));
   const before = f.record();
   assert.equal(f.run(['trial', 'gate', 'again.md'], { OUTCOME_check: 'pass' }).status, 2);
   assert.deepEqual(f.record(), before, 'the gone question\'s entry, reading and manifest line wait for a publication');
   // The next publication does.
-  f.write('dossiers/components/gate/calls/other.md', externalCall.replace('check: pass', 'other: pass').replace('the runner observes this file', 'another question'));
+  f.write('dossiers/parts/gate/calls/other.md', externalCall.replace('check: pass', 'other: pass').replace('the runner observes this file', 'another question'));
   const other = f.run(['trial', 'gate', 'other.md']);
   assert.equal(other.status, 0, other.stdout + other.stderr);
   assert.match(other.stdout, new RegExp(`^  removed evidence/${gone}\\.json: its question no longer exists$`, 'm'));
@@ -329,18 +329,18 @@ const published = (stdout: string) => stdout.match(/^answer: evidence\/(\S+)\.js
 test('an answer is removed by the publication whose answer supersedes it, with its reading and its manifest line', t => {
   const f = fixture(t);
   f.external(echo);
-  f.write('dossiers/components/gate/calls/a1.md', about('A1: pass', 'the runner observes A1'));
+  f.write('dossiers/parts/gate/calls/a1.md', about('A1: pass', 'the runner observes A1'));
   const first = f.run(['trial', 'gate', 'a1.md'], f.at(T0));
   assert.equal(first.status, 0, first.stdout + first.stderr);
   const earlier = published(first.stdout);
   writeFileSync(join(f.dir, 'evidence', `${earlier}.md`), 'The runner observed A1.\n');
-  const gate = () => JSON.parse(f.run(['verify', '--json']).stdout).components.find((c: { id: string }) => c.id === 'gate');
+  const gate = () => JSON.parse(f.run(['verify', '--json']).stdout).parts.find((c: { id: string }) => c.id === 'gate');
   const marks = (a: { marks: Record<string, { mark: string }> }) => Object.fromEntries(Object.entries(a.marks).map(([id, m]) => [id, m.mark]));
   const before = gate();
   assert.ok(!before.flags.some((flag: { name: string }) => flag.name === 'answer superseded'), 'nothing later: nothing superseded');
   // Another question, about A1 and T1: it touches everything the first answered for, and the marks
   // are the same without the first, so the first goes with this publication.
-  f.write('dossiers/components/gate/calls/both.md', about('A1: pass\n  T1: pass', 'the runner observes A1 and T1'));
+  f.write('dossiers/parts/gate/calls/both.md', about('A1: pass\n  T1: pass', 'the runner observes A1 and T1'));
   const second = f.run(['trial', 'gate', 'both.md'], f.at(T1));
   assert.equal(second.status, 0, second.stdout + second.stderr);
   const later = published(second.stdout);
@@ -357,31 +357,31 @@ test('an answer is removed by the publication whose answer supersedes it, with i
 test('a superseded answer that holds a counterexample waits for the owner\'s forget: verify flags it, recheck does not run it, and the next publication removes it, even one that writes nothing', t => {
   const f = fixture(t);
   f.external(echo);
-  f.write('dossiers/components/gate/calls/e1.md', about('E1: fail', 'the runner finds the event refused'));
+  f.write('dossiers/parts/gate/calls/e1.md', about('E1: fail', 'the runner finds the event refused'));
   const first = f.run(['trial', 'gate', 'e1.md'], { ...f.at(T0), OUTCOME_E1: 'fail' });
   assert.equal(first.status, 0, first.stdout + first.stderr);
   const earlier = published(first.stdout);
   writeFileSync(join(f.dir, 'evidence', `${earlier}.md`), 'retelling: the runner found E1 refused, as called.\n');
-  f.write('dossiers/components/gate/calls/e1-m1.md', about('E1: fail\n  M1: pass', 'the runner observes E1 and M1'));
+  f.write('dossiers/parts/gate/calls/e1-m1.md', about('E1: fail\n  M1: pass', 'the runner observes E1 and M1'));
   const second = f.run(['trial', 'gate', 'e1-m1.md'], { ...f.at(T1), OUTCOME_E1: 'fail' });
   assert.equal(second.status, 0, second.stdout + second.stderr);
   const later = published(second.stdout);
   assert.doesNotMatch(second.stdout, /removed evidence/, 'a counterexample is not let go without the owner');
   assert.deepEqual(f.entries(), [earlier, later].sort());
-  const gate = () => JSON.parse(f.run(['verify', '--json']).stdout).components.find((c: { id: string }) => c.id === 'gate');
+  const gate = () => JSON.parse(f.run(['verify', '--json']).stdout).parts.find((c: { id: string }) => c.id === 'gate');
   const digest = JSON.parse(readFileSync(join(f.dir, 'integrity.json'), 'utf8')).evidence[earlier].slice(0, 8);
   const withIt = gate();
   assert.deepEqual(withIt.flags.filter((flag: { name: string }) => flag.name === 'answer superseded'), [{ name: 'answer superseded', entry: earlier, where: `evidence/${earlier}.json: the answers that decide stand in its place; it holds a counterexample, so it stays until the owner forgets ${earlier}@${digest}` }]);
   assert.equal(withIt.answers.find((r: { entry: string }) => r.entry === earlier).superseded, true, 'the ledger\'s row says so');
   const re = f.run(['recheck', 'gate'], { OUTCOME_E1: 'fail' });
   assert.equal(re.status, 0, re.stdout + re.stderr);
-  assert.match(re.stdout, new RegExp(`^not run: components/gate/evidence/${earlier}\\.json · answer superseded: `, 'm'));
+  assert.match(re.stdout, new RegExp(`^not run: parts/gate/evidence/${earlier}\\.json · answer superseded: `, 'm'));
   assert.match(re.stdout, /^recheck: 1 same, 0 different, 1 not run$/m);
   const forget = f.run(['decide', 'gate', 'forget', `${earlier}@${digest}`, '--', 'the second call asks about E1 and M1; one answer on E1 is enough']);
   assert.equal(forget.status, 0, forget.stdout + forget.stderr);
   assert.match(gate().flags.find((flag: { name: string }) => flag.name === 'answer superseded').where, /, and the owner forgot it; the next publication removes it$/);
   // The same answer again writes nothing, and still removes it.
-  f.write('dossiers/components/gate/calls/again.md', about('E1: fail\n  M1: pass', 'the runner observes E1 and M1 again'));
+  f.write('dossiers/parts/gate/calls/again.md', about('E1: fail\n  M1: pass', 'the runner observes E1 and M1 again'));
   const third = f.run(['trial', 'gate', 'again.md'], { ...f.at(T2), OUTCOME_E1: 'fail' });
   assert.equal(third.status, 0, third.stdout + third.stderr);
   assert.match(third.stdout, new RegExp(`^answer: evidence/${later}\\.json · kept: `, 'm'));
@@ -393,27 +393,27 @@ test('a superseded answer that holds a counterexample waits for the owner\'s for
   assert.deepEqual(conclusions(without), conclusions(withIt), 'removing a superseded answer changes no conclusion');
 });
 
-test('a system checks member integrity before generating or executing', t => {
-  const f = fixture(t); f.system();
-  f.write('dossiers/components/gate/integrity.json', JSON.stringify({ ...empty, evidence: { 'tlc-A1-abcdef': 'a'.repeat(64) } }));
-  f.write('dossiers/systems/net/calls/check.md', tlcCall.replace('model/Gate.tla', 'model/generated/Net.tla').replace('model/Gate.cfg', 'model/generated/A1_all_honest.cfg') + 'property: A1\nscenario: all-honest\n');
+test('a composition checks member integrity before generating or executing', t => {
+  const f = fixture(t); f.composition();
+  f.write('dossiers/parts/gate/integrity.json', JSON.stringify({ ...empty, evidence: { 'tlc-A1-abcdef': 'a'.repeat(64) } }));
+  f.write('dossiers/compositions/net/calls/check.md', tlcCall.replace('model/Gate.tla', 'model/generated/Net.tla').replace('model/Gate.cfg', 'model/generated/A1_all_honest.cfg') + 'property: A1\nscenario: all-honest\n');
   const before = fingerprint(f.root);
   const r = f.run(['trial', 'net', 'check.md']);
   assert.equal(r.status, 2, r.stderr);
-  assert.match(r.stderr, /components\/gate: answer removed: evidence\/tlc-A1-abcdef\.json/);
+  assert.match(r.stderr, /parts\/gate: answer removed: evidence\/tlc-A1-abcdef\.json/);
   assert.deepEqual(fingerprint(f.root), before);
 });
 
 test('aborted external and Apalache executions retain the requested runner and scope', t => {
   const f = fixture(t);
   f.external('console.log("no verdict"); process.exitCode = 1;');
-  f.write('dossiers/components/gate/calls/check.md', externalCall);
+  f.write('dossiers/parts/gate/calls/check.md', externalCall);
   const external = f.run(['trial', 'gate', 'check.md']);
   assert.equal(external.status, 3, external.stderr);
   assert.equal(f.result().runner, 'check');
   f.model();
   const apalache = f.executable('apalache.mjs', 'console.error("tool could not start"); process.exitCode = 9;');
-  f.write('dossiers/components/gate/calls/apalache.md', 'kind: apalache\nmode: bounded\nlength: 7\nexecutes:\n  - model/Gate.tla\nreach: seven steps\nexpect:\n  A1: holds\nbecause: the bound is explicit\n');
+  f.write('dossiers/parts/gate/calls/apalache.md', 'kind: apalache\nmode: bounded\nlength: 7\nexecutes:\n  - model/Gate.tla\nreach: seven steps\nexpect:\n  A1: holds\nbecause: the bound is explicit\n');
   const r = f.run(['trial', 'gate', 'apalache.md'], { APALACHE: apalache });
   assert.equal(r.status, 3, r.stderr);
   const id = readdirSync(join(f.dir, 'trials')).find(id => id.includes('-apalache-'))!;
@@ -428,7 +428,7 @@ test('aborted external and Apalache executions retain the requested runner and s
 
 test('TLC receives private declared files and local import closure despite live edits', t => {
   const f = fixture(t); f.model();
-  f.write('dossiers/components/gate/model/Unused.tla', '---- MODULE Unused ----\n====\n');
+  f.write('dossiers/parts/gate/model/Unused.tla', '---- MODULE Unused ----\n====\n');
   const expected = Object.fromEntries(['model/Gate.tla', 'model/Gate.cfg', 'model/Helper.tla'].map(path => [path, fileHash(join(f.dir, path))]));
   const java = f.executable('java.mjs', `import {readFileSync,writeFileSync} from 'node:fs'; import {join} from 'node:path';
 writeFileSync(process.env.ORIGINAL_HELPER, 'changed while the checker runs');
@@ -446,14 +446,14 @@ console.log(${JSON.stringify(success)});
   assert.equal(result.cwd, '$INPUTS/model');
   assert.notEqual(fileHash(join(f.dir, 'model/Helper.tla')), expected['model/Helper.tla']);
   const verified = f.run(['verify', '--json']);
-  const gate = JSON.parse(verified.stdout).components[0];
+  const gate = JSON.parse(verified.stdout).parts[0];
   assert.equal(gate.marks.A1.mark, 'lapsed', JSON.stringify(gate.marks.A1));
 });
 
 test('external runners receive frozen files and cannot silently replace those inputs', t => {
   const f = fixture(t);
   f.external(`import {readFileSync,writeFileSync} from 'node:fs'; const input=JSON.parse(readFileSync(0,'utf8')); writeFileSync(input.files['prose.md'],'changed private input'); console.log(JSON.stringify({outcomes:{check:'pass'}}));`);
-  f.write('dossiers/components/gate/calls/check.md', externalCall);
+  f.write('dossiers/parts/gate/calls/check.md', externalCall);
   const before = readFileSync(join(f.dir, 'prose.md'), 'utf8');
   const r = f.run(['trial', 'gate', 'check.md']);
   assert.equal(r.status, 3, r.stderr);
@@ -471,8 +471,8 @@ test('changing only an imported module permits a distinct trial in the same minu
   const env = { JAVA: java, TLA_TOOLS: join(f.dir, 'model/Gate.cfg') };
   const first = f.run(['trial', 'gate', 'check.md'], env);
   assert.equal(first.status, 0, first.stderr);
-  f.write('dossiers/components/gate/model/Helper.tla', '---- MODULE Helper ----\nHelperOK == 1 = 1\n====\n');
-  f.write('dossiers/components/gate/calls/check.md', tlcCall);
+  f.write('dossiers/parts/gate/model/Helper.tla', '---- MODULE Helper ----\nHelperOK == 1 = 1\n====\n');
+  f.write('dossiers/parts/gate/calls/check.md', tlcCall);
   const second = f.run(['trial', 'gate', 'check.md'], env);
   assert.equal(second.status, 0, second.stderr);
   assert.equal(readdirSync(join(f.dir, 'trials')).length, 2);
@@ -482,24 +482,24 @@ test('changing only an imported module permits a distinct trial in the same minu
 
 test('import closure includes transitive INSTANCE/config modules and ignores comment imports', t => {
   const f = fixture(t); f.model();
-  f.write('dossiers/components/gate/model/Helper.tla', '---- MODULE Helper ----\n(* EXTENDS NotARead (* INSTANCE Neither *) *)\nH == INSTANCE Leaf\nHelperOK == H!OK\n====\n');
-  f.write('dossiers/components/gate/model/Leaf.tla', '---- MODULE Leaf ----\nOK == TRUE\n====\n');
-  f.write('dossiers/components/gate/model/Override.tla', '---- MODULE Override ----\nValue == 1\n====\n');
-  f.write('dossiers/components/gate/model/Gate.cfg', 'INIT Init\nNEXT Next\nINVARIANT A1\nCONSTANT C <- [Override] Value\n');
-  const call = parseCall(tlcCall), { plan, problems } = planTrial({ call, dossierDir: f.dir, kind: 'component' });
+  f.write('dossiers/parts/gate/model/Helper.tla', '---- MODULE Helper ----\n(* EXTENDS NotARead (* INSTANCE Neither *) *)\nH == INSTANCE Leaf\nHelperOK == H!OK\n====\n');
+  f.write('dossiers/parts/gate/model/Leaf.tla', '---- MODULE Leaf ----\nOK == TRUE\n====\n');
+  f.write('dossiers/parts/gate/model/Override.tla', '---- MODULE Override ----\nValue == 1\n====\n');
+  f.write('dossiers/parts/gate/model/Gate.cfg', 'INIT Init\nNEXT Next\nINVARIANT A1\nCONSTANT C <- [Override] Value\n');
+  const call = parseCall(tlcCall), { plan, problems } = planTrial({ call, dossierDir: f.dir, kind: 'part' });
   assert.deepEqual(problems, []);
   assert.deepEqual(executionDependencies(f.dir, call, plan), { files: ['model/Gate.cfg', 'model/Gate.tla', 'model/Helper.tla', 'model/Leaf.tla', 'model/Override.tla'], shared: ['tla:Naturals'] });
-  f.write('dossiers/components/gate/model/Leaf.tla', '---- MODULE Leaf ----\n---- MODULE Nested ----\n====\n====\n');
+  f.write('dossiers/parts/gate/model/Leaf.tla', '---- MODULE Leaf ----\n---- MODULE Nested ----\n====\n====\n');
   assert.throws(() => executionDependencies(f.dir, call, plan), /nested TLA\+ modules/);
 });
 
 test('Alloy open closure captures reachable local modules and leaves util libraries explicit', t => {
   const f = fixture(t);
-  f.write('dossiers/components/gate/model/Gate.als', 'module Gate\nopen lib/Helper\nopen util/ordering[Thing]\nsig Thing {}\nassert A1 { some Thing }\ncheck A1 for 3\n');
-  f.write('dossiers/components/gate/model/lib/Helper.als', 'module lib/Helper\n// open Missing\nopen lib/Leaf\n');
-  f.write('dossiers/components/gate/model/lib/Leaf.als', 'module lib/Leaf\n');
+  f.write('dossiers/parts/gate/model/Gate.als', 'module Gate\nopen lib/Helper\nopen util/ordering[Thing]\nsig Thing {}\nassert A1 { some Thing }\ncheck A1 for 3\n');
+  f.write('dossiers/parts/gate/model/lib/Helper.als', 'module lib/Helper\n// open Missing\nopen lib/Leaf\n');
+  f.write('dossiers/parts/gate/model/lib/Leaf.als', 'module lib/Leaf\n');
   const call = parseCall('kind: alloy\nexecutes:\n  - model/Gate.als\nreach: three things\nexpect:\n  A1: no counterexample\nbecause: bounded query\n');
-  const { plan, problems } = planTrial({ call, dossierDir: f.dir, kind: 'component' });
+  const { plan, problems } = planTrial({ call, dossierDir: f.dir, kind: 'part' });
   assert.deepEqual(problems, []);
   assert.deepEqual(executionDependencies(f.dir, call, plan), { files: ['model/Gate.als', 'model/lib/Helper.als', 'model/lib/Leaf.als'], shared: ['alloy:util/ordering'] });
 });
@@ -515,10 +515,10 @@ test('real TLC executes the copied local-module closure', { skip: !process.env.T
 
 test('real Alloy executes the copied local open closure', { skip: !process.env.ALLOY_JAR }, t => {
   const f = fixture(t);
-  f.write('dossiers/components/gate/model/Gate.als', 'module Gate\nopen lib/Helper\nassert A1 { okay[] }\ncheck A1 for 3\n');
-  f.write('dossiers/components/gate/model/lib/Helper.als', 'module lib/Helper\nopen lib/Leaf\npred okay[] { leaf[] }\n');
-  f.write('dossiers/components/gate/model/lib/Leaf.als', 'module lib/Leaf\npred leaf[] { no none }\n');
-  f.write('dossiers/components/gate/calls/check.md', 'kind: alloy\nexecutes:\n  - model/Gate.als\nreach: three things\nexpect:\n  A1: no counterexample\nbecause: bounded query\n');
+  f.write('dossiers/parts/gate/model/Gate.als', 'module Gate\nopen lib/Helper\nassert A1 { okay[] }\ncheck A1 for 3\n');
+  f.write('dossiers/parts/gate/model/lib/Helper.als', 'module lib/Helper\nopen lib/Leaf\npred okay[] { leaf[] }\n');
+  f.write('dossiers/parts/gate/model/lib/Leaf.als', 'module lib/Leaf\npred leaf[] { no none }\n');
+  f.write('dossiers/parts/gate/calls/check.md', 'kind: alloy\nexecutes:\n  - model/Gate.als\nreach: three things\nexpect:\n  A1: no counterexample\nbecause: bounded query\n');
   const r = f.run(['trial', 'gate', 'check.md', '--timeout', '30']);
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.equal(f.result().outcomes.A1, 'no counterexample');
@@ -526,8 +526,8 @@ test('real Alloy executes the copied local open closure', { skip: !process.env.A
 
 test('real Apalache executes a copied module and preserves the bounded scope', { skip: !process.env.APALACHE }, t => {
   const f = fixture(t);
-  f.write('dossiers/components/gate/model/Gate.tla', '---- MODULE Gate ----\nEXTENDS Integers\nVARIABLES\n  \\* @type: Int;\n  x\nInit == x = 0\nNext == x\' = x\nA1 == x = 0\n====\n');
-  f.write('dossiers/components/gate/calls/check.md', 'kind: apalache\nmode: bounded\nlength: 2\nexecutes:\n  - model/Gate.tla\nreach: two steps\nexpect:\n  A1: holds\nbecause: x never changes\n');
+  f.write('dossiers/parts/gate/model/Gate.tla', '---- MODULE Gate ----\nEXTENDS Integers\nVARIABLES\n  \\* @type: Int;\n  x\nInit == x = 0\nNext == x\' = x\nA1 == x = 0\n====\n');
+  f.write('dossiers/parts/gate/calls/check.md', 'kind: apalache\nmode: bounded\nlength: 2\nexecutes:\n  - model/Gate.tla\nreach: two steps\nexpect:\n  A1: holds\nbecause: x never changes\n');
   const r = f.run(['trial', 'gate', 'check.md', '--timeout', '30']);
   const record = f.result();
   assert.equal(r.status, 0, r.stderr + r.stdout + readFileSync(join(f.dir, 'trials', record.id, 'output.txt'), 'utf8'));

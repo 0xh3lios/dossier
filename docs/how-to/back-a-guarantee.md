@@ -1,6 +1,6 @@
 # Back a guarantee
 
-Tie a component's guarantee to the evidence that backs it. A guarantee is a K passage, a fact about the deployed code that the abstraction relies on without modeling it. Its last sentence names the backing. Once the backing resolves, the guarantee is marked `backed` instead of `assumed`.
+Tie a part's guarantee to the evidence that backs it. A guarantee is a K passage, a fact about the deployed code that the abstraction relies on without modeling it. Its last sentence names the backing. Once the backing resolves, the guarantee is marked `backed` instead of `assumed`.
 
 ## Steps
 
@@ -25,7 +25,7 @@ Tie a component's guarantee to the evidence that backs it. A guarantee is a K pa
    - **`external <runner>`** names a runner declared in `dossier.json`, such as `external replay` for Harbor's runner. The guarantee stays `unresolved` until an answer from that runner lists its K id under `covers`.
    - **`none`** says on purpose that nothing backs it.
 
-3. **Verify.** Run `dossier verify` to read the current backing status. `dossier render` saves it in the component ledger's guarantees table:
+3. **Verify.** Run `dossier verify` to read the current backing status. `dossier render` saves it in the part ledger's guarantees table:
 
    - `backed`: the rule or record was found, and every answer that rests on it records a hash of its text.
    - `assumed`: the passage says `none`.

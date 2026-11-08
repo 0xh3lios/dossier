@@ -1,0 +1,172 @@
+{
+  "schema": 1,
+  "dossier": "parts/breaker",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/Breaker.tla",
+      "model/Breaker_W1.cfg"
+    ],
+    "expects": [
+      "NotW1",
+      "TypeOK"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nexecutes:\n  - model/Breaker.tla\n  - model/Breaker_W1.cfg\nreach: one breaker\nexpect:\n  TypeOK: holds\n  NotW1: violated; trace: Armed > Spent\nbecause: |\n  W1 stops once and refuses a second stop in Spent. The first stop sends halt once.\n",
+    "reach": "one breaker",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "NotW1": {
+        "expect": "violated",
+        "trace": [
+          "Armed",
+          "Spent"
+        ]
+      }
+    },
+    "because": "W1 stops once and refuses a second stop in Spent. The first stop sends halt once."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "NotW1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "NotW1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "NotW1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "state": "\"Armed\"",
+          "w1_at": "0",
+          "halted": "FALSE",
+          "w1_armed_sent_halt": "0",
+          "sent_halt": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "M1_Stop",
+        "values": {
+          "state": "\"Spent\"",
+          "w1_at": "1",
+          "halted": "TRUE",
+          "w1_armed_sent_halt": "0",
+          "sent_halt": "1"
+        }
+      }
+    ],
+    "states": {
+      "generated": 2,
+      "distinct": 2,
+      "queued": 0,
+      "depth": 2
+    },
+    "actions": {
+      "M1_Stop": {
+        "move": "M1",
+        "event": "stop",
+        "targets": [
+          "Spent"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 2
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [
+      "TypeOK"
+    ],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "e508aa87",
+      "NotW1": "c8ef4f8e"
+    },
+    "reach": {
+      "text": "one breaker",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "cfaad1f7",
+        "S2": "027ee8f5",
+        "E1": "bdc4c06a",
+        "M1": "776639fa",
+        "R1": "e3bde544",
+        "A1": "0ebb46c1",
+        "A2": "ad929dbe",
+        "W1": "a814d588",
+        "X1": "5d5a0ec4",
+        "K1": "d004a497",
+        "T1": "cf2e6345"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "8f4359bc3def3404",
+          "path": "modules/breaker/behavior/invariants.md"
+        }
+      },
+      "ir": "d7a0f8880a2c16ad"
+    },
+    "executed": {
+      "model/Breaker.tla": "548bf0d52107c1d2fec1bc6c47414c8b5c783c1a35cbcce901568a2e509cc1e4",
+      "model/Breaker_W1.cfg": "4a90c9befd026d9a86f572a1a8d1254753519b9e86f34b0274563eecb3f3f249"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/Breaker.tla": "548bf0d52107c1d2fec1bc6c47414c8b5c783c1a35cbcce901568a2e509cc1e4",
+        "model/Breaker_W1.cfg": "4a90c9befd026d9a86f572a1a8d1254753519b9e86f34b0274563eecb3f3f249"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2337-tlc-ad1aac",
+    "at": "2026-11-08T23:37:36.497Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "3e3e16d2341d25481cdc7211d8b2f9d5f77a06c351f7694791bc078ef6c6818c"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

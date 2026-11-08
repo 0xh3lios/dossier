@@ -1,0 +1,189 @@
+{
+  "schema": 1,
+  "dossier": "compositions/control",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/generated/A1_executor_offline.cfg",
+      "model/generated/Control.tla"
+    ],
+    "expects": [
+      "A1",
+      "TypeOK"
+    ],
+    "property": "A1",
+    "scenario": "executor-offline",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nproperty: A1\nscenario: executor-offline\nexecutes:\n  - model/generated/Control.tla\n  - model/generated/A1_executor_offline.cfg\nreach: delay 2; amounts up to 2; ceiling 2..4; effects up to 4\nexpect:\n  TypeOK: holds\n  A1: holds\nbecause: |\n  With no executor nothing executes at all.\n",
+    "reach": "delay 2; amounts up to 2; ceiling 2..4; effects up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "A1": {
+        "expect": "holds"
+      }
+    },
+    "because": "With no executor nothing executes at all."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "A1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "A1": "holds"
+    },
+    "violation": null,
+    "trace": [],
+    "states": {
+      "generated": 159171,
+      "distinct": 12540,
+      "queued": 0,
+      "depth": 17
+    },
+    "actions": {
+      "vault_M3_Move": {
+        "distinct": 4560,
+        "generated": 20900
+      },
+      "vault_M4_Release": {
+        "distinct": 0,
+        "generated": 20900
+      },
+      "Governance": {
+        "distinct": 1582,
+        "generated": 18810
+      },
+      "Public": {
+        "distinct": 0,
+        "generated": 0
+      },
+      "User": {
+        "distinct": 4115,
+        "generated": 86020
+      },
+      "TickStep": {
+        "distinct": 2282,
+        "generated": 12540
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "6c1ceef6",
+      "A1": "9ef0097c"
+    },
+    "reach": {
+      "text": "delay 2; amounts up to 2; ceiling 2..4; effects up to 4",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_chain": "\"honest\"",
+        "Mode_governance": "\"honest\"",
+        "Mode_public": "\"offline\"",
+        "Mode_user": "\"honest\""
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_chain": "honest",
+        "Mode_governance": "honest",
+        "Mode_public": "offline",
+        "Mode_user": "honest"
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "e19a83c6",
+        "A2": "ceadfb4d",
+        "O1": "f4d2717f",
+        "N1": "674ccf7e",
+        "G1": "449661ee",
+        "G2": "124c7d47",
+        "W1": "e76e23cf",
+        "T1": "74c165be"
+      },
+      "records": {
+        "timelock#observation:delay-check-2026-11-01": "d33b3049427305ab",
+        "vault#observation:checkpoint-2026-11-01": "f53d903a45677849",
+        "timelock#actor:governance": "6358e80b9e0ab873"
+      },
+      "backing": {},
+      "wiring": "07bf80b133788637",
+      "module": "51ac087abf73ae23",
+      "members": {
+        "timelock": {
+          "prose": "b912853ee8876146",
+          "backing": {
+            "K1": "6d688aa061b03fd3",
+            "K2": "assumed"
+          }
+        },
+        "vault": {
+          "prose": "ad6f1070f6fac376",
+          "backing": {
+            "K1": "48fb01304d30b4b7",
+            "K2": "e8e54bc755943a68",
+            "K3": "bb4712dfb9f4915d",
+            "K4": "assumed"
+          }
+        },
+        "breaker": {
+          "prose": "0c69391516bd3ac7",
+          "backing": {
+            "K1": "8f4359bc3def3404"
+          }
+        },
+        "adapter": {
+          "prose": "58d831b706099361",
+          "backing": {
+            "K1": "7b42dc7c1831a88a"
+          }
+        }
+      },
+      "scenario": "880d96e7ef4dc271",
+      "actors": "2995597098702b19",
+      "extras": "20e334be8ca825e1"
+    },
+    "executed": {
+      "model/generated/Control.tla": "d4e45876197f67cf27d8be2dad942f775ddf4feefc17564abbcbce36aed960ad",
+      "model/generated/A1_executor_offline.cfg": "d9ef5fc3ae028b3d82351a39bedea6b35e1351176470be1ce098643f1cb49e6f"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/generated/A1_executor_offline.cfg": "d9ef5fc3ae028b3d82351a39bedea6b35e1351176470be1ce098643f1cb49e6f",
+        "model/generated/Control.tla": "d4e45876197f67cf27d8be2dad942f775ddf4feefc17564abbcbce36aed960ad"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2338-tlc-8ec46b",
+    "at": "2026-11-08T23:38:56.753Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "d6fbe63adad078a6629028f835724040d33ac8bd52f08b5a1eed29fe42a358a4"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

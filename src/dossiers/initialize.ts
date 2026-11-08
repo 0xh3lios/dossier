@@ -9,7 +9,7 @@ import { durableWrite, flushDirectory, publishDecisionLocked, writeIntegrity } f
 import type { PublicationOptions } from './publication.ts';
 import type { NewDecision } from './decisions.ts';
 
-export interface InitialInputs { 'prose.md': string; 'composition.md'?: string; 'margin.md'?: string }
+export interface InitialInputs { 'prose.md': string; 'wiring.md'?: string; 'margin.md'?: string }
 
 // Unlike existsSync, this also observes a dangling link that must not be replaced.
 export function dossierPathExists(path: string): boolean {
@@ -18,14 +18,14 @@ export function dossierPathExists(path: string): boolean {
 }
 
 export function initializeDossierLocked(
-  root: string, kind: 'components' | 'systems', id: string, inputs: InitialInputs,
+  root: string, kind: 'parts' | 'compositions', id: string, inputs: InitialInputs,
   decision?: NewDecision, options: PublicationOptions = {},
 ): { dir: string; decision: string | null } {
   requireCurrent(root);
   const problem = idProblem(id);
   if (problem) throw new UsageError(problem);
-  if (!inputs['prose.md'] || (kind === 'systems' && !inputs['composition.md'])) throw new UsageError('a fresh dossier needs its authored inputs');
-  if (Object.keys(inputs).some(name => !['prose.md', 'composition.md', 'margin.md'].includes(name))) throw new UsageError('unsupported initial dossier input');
+  if (!inputs['prose.md'] || (kind === 'compositions' && !inputs['wiring.md'])) throw new UsageError('a fresh dossier needs its authored inputs');
+  if (Object.keys(inputs).some(name => !['prose.md', 'wiring.md', 'margin.md'].includes(name))) throw new UsageError('unsupported initial dossier input');
   if (decision && decision.verb !== 'begin') throw new UsageError('a fresh dossier can only begin');
   const parent = join(root, kind), dir = join(parent, id);
   if (dossierPathExists(dir)) throw new UsageError(`${kind}/${id} exists; initialization cannot replace its authority`);

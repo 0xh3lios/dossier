@@ -3,7 +3,7 @@ import { basename, join } from 'node:path';
 
 const keep = (path: string, text: string) => { if (existsSync(path) && readFileSync(path, 'utf8') === text) return false; writeFileSync(path, text); return true; };
 
-// A system's generated module and configurations, each written where it moved, and every other
+// A composition's generated module and configurations, each written where it moved, and every other
 // file under model/generated/ removed: a configuration for a scenario no property claims any more
 // is no cell, and would stay callable while it lay there. Trial uses this only
 // inside its private execution copy; scaffold writes the reviewable view.

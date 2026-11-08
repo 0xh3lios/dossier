@@ -1,9 +1,9 @@
-// The intermediate form: a component's prose as one machine with citations,
+// The intermediate form: a part's prose as one machine with citations,
 // the single source for the chart, its grid, the explorer and the model scaffold.
 import { resolveIds } from './expr.ts';
 import { EVENT_CASES, passageHashes, valuesIn } from './prose.ts';
 import type { Expr, Value } from './expr.ts';
-import type { BoundaryEffect, Children, ComponentProse, Datum, Field, GuaranteeForm, SeamForm, TableCell, Trigger, WordsForm } from './prose.ts';
+import type { BoundaryEffect, Children, PartProse, Datum, Field, GuaranteeForm, SeamForm, TableCell, Trigger, WordsForm } from './prose.ts';
 
 // Any type phrase, read field by field: min and max for a count or an amount, values for an enum.
 export interface Domain { type: 'count' | 'flag' | 'amount' | 'enum'; min?: number; max?: number; values?: string[]; unit?: string }
@@ -88,7 +88,7 @@ function domainOf(type: Domain): Value[] {
   return out;
 }
 
-export function compileIR(prose: ComponentProse): Ir {
+export function compileIR(prose: PartProse): Ir {
   const errors = [...prose.errors, ...prose.misnamed];
   const data = prose.boundary.data;
   const dataByName = Object.fromEntries(data.map(d => [d.name, d]));

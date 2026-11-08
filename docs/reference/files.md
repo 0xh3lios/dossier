@@ -9,12 +9,12 @@ dossiers/
   dossier.json            setup: storage format, plugin version, knowledge, runners
   README.md               what the area holds
   .gitignore              setup: keeps index.md, each dossier's trials/ and .running/, _scratch/ and node_modules/ out of git
-  index.md                render: a view of components by systems, kept out of git
+  index.md                render: a view of parts by compositions, kept out of git
   package.json            the chart's libraries
   actors/
     actors.md             the actors and their modes
     scenarios.md          the scenarios
-  components/<id>/
+  parts/<id>/
     prose.md              the abstraction
     margin.md             working notes: intake lines, the import's draft list
     doubts.md             passages read two ways, as two walks
@@ -30,8 +30,8 @@ dossiers/
     evidence/<name>.md    the agent's reading of that answer
     trials/<id>/          trial: a trial's bundle, local and kept out of git
     reviews/              second reads
-  systems/<id>/
-    composition.md        members, wiring, free sends, closure, default scenarios
+  compositions/<id>/
+    wiring.md             members, wiring, free sends, closure, default scenarios
     prose.md              the properties
     model/generated/      scaffold: <Concern>.tla, one .cfg per cell and one per walk
     model/extras.tla      appended to the generated module
@@ -45,16 +45,16 @@ A project whose dossiers root is not `dossiers/` at its top keeps a `.dossier-ro
 
 A dossier's id names its folder. It is lower case letters, digits and hyphens, starts with a letter, does not end with a hyphen, and has no two hyphens in a row, such as `timelock` or `price-feed`. TLA+ names write its hyphens as underscores.
 
-A component's module, `<Id>`, is named from the title of its prose, with every character but letters, digits and underscores dropped, such as `Timelock`. A system's module, `<Concern>`, is named from the system's id, with each hyphenated part capitalized and the parts joined, such as `Control`, or `PriceFeed` for `price-feed`. Scaffold materializes a system's generated module and configurations. Verify computes their expected identities in memory, and trial prepares generated inputs in a private copy. Neither rewrites `model/generated/`.
+A dossier's module is named from its id, with each hyphenated segment capitalized and the segments joined: a part's `<Id>`, such as `Timelock`, or `PasFiniteKey` for `pas-finite-key`, and a composition's `<Concern>`, such as `Control`, or `PriceFeed` for `price-feed`. Scaffold materializes a composition's generated module and configurations. Verify computes their expected identities in memory, and trial prepares generated inputs in a private copy. Neither rewrites `model/generated/`.
 
-Transient paths may also appear. A trial runs in `.running/<id>/` within its dossier, and an interrupted publication leaves its candidate entry there, with the list of the entries it drops in `.running/<id>.dropped.json`. Begin and import build a new dossier in a hidden `.initializing-<id>-<uuid>` sibling under `components/` or `systems/`. Publication locks and atomic replacement temporary files appear while a command writes. None of them carries evidence or owner authority. Use the [recovery commands](commands.md#storage-and-recovery) for an interrupted publication, and never rename a private candidate into place by hand.
+Transient paths may also appear. A trial runs in `.running/<id>/` within its dossier, and an interrupted publication leaves its candidate entry there, with the list of the entries it drops in `.running/<id>.dropped.json`. Begin and import build a new dossier in a hidden `.initializing-<id>-<uuid>` sibling under `parts/` or `compositions/`. Publication locks and atomic replacement temporary files appear while a command writes. None of them carries evidence or owner authority. Use the [recovery commands](commands.md#storage-and-recovery) for an interrupted publication, and never rename a private candidate into place by hand.
 
 ## dossier.json
 
 ```json
 {
   "storage": "integrity-v1",
-  "plugin": "0.1.0",
+  "plugin": "0.1.1",
   "setup": "2026-11-03",
   "updated": "2026-11-03",
   "knowledge": { "root": "../records" },
@@ -70,7 +70,7 @@ Transient paths may also appear. A trial runs in `.running/<id>/` within its dos
 
 ## integrity.json
 
-Every visible component or system has a tool-written manifest with `schema: 1`, `evidence` and `decisionHead`. `evidence` maps the name of each [entry](#evidence), its file name in `evidence/` without `.json`, to the SHA-256 digest of the entry's bytes. `decisionHead` is `null` before any decision, or `{ algorithm: sha256-prefix, bytes, digest }`, which binds the exact committed UTF-8 prefix of `decisions.log`. `dossier decide <id> begin` writes an empty manifest into a folder of hand-drafted inputs that holds no decisions or entries yet.
+Every visible part or composition has a tool-written manifest with `schema: 1`, `evidence` and `decisionHead`. `evidence` maps the name of each [entry](#evidence), its file name in `evidence/` without `.json`, to the SHA-256 digest of the entry's bytes. `decisionHead` is `null` before any decision, or `{ algorithm: sha256-prefix, bytes, digest }`, which binds the exact committed UTF-8 prefix of `decisions.log`. `dossier decide <id> begin` writes an empty manifest into a folder of hand-drafted inputs that holds no decisions or entries yet.
 
 A reading is not bound, and `.DS_Store` is ignored. A symbolic link or a special file in `evidence/` is refused. When the owner forgets an answer whose entry was removed, its line stays until a new answer to its question replaces it. The manifest stores no marks or routes. Its precise schema, prefix algorithm and recovery rules are in [Publication and integrity](../../spec/storage.md#format-and-authority).
 
@@ -87,11 +87,11 @@ actors:
     pins: [timelock#actor:governance]     # optional: the records that fix who the actor is
 ```
 
-An actor is a part of the surroundings that sends events and fails as a unit. `public` stands for anyone at all. `market` stands for prices, rates and liquidity. `external` stands for a contract or protocol with no dossier here. A contract that has a dossier is a component, never an actor. `name` defaults to the id, `kind` to `public`, and `modes` to all three. An id declared twice is `malformed actors`.
+An actor is a source of events in the surroundings that fails as a unit. `public` stands for anyone at all. `market` stands for prices, rates and liquidity. `external` stands for a contract or protocol with no dossier here. A contract that has a dossier is a part, never an actor. `name` defaults to the id, `kind` to `public`, and `modes` to all three. An id declared twice is `malformed actors`.
 
 Of the kinds, only `chain` means anything to the tool. A tick, one block passing, is an event whose sender is an actor of kind `chain`. The tool goes by the event's name, `tick`, only when no actors file resolves the sender.
 
-`pins` names records in the knowledge base that fix who the actor is, such as a multisig's signer set. Their hashes enter the snapshot of every answer in a system the actor sends events into. A change to a pinned record lapses the cells that rest on the actor, as a change to a member's pinned record does. A pin that does not resolve in the knowledge base is flagged `pin unresolved`.
+`pins` names records in the knowledge base that fix who the actor is, such as a multisig's signer set. Their hashes enter the snapshot of every answer in a composition the actor sends events into. A change to a pinned record lapses the cells that rest on the actor, as a change to a member's pinned record does. A pin that does not resolve in the knowledge base is flagged `pin unresolved`.
 
 ```yaml
 scenarios:
@@ -112,26 +112,26 @@ These are three of Harbor's scenarios. `all-honest` always exists. Actors a scen
 
 `notes` on an actor or a scenario is free text for readers, and the tool reads nothing from it. An answer's snapshot hashes a scenario only by the modes, windows and start it gives, so an edit to its `notes` or its `stronger_than` lapses nothing.
 
-A mode is a string, or a map that gives it a window: `mode`, an optional `from` and an optional `until`. `from` is the tick the mode starts at, and defaults to 0. `until` is the tick the mode ends before. Without `until`, the mode holds for the rest of the run. The actor is in the mode while `from <= clock < until` and honest otherwise. `clock` counts the ticks taken, starting at 0. `lanes-down-two` takes both lanes offline for the first two blocks and leaves them honest after that. Both bounds are whole numbers of ticks. A window's mode is `malicious` or `offline`. A window whose `until` is not above its `from`, that has no `mode`, or whose mode is `honest` is `malformed actors`. A window on the chain's offline mode cannot end, since the clock counts the chain's ticks, so it names the tick the chain stops at and `until` is an error there. A window in a system where no member takes the chain's tick is `composition does not compose`, since the clock that opens and closes it would never move.
+A mode is a string, or a map that gives it a window: `mode`, an optional `from` and an optional `until`. `from` is the tick the mode starts at, and defaults to 0. `until` is the tick the mode ends before. Without `until`, the mode holds for the rest of the run. The actor is in the mode while `from <= clock < until` and honest otherwise. `clock` counts the ticks taken, starting at 0. `lanes-down-two` takes both lanes offline for the first two blocks and leaves them honest after that. Both bounds are whole numbers of ticks. A window's mode is `malicious` or `offline`. A window whose `until` is not above its `from`, that has no `mode`, or whose mode is `honest` is `malformed actors`. A window on the chain's offline mode cannot end, since the clock counts the chain's ticks, so it names the tick the chain stops at and `until` is an error there. A window in a composition where no member takes the chain's tick is `wiring does not compose`, since the clock that opens and closes it would never move.
 
-`start` names the values a cell under the scenario begins from. A key is `<component>.<datum>` or `<component>.state`. A value is a number for a count or an amount, `true` or `false` for a flag, one of a choice's values, or a state's name for `<component>.state`. Everything the start leaves out begins from the boundary's starting values. A key that names no component, a datum the component does not hold, or a value outside the datum's range is `malformed actors`. Each system checks the start of every scenario in `scenarios.md` against its members, whether or not a property claims the scenario. A system ignores an entry for a component that is not one of its members.
+`start` names the values a cell under the scenario begins from. A key is `<part>.<datum>` or `<part>.state`. A value is a number for a count or an amount, `true` or `false` for a flag, one of a choice's values, or a state's name for `<part>.state`. Everything the start leaves out begins from the boundary's starting values. A key that names no part, a datum the part does not hold, or a value outside the datum's range is `malformed actors`. Each composition checks the start of every scenario in `scenarios.md` against its members, whether or not a property claims the scenario. A composition ignores an entry for a part that is not one of its members.
 
 A scenario is stronger than another only when every actor's mode in it is the same or malicious. When either scenario gives an actor a window, both must give that actor the same mode in the same window, unless the stronger one has the actor malicious for the whole run, which allows every behavior. The two must also have the same start, since a run from one start says nothing about a run from another. A declared `stronger_than` that the modes or the starts do not support is the tripwire `stronger_than unsound`.
 
-## composition.md
+## wiring.md
 
 A YAML block in Markdown. Harbor's Control:
 
 ```yaml
 members:
-  - component: timelock
+  - part: timelock
     role: member
     pins: [timelock#observation:delay-check-2026-11-01]
-  - component: vault
+  - part: vault
     role: member
-  - component: breaker
+  - part: breaker
     role: member
-  - component: adapter
+  - part: adapter
     role: member
 wiring:
   - effect: timelock.change
@@ -145,15 +145,15 @@ scenarios: [all-honest, governance-captured, executor-offline]
 
 | Key | Holds |
 | --- | --- |
-| `members` | each member's `component` id, its `role`, and optional `pins`, the records that fix its instance |
-| `wiring` | one member's effect delivered as another member's event in the same step, as `effect: <component>.<effect>` and `event: <component>.<event>` |
-| `free` | the sends of members that this concern leaves unwired, each `<component>.<event>` |
+| `members` | each member's `part` id, its `role`, and optional `pins`, the records that fix its instance |
+| `wiring` | one member's effect delivered as another member's event in the same step, as `effect: <part>.<effect>` and `event: <part>.<event>` |
+| `free` | the sends of members that this concern leaves unwired, each `<part>.<event>` |
 | `closure` | rules that name the modules a property about an asset needs as members |
 | `scenarios` | the scenarios a property claims when it names none |
 
-A role is `member` or `surroundings`. A `surroundings` member is composed exactly like a `member`, and the role only tells readers that the component is there as context for the concern. A member listed twice is `malformed composition`.
+A role is `member` or `surroundings`. A `surroundings` member is composed exactly like a `member`, and the role only tells readers that the part is there as context for the concern. A member listed twice is `malformed wiring`.
 
-An event a member sends that no wiring reaches is a free action. Verify flags it `left free` until it is listed under `free:`. Each entry is `<component>.<event>`, names an event a member receives and a member sends, and is not wired, or the composition is malformed. Control declares the Adapter's sends to the Vault free, because the Supply system wires them.
+An event a member sends that no wiring reaches is a free action. Verify flags it `left free` until it is listed under `free:`. Each entry is `<part>.<event>`, names an event a member receives and a member sends, and is not wired, or the wiring is malformed. Control declares the Adapter's sends to the Vault free, because the Supply composition wires them.
 
 A closure rule names an asset and the kinds of edge whose owners must be members, as in Harbor's Supply:
 
@@ -176,8 +176,8 @@ A call is a file under `calls/`, written before the trial by hand or with `dossi
 | `reach` | how far the trial looks, in words |
 | `expect` | one line per enabled property, such as `A1: holds`, or for the chart `checks: pass` or `checks: fail <ids>` |
 | `because` | why, as an indented block |
-| `property`, `scenario` | the cell, for a system trial or a system blunder |
-| `walk`, `scenario` | the walk and its own scenario, `all-honest` when it names none, for a system witness, in place of `property` |
+| `property`, `scenario` | the cell, for a composition trial or a composition blunder |
+| `walk`, `scenario` | the walk and its own scenario, `all-honest` when it names none, for a composition witness, in place of `property` |
 | `mode`, `length`, `inv`, `init`, `cinit` | for Apalache: `bounded` with a length, or `inductive` |
 | `blunder`, `base` | for a blunder: the wrong in words, and the module it copies, which the call must name when `model/` holds more than one module |
 | `trace-data` | for a witness: the variables its expected trace shows, each one a variable of the module |
@@ -185,11 +185,11 @@ A call is a file under `calls/`, written before the trial by hand or with `dossi
 
 Outcomes under `expect` are `holds`, `violated`, `violated; trace: <state> > <state>`, `counterexample`, `no counterexample`, `instance`, `no instance`, `pass` and `fail`.
 
-A system's TLC call executes `model/generated/<Concern>.tla` and its own configuration: `<Property>_<scenario>.cfg` for a cell, or `W<n>_<scenario>.cfg` for a walk, under `model/generated/`, with the scenario's hyphens as underscores. A system's Apalache call names `cinit: ConstInit_<scenario>` in the same way. A cell is never marked from another scenario's configuration.
+A composition's TLC call executes `model/generated/<Concern>.tla` and its own configuration: `<Property>_<scenario>.cfg` for a cell, or `W<n>_<scenario>.cfg` for a walk, under `model/generated/`, with the scenario's hyphens as underscores. A composition's Apalache call names `cinit: ConstInit_<scenario>` in the same way. A cell is never marked from another scenario's configuration.
 
 ## Evidence
 
-A call asks a question: its kind, the files it executes other than `prose.md`, the passages it expects outcomes for, its scenario and its walk. The reach is not part of the question. It belongs to the answer, so a trial that looks further answers the same question again. A dossier keeps at most one entry per question, `evidence/<name>.json`, which only the runner writes. The name joins the kind, up to six of the passages the question names (its property, the passages it expects outcomes for, its walk), and its scenario with hyphens, and ends with the first six hex digits of the question's SHA-256, such as `tlc-O1-3fa2c1` or `tlc-N1-executor-offline-9b1e04`.
+A call asks a question: its kind, the files it executes other than `prose.md`, the passages it expects outcomes for, its scenario and its walk. The reach does not belong to the question. It belongs to the answer, so a trial that looks further answers the same question again. A dossier keeps at most one entry per question, `evidence/<name>.json`, which only the runner writes. The name joins the kind, up to six of the passages the question names (its property, the passages it expects outcomes for, its walk), and its scenario with hyphens, and ends with the first six hex digits of the question's SHA-256, such as `tlc-O1-3fa2c1` or `tlc-N1-executor-offline-9b1e04`.
 
 | Field | Holds |
 | --- | --- |
@@ -220,7 +220,7 @@ Publication runs under the dossier's publication lock. To write an entry, it wri
 
 ## Trial bundles
 
-A trial's id is `<date>-<hhmm>-<kind>-<hash>`, with the date and time in UTC. A trial runs in `.running/<id>/` and leaves its bundle in `trials/<id>/`. The `.gitignore` that setup writes keeps both out of git, and [the limits of a mark](../explanation/limits.md) say what a clone holds without them. No bundle is part of the record. Verify never reads `trials/`, and deleting a bundle changes no conclusion. The receipt lets the runner, and the agent on the machine that ran the trial, check the bundle's own files.
+A trial's id is `<date>-<hhmm>-<kind>-<hash>`, with the date and time in UTC. A trial runs in `.running/<id>/` and leaves its bundle in `trials/<id>/`. The `.gitignore` that setup writes keeps both out of git, and [the limits of a mark](../explanation/limits.md) say what a clone holds without them. No bundle belongs to the record. Verify never reads `trials/`, and deleting a bundle changes no conclusion. The receipt lets the runner, and the agent on the machine that ran the trial, check the bundle's own files.
 
 | File | Holds |
 | --- | --- |
@@ -246,16 +246,16 @@ External runners must use the supplied file map for declared inputs. The descrip
 
 ## Ledgers and the index
 
-A ledger's first line names its dossier and gives the time the view last changed, the prose hash, `answers <n>`, counting each entry verify can read, and `decisions <n>`. A component's `ledger.md` then holds a table of passages with each passage's words, the owner's column, the mark, the answers behind it and the reach, then the guarantees with their backing, the systems that use it, the summary, the flags, the next step, and what moved when the file last changed.
+A ledger's first line names its dossier and gives the time the view last changed, the prose hash, `answers <n>`, counting each entry verify can read, and `decisions <n>`. A part's `ledger.md` then holds a table of passages with each passage's words, the owner's column, the mark, the answers behind it and the reach, then the guarantees with their backing, the compositions that use it, the summary, the flags, the next step, and what moved when the file last changed.
 
-A system's `ledger.md` holds the table of its members, then a line for each of these that has content:
+A composition's `ledger.md` holds the table of its members, then a line for each of these that has content:
 
 - `Wiring:` the effects wired to events
 - `Free:` the sends of members that no wiring reaches, by sender
-- `Outside:` the sends into members from components that are not members
+- `Outside:` the sends into members from parts that are not members
 - `Closure open:` the modules the closure requires that are not members
 
-Then come the matrix, with each property's sentence beside its id and without the Scenarios sentence its columns show, one line per tried cell with the members it rests on, the walks table with the columns walk, scenario, mark and trial, and the same closing lines as a component's ledger.
+Then come the matrix, with each property's sentence beside its id and without the Scenarios sentence its columns show, one line per tried cell with the members it rests on, the walks table with the columns walk, scenario, mark and trial, and the same closing lines as a part's ledger.
 
 A ledger links each trial id it names to the entry under `evidence/` that holds the answer that trial established. Its summary line, like verify's, prints only the counts above zero.
 
@@ -271,7 +271,7 @@ One line per decision, such as this risk accepted on a cell of Harbor's Control.
 
 The time, the verb, its arguments with passages at their hashes, the owner's words, and the first eight hex of the previous line's hash. A risk also names the trial that established the cell's deciding answer, the violation the owner accepted. A forget names an entry as `<name>@<digest>`, with the first eight hex of the digest `integrity.json` binds for it. The first line chains to `00000000`. Only the prefix that `integrity.json` binds counts. An appended suffix grants nothing until publication or explicit recovery commits it.
 
-A doubt's answer targets `D<n>@<hash>`, binding the authored alternatives at the time of the decision. It does not rewrite `doubts.md`. A component's tier comes from `Tier:` in its prose, and a begin line does not set it.
+A doubt's answer targets `D<n>@<hash>`, binding the authored alternatives at the time of the decision. It does not rewrite `doubts.md`. A part's tier comes from `Tier:` in its prose, and a begin line does not set it.
 
 ## doubts.md
 

@@ -43,25 +43,25 @@ function addDependency(dir: string, selected: (e: Entry) => boolean) {
   return helper;
 }
 
-test('captured component imports lapse evidence; an unrelated local module does not', t => {
-  const w = fixture(t), dir = join(w.root, 'components/timelock');
+test('captured part imports lapse evidence; an unrelated local module does not', t => {
+  const w = fixture(t), dir = join(w.root, 'parts/timelock');
   const helper = addDependency(dir, entry => entry.question.kind !== 'blunder');
-  assert.deepEqual(w.verify().components.find(a => a.id === 'timelock')!.tripwires, [], 'the edited entries are bound');
-  const before = w.verify().components.find(a => a.id === 'timelock')!;
+  assert.deepEqual(w.verify().parts.find(a => a.id === 'timelock')!.tripwires, [], 'the edited entries are bound');
+  const before = w.verify().parts.find(a => a.id === 'timelock')!;
   assert.ok(['checked', 'proved', 'held'].includes(before.marks.A1.mark));
   writeFileSync(join(dir, 'model/Unused.tla'), '---- MODULE Unused ----\nValue == 999\n====\n');
-  assert.deepEqual(w.verify().components.find(a => a.id === 'timelock')!.marks, before.marks);
+  assert.deepEqual(w.verify().parts.find(a => a.id === 'timelock')!.marks, before.marks);
   writeFileSync(helper, readFileSync(helper, 'utf8').replace('Value == 1', 'Value == 2'));
-  const after = w.verify().components.find(a => a.id === 'timelock')!;
+  const after = w.verify().parts.find(a => a.id === 'timelock')!;
   assert.equal(after.marks.A1.mark, 'lapsed');
   assert.ok(after.marks.A1.lapsed?.includes('executed model/LocalSupport.tla'));
 });
 
-test('captured system imports and generated identities lapse correctly without reading generated views', t => {
-  const w = fixture(t), dir = join(w.root, 'systems/control');
+test('captured composition imports and generated identities lapse correctly without reading generated views', t => {
+  const w = fixture(t), dir = join(w.root, 'compositions/control');
   const helper = addDependency(dir, entry => entry.question.kind !== 'blunder' && entry.question.property === 'A1' && entry.question.scenario === 'all-honest');
-  assert.deepEqual(w.verify().systems.find(a => a.id === 'control')!.tripwires, [], 'the edited entries are bound');
-  const cell = () => w.verify().systems.find(a => a.id === 'control')!.cells.find(c => c.property === 'A1' && c.scenario === 'all-honest')!;
+  assert.deepEqual(w.verify().compositions.find(a => a.id === 'control')!.tripwires, [], 'the edited entries are bound');
+  const cell = () => w.verify().compositions.find(a => a.id === 'control')!.cells.find(c => c.property === 'A1' && c.scenario === 'all-honest')!;
   const baseline = cell();
   assert.equal(baseline.mark, 'proved');
   rmSync(join(dir, 'model/generated'), { recursive: true });

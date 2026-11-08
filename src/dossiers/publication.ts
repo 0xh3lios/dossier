@@ -144,7 +144,7 @@ export function currentManifest(dir: string, allowPendingDecisions = false): Int
 }
 
 const sorted = (value: object) => JSON.stringify(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)));
-// The dossier a folder holds, as an entry names it: components/<id> or systems/<id>.
+// The dossier a folder holds, as an entry names it: parts/<id> or compositions/<id>.
 const refOf = (dir: string) => `${basename(dirname(dir))}/${basename(dir)}`;
 // The bundle of a sealed trial waiting in .running/<id>/, checked against its receipt, its call and its
 // result before its answer is published, with its digest. Anything else is refused.

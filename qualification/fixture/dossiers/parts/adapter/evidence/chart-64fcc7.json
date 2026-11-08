@@ -1,0 +1,267 @@
+{
+  "schema": 1,
+  "dossier": "parts/adapter",
+  "question": {
+    "kind": "chart",
+    "checker": "chart",
+    "executes": [],
+    "expects": [
+      "checks"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: chart\nexecutes:\n  - prose.md\nreach: the chart over held 0..4\nexpect:\n  checks: pass\nbecause: |\n  Every state is reachable, every move and refusal replays as said, every walk ends as said, no pair is unsaid.\n",
+    "reach": "the chart over held 0..4",
+    "expect": {
+      "checks": {
+        "expect": "pass"
+      }
+    },
+    "because": "Every state is reachable, every move and refusal replays as said, every walk ends as said, no pair is unsaid."
+  },
+  "answer": {
+    "enabled": [
+      "checks"
+    ],
+    "outcomes": {
+      "checks": "pass"
+    },
+    "checks": [
+      {
+        "ids": [
+          "TypeOK"
+        ],
+        "name": "TypeOK: every datum stays in its declared range",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "S1"
+        ],
+        "name": "S1: Open is reachable",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "S2"
+        ],
+        "name": "S2: Halted is reachable",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "E1"
+        ],
+        "name": "E1: exit is handled",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "E2"
+        ],
+        "name": "E2: enter is handled",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "E3"
+        ],
+        "name": "E3: halt is handled",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M1"
+        ],
+        "name": "M1: Open receives exit as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M2"
+        ],
+        "name": "M2: Open receives enter as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M3"
+        ],
+        "name": "M3: Halted receives enter as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M4"
+        ],
+        "name": "M4: Open receives halt as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "R1"
+        ],
+        "name": "R1: refused as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "R2"
+        ],
+        "name": "R2: refused as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "R3"
+        ],
+        "name": "R3: refused as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "W1"
+        ],
+        "name": "W1: walk Round-trip replays",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "W2"
+        ],
+        "name": "W2: walk Stopped replays",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M1",
+          "M2",
+          "M3",
+          "M4"
+        ],
+        "name": "M1 M2 M3 M4: at most one move or refusal applies to each state and event",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "A1"
+        ],
+        "name": "A1: always while Halted not live",
+        "status": "passed",
+        "message": ""
+      }
+    ],
+    "counts": {
+      "total": 17,
+      "passed": 17,
+      "failed": 0
+    },
+    "covers": [
+      "S1",
+      "S2",
+      "E1",
+      "E2",
+      "E3",
+      "M1",
+      "M2",
+      "M3",
+      "M4",
+      "R1",
+      "R2",
+      "R3",
+      "W1",
+      "W2",
+      "A1"
+    ],
+    "explored": 702,
+    "gaps": [],
+    "failing": [],
+    "reach": {
+      "text": "the chart over held 0..4",
+      "values": {
+        "explored": 702
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "2dc0ea92",
+        "S2": "ab235827",
+        "E1": "d2a84fb7",
+        "E2": "3c7a98e6",
+        "E3": "27bd8252",
+        "M1": "bedff268",
+        "M2": "5a9c8009",
+        "M3": "c5468cd9",
+        "M4": "73630550",
+        "R1": "a9875744",
+        "R2": "02514039",
+        "R3": "d9dc2be9",
+        "A1": "add2e99f",
+        "W1": "f15d329e",
+        "W2": "503d5674",
+        "X1": "f8cba5eb",
+        "X2": "d8be73d4",
+        "X3": "6e012009",
+        "K1": "0f309b4d",
+        "T1": "cf2e6345"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "7b42dc7c1831a88a",
+          "path": "modules/adapter/behavior/invariants.md"
+        }
+      },
+      "ir": "b1b83ebc2a2874da"
+    },
+    "executed": {
+      "prose.md": "58d831b706099361e3b3fa6855a8b79b5d0c0fc8227521e7582ac34ad48c73fb"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "prose.md": "58d831b706099361e3b3fa6855a8b79b5d0c0fc8227521e7582ac34ad48c73fb"
+      },
+      "shared": [],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2337-chart-c026ab",
+    "at": "2026-11-08T23:37:09.153Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "xstate": "5.33.3",
+      "@xstate/graph": "3.0.4"
+    },
+    "bundle": "a3840fece36b305c3dd7c17ecd9dc4ab5d4c13ed81972e98900bb36d85c912c3"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

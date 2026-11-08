@@ -1,0 +1,210 @@
+{
+  "schema": 1,
+  "dossier": "compositions/supply",
+  "question": {
+    "kind": "blunder",
+    "checker": "tlc",
+    "executes": [
+      "model/blunders/lostcredit.tla",
+      "model/blunders/lostcredit_A1.cfg"
+    ],
+    "expects": [
+      "A1"
+    ],
+    "property": "A1",
+    "scenario": "all-honest",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: blunder\nproperty: A1\nscenario: all-honest\nblunder: borrow raises debt without crediting free\nexecutes:\n  - model/blunders/lostcredit.tla\n  - model/blunders/lostcredit_A1.cfg\nreach: amounts up to 2\nexpect:\n  A1: violated\nbecause: |\n  With the wrong in place A1 fails on a short path under all-honest.\n",
+    "reach": "amounts up to 2",
+    "expect": {
+      "A1": {
+        "expect": "violated"
+      }
+    },
+    "because": "With the wrong in place A1 fails on a short path under all-honest."
+  },
+  "answer": {
+    "enabled": [
+      "A1"
+    ],
+    "outcomes": {
+      "A1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "A1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "vault_state": "\"Open\"",
+          "token_supply": "0",
+          "token_state": "\"Live\"",
+          "vault_free": "0",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "vault_issued": "0",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "vault_debt": "0",
+          "adapter_sent_burn": "0",
+          "adapter_sent_mint": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "User",
+        "values": {
+          "vault_state": "\"Open\"",
+          "token_supply": "0",
+          "token_state": "\"Live\"",
+          "vault_free": "0",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "vault_issued": "0",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "vault_debt": "1",
+          "adapter_sent_burn": "0",
+          "adapter_sent_mint": "0"
+        }
+      }
+    ],
+    "states": {
+      "generated": 4,
+      "distinct": 2,
+      "queued": 0,
+      "depth": 2
+    },
+    "actions": {
+      "vault_M5_Change": {
+        "distinct": 0,
+        "generated": 0
+      },
+      "vault_M6_Change": {
+        "distinct": 0,
+        "generated": 0
+      },
+      "adapter_M4_Halt": {
+        "distinct": 0,
+        "generated": 0
+      },
+      "Holder": {
+        "distinct": 0,
+        "generated": 2
+      },
+      "User": {
+        "distinct": 1,
+        "generated": 8
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "A1": "df97b1bf"
+    },
+    "reach": {
+      "text": "amounts up to 2",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_holder": "\"honest\"",
+        "Mode_user": "\"honest\""
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_holder": "honest",
+        "Mode_user": "honest"
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "1b854fdd",
+        "A2": "e8f5fa97",
+        "A3": "2b69812d",
+        "W1": "7ebabe90",
+        "T1": "5cf28469"
+      },
+      "records": {
+        "vault#observation:checkpoint-2026-11-01": "f53d903a45677849"
+      },
+      "backing": {},
+      "wiring": "613f91fd87ef47e8",
+      "module": "80039f34c3a995fc",
+      "members": {
+        "vault": {
+          "prose": "ad6f1070f6fac376",
+          "backing": {
+            "K1": "48fb01304d30b4b7",
+            "K2": "e8e54bc755943a68",
+            "K3": "bb4712dfb9f4915d",
+            "K4": "assumed"
+          }
+        },
+        "adapter": {
+          "prose": "58d831b706099361",
+          "backing": {
+            "K1": "7b42dc7c1831a88a"
+          }
+        },
+        "token": {
+          "prose": "69858faf20e7b8ea",
+          "backing": {
+            "K1": "9dbf540264cc615a"
+          }
+        }
+      },
+      "scenario": "32ef1d2c356c5b3a",
+      "actors": "ea02bc898e688534",
+      "extras": "979f4371be250e2e"
+    },
+    "executed": {
+      "model/blunders/lostcredit.tla": "471a7b15031e86e215bc243bc1136ce025dca90764295e774612a700a366e51d",
+      "model/blunders/lostcredit_A1.cfg": "ef879cdd0d754e58419f7eae6dac6058388d83403a91167651afe175ade0195d"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/blunders/lostcredit.tla": "471a7b15031e86e215bc243bc1136ce025dca90764295e774612a700a366e51d",
+        "model/blunders/lostcredit_A1.cfg": "ef879cdd0d754e58419f7eae6dac6058388d83403a91167651afe175ade0195d"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2338-blunder-82bfbd",
+    "at": "2026-11-08T23:38:27.907Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "61204a4b4f1c9e4b84a8685d2e0185b83550b278a354b705a1d8ec03bcf618f1"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

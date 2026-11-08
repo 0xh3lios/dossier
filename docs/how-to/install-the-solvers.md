@@ -1,6 +1,6 @@
 # Install the solvers
 
-Model trials need a JDK and three solvers. TLC is the TLA+ model checker, and it ships in `tla2tools.jar`. Apalache is a symbolic model checker for TLA+. The Alloy Analyzer checks Alloy models. The chart needs none of them, so you can write and draw components before this step.
+Model trials need a JDK and three solvers. TLC is the TLA+ model checker, and it ships in `tla2tools.jar`. Apalache is a symbolic model checker for TLA+. The Alloy Analyzer checks Alloy models. The chart needs none of them, so you can write and draw parts before this step.
 
 ## With the installer
 

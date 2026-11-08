@@ -15,11 +15,11 @@ import type { TrialResult } from '../../src/trials/trials.ts';
 import type { Ir } from '../../src/prose/ir.ts';
 
 const BUNDLE = 'b'.repeat(64);
-// A completed TLC run on a component's O1, with what each case changes. Its input identity holds the
+// A completed TLC run on a part's O1, with what each case changes. Its input identity holds the
 // files it executed.
 function result(over: Partial<TrialResult> = {}): TrialResult {
   const r = {
-    kind: 'tlc', checker: 'tlc', dossier: 'components/timelock', id: '2026-11-07-1000-tlc-aaaaaa', at: '2026-11-07T10:00:00.000Z',
+    kind: 'tlc', checker: 'tlc', dossier: 'parts/timelock', id: '2026-11-07-1000-tlc-aaaaaa', at: '2026-11-07T10:00:00.000Z',
     versions: { dossier: '0.1.0' }, command: ['tlc'], cwd: '.', exit: 0, seconds: 1,
     property: null, scenario: null, walk: null,
     executed: { 'model/Timelock.tla': '1'.repeat(64), 'model/Timelock_O1.cfg': '2'.repeat(64), 'prose.md': '3'.repeat(64) },
@@ -47,7 +47,7 @@ test('ANSWER-KEY: the question is the kind, files, expectations, cell and walk; 
   assert.equal(entryName(questionOf(result({ reach: { text: 'two plans', values: { delay: 3 } } }))), base, 'a further reach answers the same question');
   assert.equal(entryName(questionOf(result({ executed: { ...result().executed, 'prose.md': '9'.repeat(64) } }))), base, 'prose.md is no part of the question');
   assert.notEqual(entryName(questionOf(result({ executed: { 'model/Timelock.tla': '1'.repeat(64), 'model/Timelock_O1b.cfg': '2'.repeat(64) } }))), base, 'two configurations of one passage are two questions');
-  const cell = entryName(questionOf(result({ dossier: 'systems/control', property: 'N1', scenario: 'executor-offline', expect: { N1: { expect: 'violated' } } })));
+  const cell = entryName(questionOf(result({ dossier: 'compositions/control', property: 'N1', scenario: 'executor-offline', expect: { N1: { expect: 'violated' } } })));
   assert.match(cell, /^tlc-N1-executor-offline-[0-9a-f]{6}$/);
 });
 
@@ -152,7 +152,7 @@ test('verify reads evidence/: unbound, edited and removed entries, a bound candi
   const one = entry(), name = entryName(one.question), text = entryText(one), digest = sha256(text);
   writeFileSync(join(dir, 'evidence', `${name}.json`), text);
   writeFileSync(join(dir, 'evidence', `${name}.md`), 'reading\n');
-  const read = (bindings: Record<string, string>, forgotten = {}) => readEvidence(dir, bindings, forgotten, 'components/timelock');
+  const read = (bindings: Record<string, string>, forgotten = {}) => readEvidence(dir, bindings, forgotten, 'parts/timelock');
   let r = read({ [name]: digest });
   assert.deepEqual(r.answers.map(a => [a.name, a.entry?.established.trial, a.reading, a.problems]), [[name, one.established.trial, 'reading\n', []]], 'one answer per entry: its name, the entry, the reading beside it and no problem');
   assert.ok(completed(r.answers[0]));
@@ -173,7 +173,7 @@ test('verify reads evidence/: unbound, edited and removed entries, a bound candi
   assert.deepEqual(r.removed, [name]);
   assert.deepEqual(r.stray, [`${name}.md`], 'a reading with no entry is a stray file');
   assert.deepEqual(r.notes, [
-    { name: 'answer publication incomplete', where: '.running/run/entry.json: a candidate integrity.json does not bind; finish it with dossier recover components/timelock trial run' },
+    { name: 'answer publication incomplete', where: '.running/run/entry.json: a candidate integrity.json does not bind; finish it with dossier recover parts/timelock trial run' },
     { name: 'stray files', where: `evidence/: ${name}.md` },
     { name: 'answer removed', where: `evidence/${name}.json; restore it, or the owner forgets ${name}@${digest.slice(0, 8)}` },
   ], 'what is wrong outside any one entry: an unbound candidate, the stray files, the removed entries');
@@ -188,7 +188,7 @@ test('verify reads evidence/: unbound, edited and removed entries, a bound candi
 test('verify takes no entry through a symbolic link or from a special file in evidence/, and an entry naming another dossier is malformed', t => {
   const one = entry(), name = entryName(one.question), text = entryText(one), digest = sha256(text);
   const folder = () => { const dir = mkdtempSync(join(tmpdir(), 'dossier-answers-')); t.after(() => rmSync(dir, { recursive: true, force: true })); mkdirSync(join(dir, 'evidence')); return dir; };
-  const read = (dir: string, bindings: Record<string, string>) => readEvidence(dir, bindings, {}, 'components/timelock');
+  const read = (dir: string, bindings: Record<string, string>) => readEvidence(dir, bindings, {}, 'parts/timelock');
   const outside = folder();
   // A link in place of the entry, to the very bytes integrity.json binds.
   const linked = folder();
@@ -226,10 +226,10 @@ test('verify takes no entry through a symbolic link or from a special file in ev
     assert.deepEqual([r.answers.map(a => [a.name, a.problems]), r.stray, evidenceNotes(r)], [[[name, []]], ['tlc-O9-000000.json'], [{ name: 'stray files', where: 'evidence/: tlc-O9-000000.json' }]]);
   }
   // An entry that names another dossier, bound as it stands.
-  const other = folder(), moved = entryText({ ...one, dossier: 'components/vault' });
+  const other = folder(), moved = entryText({ ...one, dossier: 'parts/vault' });
   writeFileSync(join(other, 'evidence', `${name}.json`), moved);
   r = read(other, { [name]: sha256(moved) });
-  assert.deepEqual([r.answers.map(a => [a.name, a.entry]), evidenceNotes(r)], [[[name, null]], [{ name: 'answer malformed', where: `evidence/${name}.json: answer malformed: entry names components/vault, not components/timelock` }]]);
+  assert.deepEqual([r.answers.map(a => [a.name, a.entry]), evidenceNotes(r)], [[[name, null]], [{ name: 'answer malformed', where: `evidence/${name}.json: answer malformed: entry names parts/vault, not parts/timelock` }]]);
 });
 
 test('a replacement records the answer it replaced and what had moved under it; a first answer records none', () => {
@@ -255,7 +255,7 @@ test('a chart blunder is authored: its question is gone with its file, while the
 
 test('an entry holds the whole basis lapse compares, its previous answer\'s too: an entry without it is malformed, never read as having nothing', () => {
   const one = entry(), name = entryName(one.question);
-  const problem = (edit: (e: Entry) => void, e0 = one, n = name, ref = 'components/timelock') => { const e = structuredClone(e0); edit(e); return entryProblem(e, n, ref); };
+  const problem = (edit: (e: Entry) => void, e0 = one, n = name, ref = 'parts/timelock') => { const e = structuredClone(e0); edit(e); return entryProblem(e, n, ref); };
   assert.equal(problem(() => {}), null);
   assert.equal(problem(e => { delete (e.basis as Partial<Entry['basis']>).inputIdentity; }), 'input identity malformed: invalid private-copy identity', 'the inputs the trial captured');
   assert.equal(problem(e => { delete (e.basis.snapshot as Partial<Snapshot>).records; }), 'malformed basis', 'the records pinned');
@@ -263,14 +263,14 @@ test('an entry holds the whole basis lapse compares, its previous answer\'s too:
   const replaced = (basis: Entry['basis']): Entry['previous'] => ({ answer: one.answer, basis, established: one.established, classification: null });
   assert.equal(problem(e => { e.previous = replaced(one.basis); }), null);
   assert.equal(problem(e => { e.previous = replaced({ ...one.basis, inputIdentity: undefined as never }); }), 'input identity malformed: invalid private-copy identity', 'and the previous answer\'s basis, which an acceptance may be compared with');
-  // A system's snapshot also holds what its cells rest on: an older one without the module's identity
+  // A composition's snapshot also holds what its cells rest on: an older one without the module's identity
   // (qualification/conformance/fixtures/snapshot-without-module.json) is no entry's.
-  const snapshot: Snapshot = { passages: { N1: 'n1' }, records: {}, backing: {}, composition: 'c', module: 'm', scenario: 's', actors: 'a', extras: null, members: { timelock: { prose: 'p', backing: {} } } };
-  const cell = entry({ dossier: 'systems/control', property: 'N1', scenario: 'executor-offline', expect: { N1: { expect: 'holds' } }, outcomes: { N1: 'holds' }, snapshot });
+  const snapshot: Snapshot = { passages: { N1: 'n1' }, records: {}, backing: {}, wiring: 'c', module: 'm', scenario: 's', actors: 'a', extras: null, members: { timelock: { prose: 'p', backing: {} } } };
+  const cell = entry({ dossier: 'compositions/control', property: 'N1', scenario: 'executor-offline', expect: { N1: { expect: 'holds' } }, outcomes: { N1: 'holds' }, snapshot });
   const cellName = entryName(cell.question);
-  assert.equal(problem(() => {}, cell, cellName, 'systems/control'), null);
-  assert.equal(problem(e => { delete e.basis.snapshot.module; }, cell, cellName, 'systems/control'), 'malformed basis', 'the generated module');
-  assert.equal(problem(e => { e.basis.snapshot.members = { timelock: { prose: 'p' } } as unknown as Snapshot['members']; }, cell, cellName, 'systems/control'), 'malformed basis', 'each member\'s backing');
+  assert.equal(problem(() => {}, cell, cellName, 'compositions/control'), null);
+  assert.equal(problem(e => { delete e.basis.snapshot.module; }, cell, cellName, 'compositions/control'), 'malformed basis', 'the generated module');
+  assert.equal(problem(e => { e.basis.snapshot.members = { timelock: { prose: 'p' } } as unknown as Snapshot['members']; }, cell, cellName, 'compositions/control'), 'malformed basis', 'each member\'s backing');
 });
 
 test('the rules compare a basis exactly as lapse does: a backing moves by its status or hash, a record by its hash while it is pinned', () => {
@@ -283,7 +283,7 @@ test('the rules compare a basis exactly as lapse does: a backing moves by its st
   assert.deepEqual(moved({ backing: { K1: { ...backed, hash: 'h2' } } }), ['backing K1']);
   assert.deepEqual(moved({ backing: { K1: { status: 'unresolved', reason: 'the record is gone' } } }), ['backing K1']);
   assert.deepEqual(moved({ records: { 'module#record:r': 'r2' } }), ['record module#record:r']);
-  assert.deepEqual(moved({ records: {} }), [], 'a record the component no longer pins, as lapse reads it');
+  assert.deepEqual(moved({ records: {} }), [], 'a record the part no longer pins, as lapse reads it');
   // A chart answer rests on no record or backing, only on the prose it compiles.
   const chart = entry({ kind: 'chart', checker: 'chart', expect: { checks: { expect: 'pass' } }, outcomes: { checks: 'pass' }, snapshot: { ...snapshot, ir: 'compiled' } });
   assert.deepEqual(basisMoved(chart, basisNow({ ...chart.basis, snapshot: { ...chart.basis.snapshot, records: { 'module#record:r': 'r2' } } }), prose), []);

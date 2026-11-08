@@ -25,10 +25,10 @@ const usage = `usage: dossier <command> [args] [--root <path>]
       explicitly finish an interrupted answer publication, or recover a dead local writer lock
   recover --root-lock [--dry-run]
       recover a demonstrably dead local lock on the root, which setup and new dossiers take
-  draw <component> [--brief] [--json] [--limit <n>]
+  draw <part> [--brief] [--json] [--limit <n>]
       compile the prose, write the chart's files, run the chart's checks; records no evidence
-  scaffold <component|system>
-      write a component's TLA+ scaffold, or regenerate a system's module and its configurations
+  scaffold <part|composition>
+      write a part's TLA+ scaffold, or regenerate a composition's module and its configurations
   call <dossier> <name> <kind> [<target>] [--scenario <id>] [--mode <m>] [--inv <name>] [--length <n>]
        [--reach <words>] [--expect "<name>: <outcome>"]... [--because <words>] [--blunder <words>]
        [--trace-data <variables>] [--runner <id>] [--base <module>] [--force]
@@ -43,14 +43,14 @@ const usage = `usage: dossier <command> [args] [--root <path>]
   recheck [<dossier>...] [--timeout <seconds>] [--workers <n>] [--limit <n>]
       ask every current answer's question again in a private folder; writes nothing; exit 1 on a difference
   decide <dossier> <verb> ... -- "<words>"
-      record a decision: begin [charted|modeled|system] | accept <ids> | reject <id>
+      record a decision: begin [charted|modeled|composition] | accept <ids> | reject <id>
       | answer D<n> a|b | risk <property> <scenario> | forget <entry>@<digest> | retire
   where <ref>
-      what a component, system, property, scenario, actor or record touches
+      what a part, composition, property, scenario, actor or record touches
   explore [--install] [--port <n>] [--limit <n>]
       serve a read-only page over the root on 127.0.0.1 until stopped; --install builds the page and exits
-  import <module> [--as <component>]
-      draft a component from the knowledge base's records
+  import <module> [--as <part>]
+      draft a part from the knowledge base's records
   doctor
       what the toolchain has and lacks
   setup [--knowledge <path>] [--install] [--dir <path> | --root <path>]
@@ -59,7 +59,7 @@ const usage = `usage: dossier <command> [args] [--root <path>]
       print the toolkit's version
 Every command takes --root <path> to name the dossiers root. Otherwise it uses DOSSIER_ROOT, or
 the nearest dossier.json, dossiers/dossier.json or .dossier-root at or above the working directory.
-<dossier> is a bare id, components/<id> or systems/<id>.`;
+<dossier> is a bare id, parts/<id> or compositions/<id>.`;
 
 // The toolkit's version, from package.json; both plugin manifests carry the same one.
 const version = (): string => JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;

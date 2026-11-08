@@ -1,0 +1,195 @@
+{
+  "schema": 1,
+  "dossier": "compositions/upkeep",
+  "question": {
+    "kind": "blunder",
+    "checker": "tlc",
+    "executes": [
+      "model/blunders/jumpy.tla",
+      "model/blunders/jumpy_A1.cfg"
+    ],
+    "expects": [
+      "A1"
+    ],
+    "property": "A1",
+    "scenario": "all-honest",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: blunder\nproperty: A1\nscenario: all-honest\nblunder: the lanes may post any price\nexecutes:\n  - model/blunders/jumpy.tla\n  - model/blunders/jumpy_A1.cfg\nreach: amounts up to 2\nexpect:\n  A1: violated\nbecause: |\n  With the wrong in place A1 fails on a short path under all-honest.\n",
+    "reach": "amounts up to 2",
+    "expect": {
+      "A1": {
+        "expect": "violated"
+      }
+    },
+    "because": "With the wrong in place A1 fails on a short path under all-honest."
+  },
+  "answer": {
+    "enabled": [
+      "A1"
+    ],
+    "outcomes": {
+      "A1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "A1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "oracle_last": "2",
+          "oracle_stale": "0",
+          "oracle_price": "2",
+          "oracle_state": "\"Fresh\"",
+          "n1_ticks": "0",
+          "clock": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "TickStep",
+        "values": {
+          "oracle_last": "2",
+          "oracle_stale": "1",
+          "oracle_price": "2",
+          "oracle_state": "\"Stale\"",
+          "n1_ticks": "1",
+          "clock": "1"
+        }
+      },
+      {
+        "index": 3,
+        "action": "Lane_a",
+        "values": {
+          "oracle_last": "2",
+          "oracle_stale": "0",
+          "oracle_price": "0",
+          "oracle_state": "\"Fresh\"",
+          "n1_ticks": "0",
+          "clock": "1"
+        }
+      }
+    ],
+    "states": {
+      "generated": 3,
+      "distinct": 3,
+      "queued": 0,
+      "depth": 3
+    },
+    "actions": {
+      "Lane_a": {
+        "distinct": 1,
+        "generated": 6
+      },
+      "Lane_b": {
+        "distinct": 0,
+        "generated": 0
+      },
+      "TickStep": {
+        "distinct": 1,
+        "generated": 2
+      }
+    },
+    "init": {
+      "accepted": 2,
+      "generated": 2
+    },
+    "partial": [],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "A1": "14e26382"
+    },
+    "reach": {
+      "text": "amounts up to 2",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_chain": "\"honest\"",
+        "Mode_lane_a": "\"honest\"",
+        "Mode_lane_b": "\"honest\"",
+        "From_lane_a": "0",
+        "Until_lane_a": "0",
+        "From_lane_b": "0",
+        "Until_lane_b": "0",
+        "Start_oracle_state": "\"Fresh\"",
+        "Start_oracle_stale": "0"
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_chain": "honest",
+        "Mode_lane_a": "honest",
+        "Mode_lane_b": "honest",
+        "From_lane_a": 0,
+        "Until_lane_a": 0,
+        "From_lane_b": 0,
+        "Until_lane_b": 0,
+        "Start_oracle_state": "Fresh",
+        "Start_oracle_stale": 0
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "266374aa",
+        "N1": "649b2ec4",
+        "G1": "155c7d2b",
+        "G2": "e0813f7f",
+        "G3": "9367edd6",
+        "G4": "416bbd6d",
+        "T1": "a25aba5c"
+      },
+      "records": {},
+      "backing": {},
+      "wiring": "bae35b592cdbc44f",
+      "module": "87c059a34c189306",
+      "members": {
+        "oracle": {
+          "prose": "b7da5a952322a306",
+          "backing": {
+            "K1": "54717f13065bd868"
+          }
+        }
+      },
+      "scenario": "9c4d9509e2c91528",
+      "actors": "064e352e3b207b1e",
+      "extras": null
+    },
+    "executed": {
+      "model/blunders/jumpy.tla": "0834e21f748dd08b5684b5c1d36e38354f073795eb552829187d6a3a968d3afc",
+      "model/blunders/jumpy_A1.cfg": "20e3d98484485c6ddb4dfc6e4fe9c160b637d5d190dcf7b62fc11d66cca84de5"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/blunders/jumpy.tla": "0834e21f748dd08b5684b5c1d36e38354f073795eb552829187d6a3a968d3afc",
+        "model/blunders/jumpy_A1.cfg": "20e3d98484485c6ddb4dfc6e4fe9c160b637d5d190dcf7b62fc11d66cca84de5"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-08-2340-blunder-2bb42a",
+    "at": "2026-11-08T23:40:27.547Z",
+    "versions": {
+      "dossier": "0.1.1",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "a1da0c6aa0bb882f784a1ef5e3425007639168cf4986d20c052f631f1fa5db86"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}
