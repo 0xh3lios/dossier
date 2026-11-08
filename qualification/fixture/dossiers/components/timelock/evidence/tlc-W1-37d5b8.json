@@ -1,0 +1,292 @@
+{
+  "schema": 1,
+  "dossier": "components/timelock",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/Timelock.tla",
+      "model/Timelock_W1.cfg"
+    ],
+    "expects": [
+      "NotW1",
+      "TypeOK"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nexecutes:\n  - model/Timelock.tla\n  - model/Timelock_W1.cfg\nreach: one plan; delay 2\ntrace-data: remaining\nexpect:\n  TypeOK: holds\n  NotW1: violated; trace: Idle/0 > Scheduled/2 > Scheduled/1 > Scheduled/0 > Idle/0\nbecause: |\n  W1 schedules, waits two ticks and executes: M4, M2, M2, M5. The refused execute in between leaves no state.\n",
+    "reach": "one plan; delay 2",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "NotW1": {
+        "expect": "violated",
+        "trace": [
+          "Idle/0",
+          "Scheduled/2",
+          "Scheduled/1",
+          "Scheduled/0",
+          "Idle/0"
+        ]
+      }
+    },
+    "because": "W1 schedules, waits two ticks and executes: M4, M2, M2, M5. The refused execute in between leaves no state."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "NotW1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "NotW1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "NotW1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "state": "\"Idle\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "0",
+          "w2_at": "0",
+          "w1_at": "0",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "M4_Schedule",
+        "values": {
+          "state": "\"Scheduled\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "2",
+          "w2_at": "1",
+          "w1_at": "1",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "0"
+        }
+      },
+      {
+        "index": 3,
+        "action": "M2_Tick",
+        "values": {
+          "state": "\"Scheduled\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "1",
+          "w2_at": "2",
+          "w1_at": "2",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "1"
+        }
+      },
+      {
+        "index": 4,
+        "action": "M2_Tick",
+        "values": {
+          "state": "\"Scheduled\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "0",
+          "w2_at": "0",
+          "w1_at": "3",
+          "w2_armed_sent_change": "0",
+          "sent_change": "0",
+          "n1_ticks": "2"
+        }
+      },
+      {
+        "index": 5,
+        "action": "M5_Execute",
+        "values": {
+          "state": "\"Idle\"",
+          "early": "FALSE",
+          "w1_armed_sent_change": "0",
+          "remaining": "0",
+          "w2_at": "0",
+          "w1_at": "4",
+          "w2_armed_sent_change": "0",
+          "sent_change": "1",
+          "n1_ticks": "0"
+        }
+      }
+    ],
+    "states": {
+      "generated": 11,
+      "distinct": 7,
+      "queued": 1,
+      "depth": 5
+    },
+    "actions": {
+      "M1_Tick": {
+        "move": "M1",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 0,
+        "generated": 3
+      },
+      "M2_Tick": {
+        "move": "M2",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 2,
+        "generated": 4
+      },
+      "M3_Tick": {
+        "move": "M3",
+        "event": "tick",
+        "targets": [],
+        "stays": true,
+        "distinct": 0,
+        "generated": 0
+      },
+      "M4_Schedule": {
+        "move": "M4",
+        "event": "schedule",
+        "targets": [
+          "Scheduled"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 3
+      },
+      "M5_Execute": {
+        "move": "M5",
+        "event": "execute",
+        "targets": [
+          "Idle"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 2
+      },
+      "M6_Cancel": {
+        "move": "M6",
+        "event": "cancel",
+        "targets": [
+          "Idle"
+        ],
+        "stays": false,
+        "distinct": 2,
+        "generated": 4
+      }
+    },
+    "init": {
+      "accepted": 2,
+      "generated": 2
+    },
+    "partial": [
+      "TypeOK"
+    ],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "a2dd0aa3",
+      "NotW1": "c8ef4f8e"
+    },
+    "reach": {
+      "text": "one plan; delay 2",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "e6a4c8b8",
+        "S2": "e39d3f70",
+        "E1": "5961722a",
+        "E2": "7f3e3029",
+        "E3": "17dd6db9",
+        "E4": "7348a8bc",
+        "M1": "402263d7",
+        "M2": "60fe8786",
+        "M3": "44d75429",
+        "M4": "87eca7f0",
+        "M5": "672a5cf3",
+        "M6": "cb6d8f36",
+        "R1": "c696f898",
+        "R2": "f17a4f63",
+        "R3": "18152481",
+        "A1": "b2a70598",
+        "O1": "ab9479de",
+        "N1": "55a58264",
+        "G1": "6a2a5abb",
+        "G2": "5e917103",
+        "W1": "bd05768e",
+        "W2": "ac96edaf",
+        "X1": "586d1988",
+        "K1": "6f727c67",
+        "K2": "ca30cbc8",
+        "T1": "f65d11b0"
+      },
+      "records": {
+        "timelock#observation:delay-check-2026-11-01": "d33b3049427305ab"
+      },
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "6d688aa061b03fd3",
+          "path": "modules/timelock/behavior/invariants.md"
+        },
+        "K2": {
+          "status": "assumed"
+        }
+      },
+      "ir": "80790d57e4171c41"
+    },
+    "executed": {
+      "model/Timelock.tla": "fd4fe6306d29eca6c86664b03ad064dbfb7b831d3eb117faae7d20a4ca46916a",
+      "model/Timelock_W1.cfg": "4a90c9befd026d9a86f572a1a8d1254753519b9e86f34b0274563eecb3f3f249"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/Timelock.tla": "fd4fe6306d29eca6c86664b03ad064dbfb7b831d3eb117faae7d20a4ca46916a",
+        "model/Timelock_W1.cfg": "4a90c9befd026d9a86f572a1a8d1254753519b9e86f34b0274563eecb3f3f249"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2321-tlc-b67048",
+    "at": "2026-11-07T23:21:59.785Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "b4b680b3e82fe03c1864b5821d1732597df190ff73412d571dc970382412345a"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

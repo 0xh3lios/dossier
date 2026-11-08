@@ -1,0 +1,218 @@
+{
+  "ok": true,
+  "errors": [],
+  "name": "Breaker",
+  "tier": "modeled",
+  "module": "breaker",
+  "pins": [],
+  "boundary": "The Breaker lets Governance halt the Adapter at once, without the Timelock's delay. It holds halted, a flag. It receives stop from Governance. It sends halt to the Adapter. It never knows why Governance stops.",
+  "context": [
+    {
+      "name": "halted",
+      "type": "flag",
+      "initial": false
+    }
+  ],
+  "effects": [
+    {
+      "name": "halt",
+      "to": "the Adapter",
+      "fields": []
+    }
+  ],
+  "states": [
+    {
+      "id": "S1",
+      "name": "Armed",
+      "path": [
+        "Armed"
+      ],
+      "key": "Armed",
+      "parent": null,
+      "text": "the breaker will relay a halt.",
+      "final": false,
+      "initial": true,
+      "children": null,
+      "passages": [
+        "S1"
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Spent",
+      "path": [
+        "Spent"
+      ],
+      "key": "Spent",
+      "parent": null,
+      "text": "the breaker has halted the adapter. Final.",
+      "final": true,
+      "initial": false,
+      "children": null,
+      "passages": [
+        "S2",
+        "R1"
+      ]
+    }
+  ],
+  "initial": "Armed",
+  "root": [
+    "Armed",
+    "Spent"
+  ],
+  "events": [
+    {
+      "id": "E1",
+      "name": "stop",
+      "sender": "Governance",
+      "fields": []
+    }
+  ],
+  "eventCases": [
+    {
+      "type": "stop"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "M1",
+      "from": "Armed",
+      "event": "stop",
+      "stays": false,
+      "target": "Spent",
+      "guard": null,
+      "assigns": [
+        {
+          "name": "halted",
+          "expr": {
+            "t": "bool",
+            "v": true
+          }
+        }
+      ],
+      "effects": [
+        "halt"
+      ]
+    }
+  ],
+  "refusals": [
+    {
+      "id": "R1",
+      "states": [
+        "Spent"
+      ],
+      "events": [
+        "stop"
+      ],
+      "effects": [],
+      "cond": null
+    }
+  ],
+  "invariants": [
+    {
+      "id": "A1",
+      "while": "Spent",
+      "cond": {
+        "t": "ref",
+        "name": "halted"
+      },
+      "givens": []
+    }
+  ],
+  "structural": [
+    {
+      "id": "A2",
+      "text": "every halt the Adapter receives comes from Governance through a Breaker whose authority is Governance"
+    }
+  ],
+  "onces": [],
+  "withins": [],
+  "givens": [],
+  "walks": [
+    {
+      "id": "W1",
+      "name": "Halt",
+      "scenario": null,
+      "from": "Armed",
+      "with": {},
+      "ends": "Spent",
+      "steps": [
+        {
+          "event": "stop",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "stop",
+          "args": {},
+          "refused": true
+        }
+      ],
+      "endData": {},
+      "sent": {
+        "halt": 1
+      },
+      "notSent": []
+    }
+  ],
+  "seams": [
+    {
+      "id": "X1",
+      "piece": "adapter",
+      "body": "halt crosses from Breaker to Adapter carrying nothing."
+    }
+  ],
+  "guarantees": [
+    {
+      "id": "K1",
+      "claim": "A breaker action only halts, never enables",
+      "backing": {
+        "kind": "record",
+        "ref": "breaker#property:breaker-only-reduces"
+      }
+    }
+  ],
+  "wordsOnly": [
+    {
+      "id": "T1",
+      "text": "This piece promises nothing eventual."
+    }
+  ],
+  "table": [
+    {
+      "state": "Armed",
+      "event": "stop",
+      "moves": [
+        "M1"
+      ],
+      "refusals": [],
+      "unconditional": []
+    },
+    {
+      "state": "Spent",
+      "event": "stop",
+      "moves": [],
+      "refusals": [
+        "R1"
+      ],
+      "unconditional": [
+        "R1"
+      ]
+    }
+  ],
+  "unsaid": [],
+  "saidTwice": [],
+  "hashes": {
+    "S1": "cfaad1f7",
+    "S2": "027ee8f5",
+    "E1": "bdc4c06a",
+    "M1": "776639fa",
+    "R1": "e3bde544",
+    "A1": "0ebb46c1",
+    "A2": "ad929dbe",
+    "W1": "a814d588",
+    "X1": "5d5a0ec4",
+    "K1": "d004a497",
+    "T1": "cf2e6345"
+  }
+}

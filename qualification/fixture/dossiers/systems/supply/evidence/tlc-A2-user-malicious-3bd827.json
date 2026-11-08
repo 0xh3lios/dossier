@@ -1,0 +1,169 @@
+{
+  "schema": 1,
+  "dossier": "systems/supply",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/generated/A2_user_malicious.cfg",
+      "model/generated/Supply.tla"
+    ],
+    "expects": [
+      "A2",
+      "TypeOK"
+    ],
+    "property": "A2",
+    "scenario": "user-malicious",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nproperty: A2\nscenario: user-malicious\nexecutes:\n  - model/generated/Supply.tla\n  - model/generated/A2_user_malicious.cfg\nreach: amounts up to 2; debt, free, issued, held and supply up to 4; effects up to 4\nexpect:\n  TypeOK: holds\n  A2: holds\nbecause: |\n  A malicious user has no Given to cancel; the wiring alone keeps A2.\n",
+    "reach": "amounts up to 2; debt, free, issued, held and supply up to 4; effects up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "A2": {
+        "expect": "holds"
+      }
+    },
+    "because": "A malicious user has no Given to cancel; the wiring alone keeps A2."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "A2"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "A2": "holds"
+    },
+    "violation": null,
+    "trace": [],
+    "states": {
+      "generated": 20420,
+      "distinct": 2104,
+      "queued": 0,
+      "depth": 14
+    },
+    "actions": {
+      "vault_M5_Change": {
+        "distinct": 700,
+        "generated": 1025
+      },
+      "vault_M6_Change": {
+        "distinct": 0,
+        "generated": 1079
+      },
+      "adapter_M4_Halt": {
+        "distinct": 310,
+        "generated": 1214
+      },
+      "Holder": {
+        "distinct": 0,
+        "generated": 2104
+      },
+      "User": {
+        "distinct": 1093,
+        "generated": 14997
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "46934b89",
+      "A2": "518a666a"
+    },
+    "reach": {
+      "text": "amounts up to 2; debt, free, issued, held and supply up to 4; effects up to 4",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_holder": "\"malicious\"",
+        "Mode_user": "\"malicious\""
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_holder": "malicious",
+        "Mode_user": "malicious"
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "1b854fdd",
+        "A2": "e8f5fa97",
+        "A3": "2b69812d",
+        "W1": "7ebabe90",
+        "T1": "5cf28469"
+      },
+      "records": {
+        "vault#observation:checkpoint-2026-11-01": "f53d903a45677849"
+      },
+      "backing": {},
+      "composition": "381cc276354b7701",
+      "module": "42ec45b0ddf4dd67",
+      "members": {
+        "vault": {
+          "prose": "ad6f1070f6fac376",
+          "backing": {
+            "K1": "48fb01304d30b4b7",
+            "K2": "e8e54bc755943a68",
+            "K3": "bb4712dfb9f4915d",
+            "K4": "assumed"
+          }
+        },
+        "adapter": {
+          "prose": "58d831b706099361",
+          "backing": {
+            "K1": "7b42dc7c1831a88a"
+          }
+        },
+        "token": {
+          "prose": "69858faf20e7b8ea",
+          "backing": {
+            "K1": "9dbf540264cc615a"
+          }
+        }
+      },
+      "scenario": "e6e40104474df5d2",
+      "actors": "ea02bc898e688534",
+      "extras": "979f4371be250e2e"
+    },
+    "executed": {
+      "model/generated/Supply.tla": "430e87a8ffdea419298f4ec307f81ec7c9079dc062e4d8abc374dd3fbab331da",
+      "model/generated/A2_user_malicious.cfg": "96ab8166f43ec7fea7104a6ead265a934cf0af09093bfb60d195bfba1e58db1f"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/generated/A2_user_malicious.cfg": "96ab8166f43ec7fea7104a6ead265a934cf0af09093bfb60d195bfba1e58db1f",
+        "model/generated/Supply.tla": "430e87a8ffdea419298f4ec307f81ec7c9079dc062e4d8abc374dd3fbab331da"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2322-tlc-4f2710",
+    "at": "2026-11-07T23:22:49.663Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "bb3800fb98690208f94e157f5ccfc4b28d43df57d046696043f3853ce58db72d"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

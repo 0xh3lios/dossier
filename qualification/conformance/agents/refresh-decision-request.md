@@ -1,0 +1,13 @@
+# Continue a changed deadline check
+
+Use `skills/keep/SKILL.md` from the supplied plugin. This is an interrupted continuation on `systems/control`: N1 has already changed from three ticks to two ticks, and `calls/continuation.md` is a prepared prediction that has not run. Keep the supplied current prose, composition, actors, Givens and model extras unchanged. Do not weaken the deadline or the scenario to match the prediction. Use the provided toolchain through `dossier trial`; do not install tools or execute a solver directly.
+
+First inspect current evidence and explain what became stale and whether the old risk acceptance still applies. Prepare the current generated inputs, then execute the prepared call without changing its prediction. Record what actually happens and classify any miscall. Refresh N1's three claimed scenarios and its sensitivity blunder at the current words. This request does not ask you to rerun A1, A2, O1 or their witnesses: report their remaining status accurately. Never edit or remove a recorded answer or its reading yourself. Only `dossier trial` replaces an answer, and it removes the replaced answer's reading itself. Preserve old decision words and append only the decision explicitly authorized below.
+
+After observing the current executor-offline result, record my risk decision on N1 in executor-offline using these exact words:
+
+> I accept that the two-tick deadline can fail while the executor is offline. This acceptance does not assert recovery or make N1 true.
+
+No passage acceptance, other risk acceptance, `forget` or semantic edit is authorized. Under the control dossier you may add new calls, the answers `dossier trial` publishes in `evidence/` with your readings beside them, the bundles the runner leaves in its local `trials/`, and a new blunder model and configuration. You may also refresh generated model files and reports, and write `answer.md`/`answer.json`. The prepared call is consumed by its trial; do not edit or recreate it to hide the initial expectation.
+
+In `answer.md`, explain the initial stale state, what the prepared run showed, the final supported claims and limits, and what remains stale. Include links to the relevant artifacts. Write `answer.json` with `system`, `initialAcceptanceCurrent` (boolean), `continuationTrial` (the id of the prepared call's trial), `proof` (boolean), `cells` (all current control cells, each with `property`, `scenario`, `mark`, `accepted` boolean), `refreshedTrials` (object mapping N1 scenario names to the trials that established their current answers), `blunderTrial` (the trial that established the blunder's current answer), `riskWords` and `limitations` (array of strings). These answer files are exercise outputs, not authoritative Dossier records.

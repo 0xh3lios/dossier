@@ -1,0 +1,350 @@
+{
+  "schema": 1,
+  "dossier": "systems/control",
+  "question": {
+    "kind": "blunder",
+    "checker": "tlc",
+    "executes": [
+      "model/blunders/impatient.tla",
+      "model/blunders/impatient_N1.cfg"
+    ],
+    "expects": [
+      "N1"
+    ],
+    "property": "N1",
+    "scenario": "all-honest",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: blunder\nproperty: N1\nscenario: all-honest\nblunder: the chain ticks while an execute is due\nexecutes:\n  - model/blunders/impatient.tla\n  - model/blunders/impatient_N1.cfg\nreach: amounts up to 2\nexpect:\n  N1: violated\nbecause: |\n  With the wrong in place N1 fails on a short path under all-honest.\n",
+    "reach": "amounts up to 2",
+    "expect": {
+      "N1": {
+        "expect": "violated"
+      }
+    },
+    "because": "With the wrong in place N1 fails on a short path under all-honest."
+  },
+  "answer": {
+    "enabled": [
+      "N1"
+    ],
+    "outcomes": {
+      "N1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "N1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "vault_state": "\"Open\"",
+          "timelock_sent_change": "0",
+          "vault_free": "0",
+          "timelock_remaining": "0",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "breaker_sent_halt": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "breaker_halted": "FALSE",
+          "vault_issued": "0",
+          "timelock_state": "\"Idle\"",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "breaker_state": "\"Armed\"",
+          "vault_debt": "0",
+          "adapter_sent_burn": "0",
+          "n1_ticks": "0",
+          "timelock_early": "FALSE",
+          "adapter_sent_mint": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "Governance",
+        "values": {
+          "vault_state": "\"Open\"",
+          "timelock_sent_change": "0",
+          "vault_free": "0",
+          "timelock_remaining": "2",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "breaker_sent_halt": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "1",
+          "vault_ceiling": "2",
+          "breaker_halted": "FALSE",
+          "vault_issued": "0",
+          "timelock_state": "\"Scheduled\"",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "breaker_state": "\"Armed\"",
+          "vault_debt": "0",
+          "adapter_sent_burn": "0",
+          "n1_ticks": "0",
+          "timelock_early": "FALSE",
+          "adapter_sent_mint": "0"
+        }
+      },
+      {
+        "index": 3,
+        "action": "TickStep",
+        "values": {
+          "vault_state": "\"Open\"",
+          "timelock_sent_change": "0",
+          "vault_free": "0",
+          "timelock_remaining": "1",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "breaker_sent_halt": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "2",
+          "vault_ceiling": "2",
+          "breaker_halted": "FALSE",
+          "vault_issued": "0",
+          "timelock_state": "\"Scheduled\"",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "breaker_state": "\"Armed\"",
+          "vault_debt": "0",
+          "adapter_sent_burn": "0",
+          "n1_ticks": "1",
+          "timelock_early": "FALSE",
+          "adapter_sent_mint": "0"
+        }
+      },
+      {
+        "index": 4,
+        "action": "TickStep",
+        "values": {
+          "vault_state": "\"Open\"",
+          "timelock_sent_change": "0",
+          "vault_free": "0",
+          "timelock_remaining": "0",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "breaker_sent_halt": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "3",
+          "vault_ceiling": "2",
+          "breaker_halted": "FALSE",
+          "vault_issued": "0",
+          "timelock_state": "\"Scheduled\"",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "breaker_state": "\"Armed\"",
+          "vault_debt": "0",
+          "adapter_sent_burn": "0",
+          "n1_ticks": "2",
+          "timelock_early": "FALSE",
+          "adapter_sent_mint": "0"
+        }
+      },
+      {
+        "index": 5,
+        "action": "TickStep",
+        "values": {
+          "vault_state": "\"Open\"",
+          "timelock_sent_change": "0",
+          "vault_free": "0",
+          "timelock_remaining": "0",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "breaker_sent_halt": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "breaker_halted": "FALSE",
+          "vault_issued": "0",
+          "timelock_state": "\"Scheduled\"",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "breaker_state": "\"Armed\"",
+          "vault_debt": "0",
+          "adapter_sent_burn": "0",
+          "n1_ticks": "3",
+          "timelock_early": "FALSE",
+          "adapter_sent_mint": "0"
+        }
+      },
+      {
+        "index": 6,
+        "action": "TickStep",
+        "values": {
+          "vault_state": "\"Open\"",
+          "timelock_sent_change": "0",
+          "vault_free": "0",
+          "timelock_remaining": "0",
+          "adapter_live": "TRUE",
+          "adapter_held": "0",
+          "breaker_sent_halt": "0",
+          "adapter_state": "\"Open\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "breaker_halted": "FALSE",
+          "vault_issued": "0",
+          "timelock_state": "\"Scheduled\"",
+          "adapter_sent_release": "0",
+          "adapter_sent_move": "0",
+          "breaker_state": "\"Armed\"",
+          "vault_debt": "0",
+          "adapter_sent_burn": "0",
+          "n1_ticks": "4",
+          "timelock_early": "FALSE",
+          "adapter_sent_mint": "0"
+        }
+      }
+    ],
+    "states": {
+      "generated": 2549,
+      "distinct": 541,
+      "queued": 347,
+      "depth": 6
+    },
+    "actions": {
+      "vault_M3_Move": {
+        "distinct": 81,
+        "generated": 302
+      },
+      "vault_M4_Release": {
+        "distinct": 0,
+        "generated": 224
+      },
+      "Governance": {
+        "distinct": 155,
+        "generated": 342
+      },
+      "Public": {
+        "distinct": 1,
+        "generated": 1
+      },
+      "User": {
+        "distinct": 259,
+        "generated": 1488
+      },
+      "TickStep": {
+        "distinct": 44,
+        "generated": 198
+      }
+    },
+    "init": {
+      "accepted": 2,
+      "generated": 2
+    },
+    "partial": [],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "N1": "83f3fcd1"
+    },
+    "reach": {
+      "text": "amounts up to 2",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_chain": "\"honest\"",
+        "Mode_governance": "\"honest\"",
+        "Mode_public": "\"honest\"",
+        "Mode_user": "\"honest\""
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_chain": "honest",
+        "Mode_governance": "honest",
+        "Mode_public": "honest",
+        "Mode_user": "honest"
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "e19a83c6",
+        "A2": "ceadfb4d",
+        "O1": "f4d2717f",
+        "N1": "674ccf7e",
+        "G1": "449661ee",
+        "G2": "124c7d47",
+        "W1": "e76e23cf",
+        "T1": "74c165be"
+      },
+      "records": {
+        "timelock#observation:delay-check-2026-11-01": "d33b3049427305ab",
+        "vault#observation:checkpoint-2026-11-01": "f53d903a45677849",
+        "timelock#actor:governance": "6358e80b9e0ab873"
+      },
+      "backing": {},
+      "composition": "ee9245340ee68f7b",
+      "module": "bae974143afe24ac",
+      "members": {
+        "timelock": {
+          "prose": "b912853ee8876146",
+          "backing": {
+            "K1": "6d688aa061b03fd3",
+            "K2": "assumed"
+          }
+        },
+        "vault": {
+          "prose": "ad6f1070f6fac376",
+          "backing": {
+            "K1": "48fb01304d30b4b7",
+            "K2": "e8e54bc755943a68",
+            "K3": "bb4712dfb9f4915d",
+            "K4": "assumed"
+          }
+        },
+        "breaker": {
+          "prose": "0c69391516bd3ac7",
+          "backing": {
+            "K1": "8f4359bc3def3404"
+          }
+        },
+        "adapter": {
+          "prose": "58d831b706099361",
+          "backing": {
+            "K1": "7b42dc7c1831a88a"
+          }
+        }
+      },
+      "scenario": "622eda74a625b4c2",
+      "actors": "2995597098702b19",
+      "extras": "20e334be8ca825e1"
+    },
+    "executed": {
+      "model/blunders/impatient.tla": "bffb09e155a3df62f9c5baf79a62342251559274ea1ea9a7099a093ec0184e33",
+      "model/blunders/impatient_N1.cfg": "5e73876dc16f9ae5e72e7b8c4aedbf3b3067f7726a2e1d2abbee0d42be23ba18"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/blunders/impatient.tla": "bffb09e155a3df62f9c5baf79a62342251559274ea1ea9a7099a093ec0184e33",
+        "model/blunders/impatient_N1.cfg": "5e73876dc16f9ae5e72e7b8c4aedbf3b3067f7726a2e1d2abbee0d42be23ba18"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2324-blunder-d965d4",
+    "at": "2026-11-07T23:24:18.916Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "0e9e01bebfa53680d07b187e4d38f84eb6cb8093c6db2dffcb0adb1da1f254e4"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

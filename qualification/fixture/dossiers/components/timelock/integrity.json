@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "evidence": {
+    "chart-64fcc7": "4471f428f7fdfe0a996e8d27413dc79e99441b9e7fb0d75791e66f760a1dc29b",
+    "tlc-A1-N1-59ce72": "c5f18217e5d8a7aad092b829e03db00336b89107599c06e36a7b3beb6d468e5d",
+    "tlc-O1-2be705": "ca354a9a283a64cf200dc2e02023e47efa07cbb982f6f50b90acdd38d207e6f0",
+    "tlc-W2-c29421": "2eaa95d1dc2b92e0483084fd403d37ed4de9b872a357cdaf8a132cd6127ca95e",
+    "tlc-W1-37d5b8": "25a287bfcde26addf602d482e005596aa055c28eb024af8183b9bdea986d95ff",
+    "apalache-A1-78bb75": "d1f6bfca3a4bce10df17602358b2202b04544b04eff7abbc9eb043b2848db6d7",
+    "blunder-A1-48f8c0": "48eec283c880daa4008ab29d1579438ba4315d900f6ea261a83eb51afdb35f54",
+    "blunder-N1-0df476": "039006d1ee13c82f4157c7c571fa5944f79e1a931f0bda4ab98722ab4ec72b02",
+    "blunder-O1-06ff15": "c0eba26ac5c1c13c0fa338df06f3f107663e8ce86189f1ca0d4c3c41403dbfbf"
+  },
+  "decisionHead": {
+    "algorithm": "sha256-prefix",
+    "bytes": 273,
+    "digest": "93ae95c3d4ba371414c87b0bf246e7cc2e0d77839dcc873b79a5ab9983b05b4c"
+  }
+}

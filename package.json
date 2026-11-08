@@ -1,0 +1,26 @@
+{
+  "name": "dossier",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Dossier toolkit: the dossier command, the skills that use it, and their tests.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"qualification/tests/**/*.test.ts\"",
+    "test:spec": "node --test qualification/tests/spec.test.ts qualification/tests/spec-lifecycle.test.ts qualification/tests/spec-examples.test.ts qualification/tests/agent-exercise.test.ts qualification/tests/agent-workflows.test.ts qualification/tests/fixture-readings.test.ts qualification/tests/input-identity.test.ts qualification/tests/answers.test.ts qualification/tests/superseded.test.ts qualification/tests/spec-names.test.ts qualification/tests/review-owed.test.ts",
+    "test:integrity": "node --test qualification/tests/integrity.test.ts qualification/tests/integrity-verifier.test.ts qualification/tests/trial-bundle.test.ts qualification/tests/initialization.test.ts qualification/tests/trial-publication.test.ts qualification/tests/answers.test.ts",
+    "test:process": "node --test qualification/tests/command-lifecycle.test.ts",
+    "test:differential": "node qualification/differential/run.mjs"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.3.0"
+  },
+  "dependencies": {
+    "@xstate/graph": "^3.0.4",
+    "xstate": "^5.33.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "7.0.2"
+  }
+}

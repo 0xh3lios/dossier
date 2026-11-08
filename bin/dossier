@@ -1,0 +1,13 @@
+#!/bin/sh
+# The one entry to the dossier tools. Everything the skills run goes through here.
+# It finds the plugin from its own location, following symbolic links, so a link to it works.
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in
+    /*) self=$link ;;
+    *) self=$(dirname "$self")/$link ;;
+  esac
+done
+here="$(cd "$(dirname "$self")/.." && pwd)"
+exec node "$here/src/cli.ts" "$@"

@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "dossier": "systems/upkeep",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/generated/N1_lanes_down_one.cfg",
+      "model/generated/Upkeep.tla"
+    ],
+    "expects": [
+      "N1",
+      "TypeOK"
+    ],
+    "property": "N1",
+    "scenario": "lanes-down-one",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nproperty: N1\nscenario: lanes-down-one\nexecutes:\n  - model/generated/Upkeep.tla\n  - model/generated/N1_lanes_down_one.cfg\nreach: stale up to 3; price and last up to 4; clock up to 2; effects up to 4\nexpect:\n  TypeOK: holds\n  N1: holds\nbecause: |\n  Both lanes are down for the first block only. The tick that makes the price stale ends the window, and a prompt lane posts before the next tick.\n",
+    "reach": "stale up to 3; price and last up to 4; clock up to 2; effects up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "N1": {
+        "expect": "holds"
+      }
+    },
+    "because": "Both lanes are down for the first block only. The tick that makes the price stale ends the window, and a prompt lane posts before the next tick."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "N1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "N1": "holds"
+    },
+    "violation": null,
+    "trace": [],
+    "states": {
+      "generated": 94,
+      "distinct": 31,
+      "queued": 0,
+      "depth": 8
+    },
+    "actions": {
+      "Lane_a": {
+        "distinct": 16,
+        "generated": 38
+      },
+      "Lane_b": {
+        "distinct": 0,
+        "generated": 38
+      },
+      "TickStep": {
+        "distinct": 14,
+        "generated": 17
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "88ed033d",
+      "N1": "a4ae7304"
+    },
+    "reach": {
+      "text": "stale up to 3; price and last up to 4; clock up to 2; effects up to 4",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_chain": "\"honest\"",
+        "Mode_lane_a": "\"offline\"",
+        "Mode_lane_b": "\"offline\"",
+        "From_lane_a": "0",
+        "Until_lane_a": "1",
+        "From_lane_b": "0",
+        "Until_lane_b": "1",
+        "Start_oracle_state": "\"Fresh\"",
+        "Start_oracle_stale": "0"
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_chain": "honest",
+        "Mode_lane_a": "offline",
+        "Mode_lane_b": "offline",
+        "From_lane_a": 0,
+        "Until_lane_a": 1,
+        "From_lane_b": 0,
+        "Until_lane_b": 1,
+        "Start_oracle_state": "Fresh",
+        "Start_oracle_stale": 0
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "266374aa",
+        "N1": "649b2ec4",
+        "G1": "155c7d2b",
+        "G2": "e0813f7f",
+        "G3": "9367edd6",
+        "G4": "416bbd6d",
+        "T1": "a25aba5c"
+      },
+      "records": {},
+      "backing": {},
+      "composition": "da6a8b72678c55ee",
+      "module": "01b7566f7121cf71",
+      "members": {
+        "oracle": {
+          "prose": "b7da5a952322a306",
+          "backing": {
+            "K1": "54717f13065bd868"
+          }
+        }
+      },
+      "scenario": "f87f0b7f1ca8a1f9",
+      "actors": "064e352e3b207b1e",
+      "extras": null
+    },
+    "executed": {
+      "model/generated/Upkeep.tla": "a0ed3b2dd30415d9c07373af0c686409540dac8adb201c415298606413bdba9b",
+      "model/generated/N1_lanes_down_one.cfg": "a6debcdeb4146f9f056b6c359b678b59ab9eb163c21f6a26a8284cba62586f54"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/generated/N1_lanes_down_one.cfg": "a6debcdeb4146f9f056b6c359b678b59ab9eb163c21f6a26a8284cba62586f54",
+        "model/generated/Upkeep.tla": "a0ed3b2dd30415d9c07373af0c686409540dac8adb201c415298606413bdba9b"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2324-tlc-c11f65",
+    "at": "2026-11-07T23:24:35.704Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "6521394db951249f3a578dcafd7736143c42d38e76db27dce25bad11311d0bba"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

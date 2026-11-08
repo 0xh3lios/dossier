@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-11-01T12:00:12+00:00",
+  "chain": "Ethereum",
+  "chain_id": 1,
+  "requested_block_tag": "finalized",
+  "block": 26300000,
+  "block_hash": "0x9c4e2a7d1f3b5860c2e4a6d8f0b1c3e5a7d9f1b2c4e6a8d0f2b4c6e8a0d2f4b6",
+  "block_timestamp": "2026-11-01T11:58:47+00:00",
+  "reads": [
+    {
+      "quantity": "debt",
+      "address": "0x7a1b3e5c9d2f4a6b8c0d1e2f3a4b5c6d7e8f9a0b",
+      "method": "debt()",
+      "args": [],
+      "decoded": "1500000000000000000000000"
+    },
+    {
+      "quantity": "free",
+      "address": "0x7a1b3e5c9d2f4a6b8c0d1e2f3a4b5c6d7e8f9a0b",
+      "method": "free()",
+      "args": [],
+      "decoded": "900000000000000000000000"
+    },
+    {
+      "quantity": "issued",
+      "address": "0x7a1b3e5c9d2f4a6b8c0d1e2f3a4b5c6d7e8f9a0b",
+      "method": "issued()",
+      "args": [],
+      "decoded": "600000000000000000000000"
+    },
+    {
+      "quantity": "ceiling",
+      "address": "0x7a1b3e5c9d2f4a6b8c0d1e2f3a4b5c6d7e8f9a0b",
+      "method": "ceiling()",
+      "args": [],
+      "decoded": "2000000000000000000000000"
+    }
+  ]
+}

@@ -1,0 +1,347 @@
+{
+  "schema": 1,
+  "dossier": "components/vault",
+  "question": {
+    "kind": "chart",
+    "checker": "chart",
+    "executes": [],
+    "expects": [
+      "checks"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: chart\nexecutes:\n  - prose.md\nreach: the chart over debt, free, issued 0..4 and ceiling 2..4\nexpect:\n  checks: pass\nbecause: |\n  Every state is reachable, every move and refusal replays as said, every walk ends as said, no pair is unsaid.\n",
+    "reach": "the chart over debt, free, issued 0..4 and ceiling 2..4",
+    "expect": {
+      "checks": {
+        "expect": "pass"
+      }
+    },
+    "because": "Every state is reachable, every move and refusal replays as said, every walk ends as said, no pair is unsaid."
+  },
+  "answer": {
+    "enabled": [
+      "checks"
+    ],
+    "outcomes": {
+      "checks": "pass"
+    },
+    "checks": [
+      {
+        "ids": [
+          "TypeOK"
+        ],
+        "name": "TypeOK: every datum stays in its declared range",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "S1"
+        ],
+        "name": "S1: Open is reachable",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "E1"
+        ],
+        "name": "E1: borrow is handled",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "E2"
+        ],
+        "name": "E2: repay is handled",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "E3"
+        ],
+        "name": "E3: move is handled",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "E4"
+        ],
+        "name": "E4: release is handled",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "E5"
+        ],
+        "name": "E5: change is handled",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M1"
+        ],
+        "name": "M1: Open receives borrow as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M2"
+        ],
+        "name": "M2: Open receives repay as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M3"
+        ],
+        "name": "M3: Open receives move as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M4"
+        ],
+        "name": "M4: Open receives release as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M5"
+        ],
+        "name": "M5: Open receives change as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M6"
+        ],
+        "name": "M6: Open receives change as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "R1"
+        ],
+        "name": "R1: refused as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "R2"
+        ],
+        "name": "R2: refused as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "R3"
+        ],
+        "name": "R3: refused as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "R4"
+        ],
+        "name": "R4: refused as said",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "W1"
+        ],
+        "name": "W1: walk Borrow replays",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "W2"
+        ],
+        "name": "W2: walk Overdraw replays",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "W3"
+        ],
+        "name": "W3: walk Raised replays",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "M1",
+          "M2",
+          "M3",
+          "M4",
+          "M5",
+          "M6"
+        ],
+        "name": "M1 M2 M3 M4 M5 M6: at most one move or refusal applies to each state and event",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "A1"
+        ],
+        "name": "A1: always debt = free + issued",
+        "status": "passed",
+        "message": ""
+      },
+      {
+        "ids": [
+          "A2"
+        ],
+        "name": "A2: always debt <= ceiling",
+        "status": "passed",
+        "message": ""
+      }
+    ],
+    "counts": {
+      "total": 23,
+      "passed": 23,
+      "failed": 0
+    },
+    "covers": [
+      "S1",
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "M1",
+      "M2",
+      "M3",
+      "M4",
+      "M5",
+      "M6",
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "W1",
+      "W2",
+      "W3",
+      "A1",
+      "A2"
+    ],
+    "explored": 31,
+    "gaps": [],
+    "failing": [],
+    "reach": {
+      "text": "the chart over debt, free, issued 0..4 and ceiling 2..4",
+      "values": {
+        "explored": 31
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "932f7987",
+        "E1": "277c6691",
+        "E2": "f6402f38",
+        "E3": "ef202696",
+        "E4": "f5a96bcd",
+        "E5": "bc5fa558",
+        "M1": "5cafd080",
+        "M2": "d7217020",
+        "M3": "4c33377c",
+        "M4": "005fc9ee",
+        "M5": "fdad2723",
+        "M6": "cf40bb4b",
+        "R1": "4176a82c",
+        "R2": "d5c670e4",
+        "R3": "6350aeba",
+        "R4": "03c6ef18",
+        "A1": "a7ce3014",
+        "A2": "a6767eb7",
+        "W1": "b9cc8dfb",
+        "W2": "e511df2b",
+        "W3": "456db00a",
+        "X1": "b13f3498",
+        "X2": "75de9c3e",
+        "K1": "a72322bf",
+        "K2": "f9f2026c",
+        "K3": "2c53e665",
+        "K4": "d9ce0e5b",
+        "T1": "cf2e6345",
+        "T2": "d4da3500"
+      },
+      "records": {
+        "vault#observation:checkpoint-2026-11-01": "f53d903a45677849"
+      },
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "48fb01304d30b4b7",
+          "path": "modules/vault/source-cache/github/commit-1a2b-9f8e/certora/Vault.spec"
+        },
+        "K2": {
+          "status": "backed",
+          "hash": "e8e54bc755943a68",
+          "path": "modules/vault/source-cache/github/commit-1a2b-9f8e/certora/Vault.spec"
+        },
+        "K3": {
+          "status": "backed",
+          "hash": "bb4712dfb9f4915d",
+          "path": "modules/vault/source-cache/github/commit-1a2b-9f8e/certora/Vault.spec"
+        },
+        "K4": {
+          "status": "assumed"
+        }
+      },
+      "ir": "9bbd9b9e69103ab8"
+    },
+    "executed": {
+      "prose.md": "ad6f1070f6fac376ab9d505f4e9c60e58994a1c6a47cf780ee12f2f93165a6fa"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "prose.md": "ad6f1070f6fac376ab9d505f4e9c60e58994a1c6a47cf780ee12f2f93165a6fa"
+      },
+      "shared": [],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2321-chart-a57cb9",
+    "at": "2026-11-07T23:21:21.387Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "xstate": "5.33.3",
+      "@xstate/graph": "3.0.4"
+    },
+    "bundle": "b1346d0a159de2043d8ce9b3092c8afc0be667f9d2ab9bfaece9286f4f52fa17"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

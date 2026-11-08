@@ -1,0 +1,19 @@
+{
+  "plugin": "0.1.0",
+  "setup": "2026-11-03",
+  "updated": "2026-11-03",
+  "knowledge": {
+    "root": "../knowledge"
+  },
+  "external": {
+    "replay": {
+      "command": [
+        "node",
+        "tools/replay.mjs"
+      ],
+      "cwd": ".."
+    }
+  },
+  "note": "The tools' contract: the Harbor protocol, abstracted, composed and tried. Every mark here is compared against expected-marks.json by the plugin's tests.",
+  "storage": "integrity-v1"
+}

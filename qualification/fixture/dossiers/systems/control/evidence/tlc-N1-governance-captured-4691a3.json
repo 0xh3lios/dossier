@@ -1,0 +1,189 @@
+{
+  "schema": 1,
+  "dossier": "systems/control",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/generated/Control.tla",
+      "model/generated/N1_governance_captured.cfg"
+    ],
+    "expects": [
+      "N1",
+      "TypeOK"
+    ],
+    "property": "N1",
+    "scenario": "governance-captured",
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nproperty: N1\nscenario: governance-captured\nexecutes:\n  - model/generated/Control.tla\n  - model/generated/N1_governance_captured.cfg\nreach: delay 2; amounts up to 2; ceiling 2..4; effects up to 4\nexpect:\n  TypeOK: holds\n  N1: holds\nbecause: |\n  Captured Governance can only cancel sooner.\n",
+    "reach": "delay 2; amounts up to 2; ceiling 2..4; effects up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "N1": {
+        "expect": "holds"
+      }
+    },
+    "because": "Captured Governance can only cancel sooner."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "N1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "N1": "holds"
+    },
+    "violation": null,
+    "trace": [],
+    "states": {
+      "generated": 1587196,
+      "distinct": 113050,
+      "queued": 0,
+      "depth": 33
+    },
+    "actions": {
+      "vault_M3_Move": {
+        "distinct": 44460,
+        "generated": 225910
+      },
+      "vault_M4_Release": {
+        "distinct": 0,
+        "generated": 225910
+      },
+      "Governance": {
+        "distinct": 14002,
+        "generated": 169575
+      },
+      "Public": {
+        "distinct": 8744,
+        "generated": 23180
+      },
+      "User": {
+        "distinct": 22659,
+        "generated": 852750
+      },
+      "TickStep": {
+        "distinct": 23184,
+        "generated": 89870
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "6c1ceef6",
+      "N1": "83f3fcd1"
+    },
+    "reach": {
+      "text": "delay 2; amounts up to 2; ceiling 2..4; effects up to 4",
+      "constants": {
+        "MaxSent": "4",
+        "Mode_chain": "\"honest\"",
+        "Mode_governance": "\"malicious\"",
+        "Mode_public": "\"honest\"",
+        "Mode_user": "\"honest\""
+      },
+      "values": {
+        "MaxSent": 4,
+        "Mode_chain": "honest",
+        "Mode_governance": "malicious",
+        "Mode_public": "honest",
+        "Mode_user": "honest"
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "A1": "e19a83c6",
+        "A2": "ceadfb4d",
+        "O1": "f4d2717f",
+        "N1": "674ccf7e",
+        "G1": "449661ee",
+        "G2": "124c7d47",
+        "W1": "e76e23cf",
+        "T1": "74c165be"
+      },
+      "records": {
+        "timelock#observation:delay-check-2026-11-01": "d33b3049427305ab",
+        "vault#observation:checkpoint-2026-11-01": "f53d903a45677849",
+        "timelock#actor:governance": "6358e80b9e0ab873"
+      },
+      "backing": {},
+      "composition": "ee9245340ee68f7b",
+      "module": "b3b6c8535a410a0d",
+      "members": {
+        "timelock": {
+          "prose": "b912853ee8876146",
+          "backing": {
+            "K1": "6d688aa061b03fd3",
+            "K2": "assumed"
+          }
+        },
+        "vault": {
+          "prose": "ad6f1070f6fac376",
+          "backing": {
+            "K1": "48fb01304d30b4b7",
+            "K2": "e8e54bc755943a68",
+            "K3": "bb4712dfb9f4915d",
+            "K4": "assumed"
+          }
+        },
+        "breaker": {
+          "prose": "0c69391516bd3ac7",
+          "backing": {
+            "K1": "8f4359bc3def3404"
+          }
+        },
+        "adapter": {
+          "prose": "58d831b706099361",
+          "backing": {
+            "K1": "7b42dc7c1831a88a"
+          }
+        }
+      },
+      "scenario": "1cbd8f539e338086",
+      "actors": "2995597098702b19",
+      "extras": "20e334be8ca825e1"
+    },
+    "executed": {
+      "model/generated/Control.tla": "db0c54d76a781cfce08b63789c43a1ee6dedc3a609501c8db596602c31058fee",
+      "model/generated/N1_governance_captured.cfg": "1860e60a6c2ca9fc12752e188568527cb9d63f2a93445f089f232dca8462798f"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/generated/Control.tla": "db0c54d76a781cfce08b63789c43a1ee6dedc3a609501c8db596602c31058fee",
+        "model/generated/N1_governance_captured.cfg": "1860e60a6c2ca9fc12752e188568527cb9d63f2a93445f089f232dca8462798f"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2324-tlc-145607",
+    "at": "2026-11-07T23:24:07.849Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "b32210fcce8d6f22bcce7a5c62e529fe563330f55cf2d898f3cf262365aa2b0f"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

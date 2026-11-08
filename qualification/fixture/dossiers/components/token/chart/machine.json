@@ -1,0 +1,404 @@
+{
+  "ok": true,
+  "errors": [],
+  "name": "Token",
+  "tier": "modeled",
+  "module": "token",
+  "pins": [],
+  "boundary": "The Token is Harbor's HRD. It holds supply, an amount of HRD up to 4. It receives mint and burn from the Adapter, and transfer from the Holder. It never knows why the Adapter mints.",
+  "context": [
+    {
+      "name": "supply",
+      "type": "amount",
+      "min": 0,
+      "max": 4,
+      "unit": "HRD",
+      "initial": 0
+    }
+  ],
+  "effects": [],
+  "states": [
+    {
+      "id": "S1",
+      "name": "Live",
+      "path": [
+        "Live"
+      ],
+      "key": "Live",
+      "parent": null,
+      "text": "the token mints, burns and transfers.",
+      "final": false,
+      "initial": true,
+      "children": null,
+      "passages": [
+        "S1",
+        "R1",
+        "R2"
+      ]
+    }
+  ],
+  "initial": "Live",
+  "root": [
+    "Live"
+  ],
+  "events": [
+    {
+      "id": "E1",
+      "name": "mint",
+      "sender": "the Adapter",
+      "fields": [
+        {
+          "name": "amount",
+          "type": "amount",
+          "min": 0,
+          "max": 2,
+          "unit": "HRD"
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "name": "burn",
+      "sender": "the Adapter",
+      "fields": [
+        {
+          "name": "amount",
+          "type": "amount",
+          "min": 0,
+          "max": 2,
+          "unit": "HRD"
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "name": "transfer",
+      "sender": "the Holder",
+      "fields": []
+    }
+  ],
+  "eventCases": [
+    {
+      "type": "mint",
+      "amount": 0
+    },
+    {
+      "type": "mint",
+      "amount": 1
+    },
+    {
+      "type": "mint",
+      "amount": 2
+    },
+    {
+      "type": "burn",
+      "amount": 0
+    },
+    {
+      "type": "burn",
+      "amount": 1
+    },
+    {
+      "type": "burn",
+      "amount": 2
+    },
+    {
+      "type": "transfer"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "M1",
+      "from": "Live",
+      "event": "mint",
+      "stays": true,
+      "target": "Live",
+      "guard": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "bin",
+          "op": "+",
+          "l": {
+            "t": "ref",
+            "name": "supply"
+          },
+          "r": {
+            "t": "field",
+            "name": "amount"
+          }
+        },
+        "r": {
+          "t": "int",
+          "v": 4
+        }
+      },
+      "assigns": [
+        {
+          "name": "supply",
+          "expr": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "supply"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M2",
+      "from": "Live",
+      "event": "burn",
+      "stays": true,
+      "target": "Live",
+      "guard": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "field",
+          "name": "amount"
+        },
+        "r": {
+          "t": "ref",
+          "name": "supply"
+        }
+      },
+      "assigns": [
+        {
+          "name": "supply",
+          "expr": {
+            "t": "bin",
+            "op": "-",
+            "l": {
+              "t": "ref",
+              "name": "supply"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M3",
+      "from": "Live",
+      "event": "transfer",
+      "stays": true,
+      "target": "Live",
+      "guard": null,
+      "assigns": [],
+      "effects": []
+    }
+  ],
+  "refusals": [
+    {
+      "id": "R1",
+      "states": [
+        "Live"
+      ],
+      "events": [
+        "mint"
+      ],
+      "effects": [],
+      "cond": {
+        "t": "bin",
+        "op": ">",
+        "l": {
+          "t": "bin",
+          "op": "+",
+          "l": {
+            "t": "ref",
+            "name": "supply"
+          },
+          "r": {
+            "t": "field",
+            "name": "amount"
+          }
+        },
+        "r": {
+          "t": "int",
+          "v": 4
+        }
+      }
+    },
+    {
+      "id": "R2",
+      "states": [
+        "Live"
+      ],
+      "events": [
+        "burn"
+      ],
+      "effects": [],
+      "cond": {
+        "t": "bin",
+        "op": ">",
+        "l": {
+          "t": "field",
+          "name": "amount"
+        },
+        "r": {
+          "t": "ref",
+          "name": "supply"
+        }
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "A1",
+      "while": null,
+      "cond": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "ref",
+          "name": "supply"
+        },
+        "r": {
+          "t": "int",
+          "v": 4
+        }
+      },
+      "givens": []
+    }
+  ],
+  "structural": [],
+  "onces": [],
+  "withins": [],
+  "givens": [],
+  "walks": [
+    {
+      "id": "W1",
+      "name": "Mint-and-burn",
+      "scenario": null,
+      "from": "Live",
+      "with": {},
+      "ends": "Live",
+      "steps": [
+        {
+          "event": "mint",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 2
+            }
+          },
+          "refused": false
+        },
+        {
+          "event": "transfer",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "burn",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 2
+            }
+          },
+          "refused": false
+        }
+      ],
+      "endData": {
+        "supply": {
+          "t": "int",
+          "v": 0
+        }
+      },
+      "sent": {},
+      "notSent": []
+    }
+  ],
+  "seams": [
+    {
+      "id": "X1",
+      "piece": "adapter",
+      "body": "mint and burn cross from Adapter to Token carrying the amount."
+    }
+  ],
+  "guarantees": [
+    {
+      "id": "K1",
+      "claim": "The supply changes only through mint and burn, which only the Adapter may call",
+      "backing": {
+        "kind": "record",
+        "ref": "token#property:supply-only-via-adapter"
+      }
+    }
+  ],
+  "wordsOnly": [
+    {
+      "id": "T1",
+      "text": "This piece promises nothing eventual."
+    },
+    {
+      "id": "T2",
+      "text": "Balances per holder are the Holder's business; only the supply is modeled here."
+    }
+  ],
+  "table": [
+    {
+      "state": "Live",
+      "event": "mint",
+      "moves": [
+        "M1"
+      ],
+      "refusals": [
+        "R1"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Live",
+      "event": "burn",
+      "moves": [
+        "M2"
+      ],
+      "refusals": [
+        "R2"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Live",
+      "event": "transfer",
+      "moves": [
+        "M3"
+      ],
+      "refusals": [],
+      "unconditional": []
+    }
+  ],
+  "unsaid": [],
+  "saidTwice": [],
+  "hashes": {
+    "S1": "b60d32db",
+    "E1": "fb62f7b5",
+    "E2": "e14753fa",
+    "E3": "486165aa",
+    "M1": "77f01296",
+    "M2": "e2aa4e54",
+    "M3": "0b52cdcb",
+    "R1": "04a14621",
+    "R2": "8fd6c9d2",
+    "A1": "8494bc9e",
+    "W1": "1548a99c",
+    "X1": "568ed06f",
+    "K1": "79b73c9a",
+    "T1": "cf2e6345",
+    "T2": "101fbe78"
+  }
+}

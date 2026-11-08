@@ -1,0 +1,206 @@
+{
+  "schema": 1,
+  "dossier": "components/adapter",
+  "question": {
+    "kind": "blunder",
+    "checker": "tlc",
+    "executes": [
+      "model/blunders/stilllive.tla",
+      "model/blunders/stilllive_A1.cfg"
+    ],
+    "expects": [
+      "A1"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: blunder\nblunder: halt no longer clears live\nexecutes:\n  - model/blunders/stilllive.tla\n  - model/blunders/stilllive_A1.cfg\nreach: amounts up to 2\nexpect:\n  A1: violated\nbecause: |\n  With the wrong in place the property fails on a short path; the property is not hollow.\n",
+    "reach": "amounts up to 2",
+    "expect": {
+      "A1": {
+        "expect": "violated"
+      }
+    },
+    "because": "With the wrong in place the property fails on a short path; the property is not hollow."
+  },
+  "answer": {
+    "enabled": [
+      "A1"
+    ],
+    "outcomes": {
+      "A1": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "A1"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "state": "\"Open\"",
+          "live": "TRUE",
+          "w1_armed_sent_mint": "0",
+          "sent_release": "0",
+          "sent_mint": "0",
+          "w2_at": "0",
+          "w1_at": "0",
+          "held": "0",
+          "w1_armed_sent_burn": "0",
+          "sent_burn": "0",
+          "w1_armed_sent_move": "0",
+          "sent_move": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "M4_Halt",
+        "values": {
+          "state": "\"Halted\"",
+          "live": "TRUE",
+          "w1_armed_sent_mint": "0",
+          "sent_release": "0",
+          "sent_mint": "0",
+          "w2_at": "0",
+          "w1_at": "0",
+          "held": "0",
+          "w1_armed_sent_burn": "0",
+          "sent_burn": "0",
+          "w1_armed_sent_move": "0",
+          "sent_move": "0"
+        }
+      }
+    ],
+    "states": {
+      "generated": 6,
+      "distinct": 6,
+      "queued": 4,
+      "depth": 2
+    },
+    "actions": {
+      "M1_Exit": {
+        "move": "M1",
+        "event": "exit",
+        "targets": [],
+        "stays": true,
+        "distinct": 3,
+        "generated": 6
+      },
+      "M2_Enter": {
+        "move": "M2",
+        "event": "enter",
+        "targets": [],
+        "stays": true,
+        "distinct": 1,
+        "generated": 2
+      },
+      "M3_Enter": {
+        "move": "M3",
+        "event": "enter",
+        "targets": [],
+        "stays": true,
+        "distinct": 0,
+        "generated": 0
+      },
+      "M4_Halt": {
+        "move": "M4",
+        "event": "halt",
+        "targets": [
+          "Halted"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 2
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "A1": "cef8e7df"
+    },
+    "reach": {
+      "text": "amounts up to 2",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "2dc0ea92",
+        "S2": "ab235827",
+        "E1": "d2a84fb7",
+        "E2": "3c7a98e6",
+        "E3": "27bd8252",
+        "M1": "bedff268",
+        "M2": "5a9c8009",
+        "M3": "c5468cd9",
+        "M4": "73630550",
+        "R1": "a9875744",
+        "R2": "02514039",
+        "R3": "d9dc2be9",
+        "A1": "add2e99f",
+        "W1": "f15d329e",
+        "W2": "503d5674",
+        "X1": "f8cba5eb",
+        "X2": "d8be73d4",
+        "X3": "6e012009",
+        "K1": "0f309b4d",
+        "T1": "cf2e6345"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "7b42dc7c1831a88a",
+          "path": "modules/adapter/behavior/invariants.md"
+        }
+      },
+      "ir": "b1b83ebc2a2874da"
+    },
+    "executed": {
+      "model/blunders/stilllive.tla": "238c2021166d08e948676cc0681f2df19a0c682d7ac8f225a35ff1804bdce53a",
+      "model/blunders/stilllive_A1.cfg": "dd72eab7f7e31820881501ef896686222ccd6a43c353761d827971cb790d8e73"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/blunders/stilllive.tla": "238c2021166d08e948676cc0681f2df19a0c682d7ac8f225a35ff1804bdce53a",
+        "model/blunders/stilllive_A1.cfg": "dd72eab7f7e31820881501ef896686222ccd6a43c353761d827971cb790d8e73"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2321-blunder-178da3",
+    "at": "2026-11-07T23:21:49.156Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "529c99ad60c5b10cf71dcd6757c592768b776e7b449b53c9ddf19c2c298ae294"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

@@ -1,0 +1,711 @@
+{
+  "ok": true,
+  "errors": [],
+  "name": "Oracle",
+  "tier": "modeled",
+  "module": "oracle",
+  "pins": [],
+  "boundary": "The Oracle holds a price that two keeper lanes refresh. It holds stale, a count from 0 to 3. It holds price, a count from 0 to 4, starting at 2. It holds last, a count from 0 to 4, starting at 2. It receives tick from the chain, post-a from lane A and post-b from lane B. It never knows where a lane's price comes from.",
+  "context": [
+    {
+      "name": "stale",
+      "type": "count",
+      "min": 0,
+      "max": 3,
+      "initial": 0
+    },
+    {
+      "name": "price",
+      "type": "count",
+      "min": 0,
+      "max": 4,
+      "initial": 2
+    },
+    {
+      "name": "last",
+      "type": "count",
+      "min": 0,
+      "max": 4,
+      "initial": 2
+    }
+  ],
+  "effects": [],
+  "states": [
+    {
+      "id": "S1",
+      "name": "Fresh",
+      "path": [
+        "Fresh"
+      ],
+      "key": "Fresh",
+      "parent": null,
+      "text": "the price was posted since the last block.",
+      "final": false,
+      "initial": true,
+      "children": null,
+      "passages": [
+        "S1",
+        "R1"
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Stale",
+      "path": [
+        "Stale"
+      ],
+      "key": "Stale",
+      "parent": null,
+      "text": "at least one block passed since the last post.",
+      "final": false,
+      "initial": false,
+      "children": null,
+      "passages": [
+        "S2"
+      ]
+    }
+  ],
+  "initial": "Fresh",
+  "root": [
+    "Fresh",
+    "Stale"
+  ],
+  "events": [
+    {
+      "id": "E1",
+      "name": "tick",
+      "sender": "the chain",
+      "fields": []
+    },
+    {
+      "id": "E2",
+      "name": "post-a",
+      "sender": "lane A",
+      "fields": [
+        {
+          "name": "value",
+          "type": "count",
+          "min": 0,
+          "max": 4
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "name": "post-b",
+      "sender": "lane B",
+      "fields": [
+        {
+          "name": "value",
+          "type": "count",
+          "min": 0,
+          "max": 4
+        }
+      ]
+    }
+  ],
+  "eventCases": [
+    {
+      "type": "tick"
+    },
+    {
+      "type": "post-a",
+      "value": 0
+    },
+    {
+      "type": "post-a",
+      "value": 1
+    },
+    {
+      "type": "post-a",
+      "value": 2
+    },
+    {
+      "type": "post-a",
+      "value": 3
+    },
+    {
+      "type": "post-a",
+      "value": 4
+    },
+    {
+      "type": "post-b",
+      "value": 0
+    },
+    {
+      "type": "post-b",
+      "value": 1
+    },
+    {
+      "type": "post-b",
+      "value": 2
+    },
+    {
+      "type": "post-b",
+      "value": 3
+    },
+    {
+      "type": "post-b",
+      "value": 4
+    }
+  ],
+  "transitions": [
+    {
+      "id": "M1",
+      "from": "Fresh",
+      "event": "tick",
+      "stays": false,
+      "target": "Stale",
+      "guard": null,
+      "assigns": [
+        {
+          "name": "stale",
+          "expr": {
+            "t": "int",
+            "v": 1
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M2",
+      "from": "Stale",
+      "event": "tick",
+      "stays": true,
+      "target": "Stale",
+      "guard": {
+        "t": "bin",
+        "op": "<",
+        "l": {
+          "t": "ref",
+          "name": "stale"
+        },
+        "r": {
+          "t": "int",
+          "v": 3
+        }
+      },
+      "assigns": [
+        {
+          "name": "stale",
+          "expr": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "stale"
+            },
+            "r": {
+              "t": "int",
+              "v": 1
+            }
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M3",
+      "from": "Stale",
+      "event": "tick",
+      "stays": true,
+      "target": "Stale",
+      "guard": {
+        "t": "bin",
+        "op": "=",
+        "l": {
+          "t": "ref",
+          "name": "stale"
+        },
+        "r": {
+          "t": "int",
+          "v": 3
+        }
+      },
+      "assigns": [],
+      "effects": []
+    },
+    {
+      "id": "M4",
+      "from": "Stale",
+      "event": "post-a",
+      "stays": false,
+      "target": "Fresh",
+      "guard": null,
+      "assigns": [
+        {
+          "name": "stale",
+          "expr": {
+            "t": "int",
+            "v": 0
+          }
+        },
+        {
+          "name": "last",
+          "expr": {
+            "t": "ref",
+            "name": "price"
+          }
+        },
+        {
+          "name": "price",
+          "expr": {
+            "t": "field",
+            "name": "value"
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M5",
+      "from": "Stale",
+      "event": "post-b",
+      "stays": false,
+      "target": "Fresh",
+      "guard": null,
+      "assigns": [
+        {
+          "name": "stale",
+          "expr": {
+            "t": "int",
+            "v": 0
+          }
+        },
+        {
+          "name": "last",
+          "expr": {
+            "t": "ref",
+            "name": "price"
+          }
+        },
+        {
+          "name": "price",
+          "expr": {
+            "t": "field",
+            "name": "value"
+          }
+        }
+      ],
+      "effects": []
+    }
+  ],
+  "refusals": [
+    {
+      "id": "R1",
+      "states": [
+        "Fresh"
+      ],
+      "events": [
+        "post-a",
+        "post-b"
+      ],
+      "effects": [],
+      "cond": null
+    }
+  ],
+  "invariants": [
+    {
+      "id": "A1",
+      "while": "Fresh",
+      "cond": {
+        "t": "bin",
+        "op": "=",
+        "l": {
+          "t": "ref",
+          "name": "stale"
+        },
+        "r": {
+          "t": "int",
+          "v": 0
+        }
+      },
+      "givens": []
+    },
+    {
+      "id": "A2",
+      "while": null,
+      "cond": {
+        "t": "bin",
+        "op": "and",
+        "l": {
+          "t": "bin",
+          "op": ">=",
+          "l": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "price"
+            },
+            "r": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "r": {
+            "t": "ref",
+            "name": "last"
+          }
+        },
+        "r": {
+          "t": "bin",
+          "op": ">=",
+          "l": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "last"
+            },
+            "r": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "r": {
+            "t": "ref",
+            "name": "price"
+          }
+        }
+      },
+      "givens": [
+        "G3",
+        "G4"
+      ]
+    }
+  ],
+  "structural": [],
+  "onces": [],
+  "withins": [
+    {
+      "id": "N1",
+      "k": 1,
+      "trigger": {
+        "state": "Stale"
+      },
+      "goal": {
+        "state": "Fresh"
+      },
+      "givens": [
+        "G1",
+        "G2"
+      ]
+    }
+  ],
+  "givens": [
+    {
+      "id": "G1",
+      "assumption": "lane A posts a stale oracle before the next block",
+      "otherwise": "N1 rests on G2 alone",
+      "actor": "lane A",
+      "event": "post-a",
+      "promptness": "prompt",
+      "when": null
+    },
+    {
+      "id": "G2",
+      "assumption": "lane B posts a stale oracle before the next block",
+      "otherwise": "N1 rests on G1 alone",
+      "actor": "lane B",
+      "event": "post-b",
+      "promptness": "prompt",
+      "when": null
+    },
+    {
+      "id": "G3",
+      "assumption": "lane A moves the price by at most one step per post",
+      "otherwise": "A2 is void",
+      "actor": "lane A",
+      "event": "post-a",
+      "promptness": "eventual",
+      "when": {
+        "t": "bin",
+        "op": "and",
+        "l": {
+          "t": "bin",
+          "op": ">=",
+          "l": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "field",
+              "name": "value"
+            },
+            "r": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "r": {
+            "t": "ref",
+            "name": "price"
+          }
+        },
+        "r": {
+          "t": "bin",
+          "op": "<=",
+          "l": {
+            "t": "field",
+            "name": "value"
+          },
+          "r": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "price"
+            },
+            "r": {
+              "t": "int",
+              "v": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "G4",
+      "assumption": "lane B moves the price by at most one step per post",
+      "otherwise": "A2 is void",
+      "actor": "lane B",
+      "event": "post-b",
+      "promptness": "eventual",
+      "when": {
+        "t": "bin",
+        "op": "and",
+        "l": {
+          "t": "bin",
+          "op": ">=",
+          "l": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "field",
+              "name": "value"
+            },
+            "r": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "r": {
+            "t": "ref",
+            "name": "price"
+          }
+        },
+        "r": {
+          "t": "bin",
+          "op": "<=",
+          "l": {
+            "t": "field",
+            "name": "value"
+          },
+          "r": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "price"
+            },
+            "r": {
+              "t": "int",
+              "v": 1
+            }
+          }
+        }
+      }
+    }
+  ],
+  "walks": [
+    {
+      "id": "W1",
+      "name": "Refresh",
+      "scenario": null,
+      "from": "Fresh",
+      "with": {},
+      "ends": "Fresh",
+      "steps": [
+        {
+          "event": "tick",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "post-a",
+          "args": {
+            "value": {
+              "t": "int",
+              "v": 2
+            }
+          },
+          "refused": false
+        }
+      ],
+      "endData": {
+        "stale": {
+          "t": "int",
+          "v": 0
+        },
+        "price": {
+          "t": "int",
+          "v": 2
+        }
+      },
+      "sent": {},
+      "notSent": []
+    },
+    {
+      "id": "W2",
+      "name": "Backup",
+      "scenario": null,
+      "from": "Fresh",
+      "with": {},
+      "ends": "Fresh",
+      "steps": [
+        {
+          "event": "tick",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "post-b",
+          "args": {
+            "value": {
+              "t": "int",
+              "v": 3
+            }
+          },
+          "refused": false
+        },
+        {
+          "event": "post-a",
+          "args": {
+            "value": {
+              "t": "int",
+              "v": 3
+            }
+          },
+          "refused": true
+        }
+      ],
+      "endData": {
+        "price": {
+          "t": "int",
+          "v": 3
+        },
+        "last": {
+          "t": "int",
+          "v": 2
+        }
+      },
+      "sent": {},
+      "notSent": []
+    }
+  ],
+  "seams": [],
+  "guarantees": [
+    {
+      "id": "K1",
+      "claim": "stale never exceeds one block while a lane is live",
+      "backing": {
+        "kind": "record",
+        "ref": "oracle#property:freshness"
+      }
+    }
+  ],
+  "wordsOnly": [
+    {
+      "id": "T1",
+      "text": "Where a lane's price comes from is the lanes' business; what is modeled is the price's age and the step a post may move it."
+    }
+  ],
+  "table": [
+    {
+      "state": "Fresh",
+      "event": "tick",
+      "moves": [
+        "M1"
+      ],
+      "refusals": [],
+      "unconditional": []
+    },
+    {
+      "state": "Fresh",
+      "event": "post-a",
+      "moves": [],
+      "refusals": [
+        "R1"
+      ],
+      "unconditional": [
+        "R1"
+      ]
+    },
+    {
+      "state": "Fresh",
+      "event": "post-b",
+      "moves": [],
+      "refusals": [
+        "R1"
+      ],
+      "unconditional": [
+        "R1"
+      ]
+    },
+    {
+      "state": "Stale",
+      "event": "tick",
+      "moves": [
+        "M2",
+        "M3"
+      ],
+      "refusals": [],
+      "unconditional": []
+    },
+    {
+      "state": "Stale",
+      "event": "post-a",
+      "moves": [
+        "M4"
+      ],
+      "refusals": [],
+      "unconditional": []
+    },
+    {
+      "state": "Stale",
+      "event": "post-b",
+      "moves": [
+        "M5"
+      ],
+      "refusals": [],
+      "unconditional": []
+    }
+  ],
+  "unsaid": [],
+  "saidTwice": [],
+  "hashes": {
+    "S1": "5cbde622",
+    "S2": "e39575ad",
+    "E1": "5961722a",
+    "E2": "c3af7dd7",
+    "E3": "1098b779",
+    "M1": "b7b4049c",
+    "M2": "8cffb858",
+    "M3": "c96205f9",
+    "M4": "3db4ddee",
+    "M5": "11ceae28",
+    "R1": "78889aa1",
+    "A1": "ec31db11",
+    "A2": "ef269f93",
+    "N1": "90e0de0a",
+    "G1": "c51dd0f1",
+    "G2": "9e2b7e6a",
+    "G3": "daa3b18d",
+    "G4": "582ce021",
+    "W1": "e17bda2b",
+    "W2": "a766854d",
+    "K1": "6cce6743",
+    "T1": "15d27da3"
+  }
+}

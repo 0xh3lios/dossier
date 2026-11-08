@@ -1,0 +1,40 @@
+TLC recordings
+
+These files are TLC's output for runs of Parcel.tla, a small test model of
+orders and parcels that is not kept in the repository, of three blunder
+copies of it, and of Broken.tla, a module that does not parse. The checker
+tests read them in place of a live run.
+
+  parcel        Parcel.tla, its ordinary configuration     no error
+  parcel-O1     Parcel.tla, O1 alone                        no error
+  parcel-W1     Parcel.tla, the witness of W1               NotW1 violated
+  parcel-W2     Parcel.tla, the witness of W2               NotW2 violated
+  loose-A1      blunders/loose.tla, A1 alone                A1 violated
+  recall-A2     blunders/recall.tla, A2 alone               A2 violated
+  recall-R1     blunders/recall.tla, R1 alone               action property R1 violated
+  unfair-O1     blunders/unfair.tla, O1 alone               temporal property violated
+  parse-error   Broken.tla                                  does not parse
+
+Each ran with TLC 2.19 in -tool mode, with <cfg> its configuration, <states>
+an empty scratch folder, and <module> the path of its module:
+
+  $JAVA -cp $TLA_TOOLS tlc2.TLC -tool -coverage 1 -workers 1 -cleanup \
+    -metadir <states> -config <cfg> <module>
+
+Each run's output is <name>.txt and its exit status <name>.exit. TLC exited
+0 for parcel and parcel-O1, 12 for each violated invariant, 13 for recall-R1
+and unfair-O1, and 150 for parse-error. version.txt holds the version line
+that every output begins with.
+
+The command is the TLC driver's argv after its JVM options, as
+qualification/tests/checkers.test.ts asserts it. The runs predate the
+driver's -XX:+UseParallelGC option, so each output carries TLC's warning
+that asks for it.
+
+$JAVA is the JDK's java and $TLA_TOOLS the tla2tools jar. versions.txt in
+the folder above names the versions.
+
+The outputs use the names the runner writes when it records a trial.
+$PLUGIN is the plugin's root. $CORES, $HEAP and $PID stand for the
+machine's cores, its heap and the process id. $OS, $JDK_VENDOR and
+$JDK_ARCH stand for the system and the JVM's vendor and architecture.

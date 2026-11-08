@@ -1,0 +1,615 @@
+{
+  "ok": true,
+  "errors": [],
+  "name": "Adapter",
+  "tier": "modeled",
+  "module": "adapter",
+  "pins": [],
+  "boundary": "The Adapter turns the Vault's free credit into HRD and back. It holds held, an amount of HRD up to 4. It holds live, a flag, starting set. It receives exit and enter from the User, and halt from the Breaker. It sends move to the Vault, carrying amount. It sends release to the Vault, carrying amount. It sends mint to the Token, carrying amount. It sends burn to the Token, carrying amount.",
+  "context": [
+    {
+      "name": "held",
+      "type": "amount",
+      "min": 0,
+      "max": 4,
+      "unit": "HRD",
+      "initial": 0
+    },
+    {
+      "name": "live",
+      "type": "flag",
+      "initial": true
+    }
+  ],
+  "effects": [
+    {
+      "name": "move",
+      "to": "the Vault",
+      "fields": [
+        "amount"
+      ]
+    },
+    {
+      "name": "release",
+      "to": "the Vault",
+      "fields": [
+        "amount"
+      ]
+    },
+    {
+      "name": "mint",
+      "to": "the Token",
+      "fields": [
+        "amount"
+      ]
+    },
+    {
+      "name": "burn",
+      "to": "the Token",
+      "fields": [
+        "amount"
+      ]
+    }
+  ],
+  "states": [
+    {
+      "id": "S1",
+      "name": "Open",
+      "path": [
+        "Open"
+      ],
+      "key": "Open",
+      "parent": null,
+      "text": "exits and entries are accepted.",
+      "final": false,
+      "initial": true,
+      "children": null,
+      "passages": [
+        "S1",
+        "R2",
+        "R3"
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Halted",
+      "path": [
+        "Halted"
+      ],
+      "key": "Halted",
+      "parent": null,
+      "text": "the Breaker stopped exits; entries continue so HRD can always return.",
+      "final": false,
+      "initial": false,
+      "children": null,
+      "passages": [
+        "S2",
+        "R1",
+        "R2"
+      ]
+    }
+  ],
+  "initial": "Open",
+  "root": [
+    "Open",
+    "Halted"
+  ],
+  "events": [
+    {
+      "id": "E1",
+      "name": "exit",
+      "sender": "the User",
+      "fields": [
+        {
+          "name": "amount",
+          "type": "amount",
+          "min": 0,
+          "max": 2,
+          "unit": "HRD"
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "name": "enter",
+      "sender": "the User",
+      "fields": [
+        {
+          "name": "amount",
+          "type": "amount",
+          "min": 0,
+          "max": 2,
+          "unit": "HRD"
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "name": "halt",
+      "sender": "the Breaker",
+      "fields": []
+    }
+  ],
+  "eventCases": [
+    {
+      "type": "exit",
+      "amount": 0
+    },
+    {
+      "type": "exit",
+      "amount": 1
+    },
+    {
+      "type": "exit",
+      "amount": 2
+    },
+    {
+      "type": "enter",
+      "amount": 0
+    },
+    {
+      "type": "enter",
+      "amount": 1
+    },
+    {
+      "type": "enter",
+      "amount": 2
+    },
+    {
+      "type": "halt"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "M1",
+      "from": "Open",
+      "event": "exit",
+      "stays": true,
+      "target": "Open",
+      "guard": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "bin",
+          "op": "+",
+          "l": {
+            "t": "ref",
+            "name": "held"
+          },
+          "r": {
+            "t": "field",
+            "name": "amount"
+          }
+        },
+        "r": {
+          "t": "int",
+          "v": 4
+        }
+      },
+      "assigns": [
+        {
+          "name": "held",
+          "expr": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "held"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        }
+      ],
+      "effects": [
+        "move",
+        "mint"
+      ]
+    },
+    {
+      "id": "M2",
+      "from": "Open",
+      "event": "enter",
+      "stays": true,
+      "target": "Open",
+      "guard": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "field",
+          "name": "amount"
+        },
+        "r": {
+          "t": "ref",
+          "name": "held"
+        }
+      },
+      "assigns": [
+        {
+          "name": "held",
+          "expr": {
+            "t": "bin",
+            "op": "-",
+            "l": {
+              "t": "ref",
+              "name": "held"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        }
+      ],
+      "effects": [
+        "burn",
+        "release"
+      ]
+    },
+    {
+      "id": "M3",
+      "from": "Halted",
+      "event": "enter",
+      "stays": true,
+      "target": "Halted",
+      "guard": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "field",
+          "name": "amount"
+        },
+        "r": {
+          "t": "ref",
+          "name": "held"
+        }
+      },
+      "assigns": [
+        {
+          "name": "held",
+          "expr": {
+            "t": "bin",
+            "op": "-",
+            "l": {
+              "t": "ref",
+              "name": "held"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        }
+      ],
+      "effects": [
+        "burn",
+        "release"
+      ]
+    },
+    {
+      "id": "M4",
+      "from": "Open",
+      "event": "halt",
+      "stays": false,
+      "target": "Halted",
+      "guard": null,
+      "assigns": [
+        {
+          "name": "live",
+          "expr": {
+            "t": "bool",
+            "v": false
+          }
+        }
+      ],
+      "effects": []
+    }
+  ],
+  "refusals": [
+    {
+      "id": "R1",
+      "states": [
+        "Halted"
+      ],
+      "events": [
+        "exit",
+        "halt"
+      ],
+      "effects": [],
+      "cond": null
+    },
+    {
+      "id": "R2",
+      "states": [
+        "Open",
+        "Halted"
+      ],
+      "events": [
+        "enter"
+      ],
+      "effects": [],
+      "cond": {
+        "t": "bin",
+        "op": ">",
+        "l": {
+          "t": "field",
+          "name": "amount"
+        },
+        "r": {
+          "t": "ref",
+          "name": "held"
+        }
+      }
+    },
+    {
+      "id": "R3",
+      "states": [
+        "Open"
+      ],
+      "events": [
+        "exit"
+      ],
+      "effects": [],
+      "cond": {
+        "t": "bin",
+        "op": ">",
+        "l": {
+          "t": "bin",
+          "op": "+",
+          "l": {
+            "t": "ref",
+            "name": "held"
+          },
+          "r": {
+            "t": "field",
+            "name": "amount"
+          }
+        },
+        "r": {
+          "t": "int",
+          "v": 4
+        }
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "A1",
+      "while": "Halted",
+      "cond": {
+        "t": "not",
+        "e": {
+          "t": "ref",
+          "name": "live"
+        }
+      },
+      "givens": []
+    }
+  ],
+  "structural": [],
+  "onces": [],
+  "withins": [],
+  "givens": [],
+  "walks": [
+    {
+      "id": "W1",
+      "name": "Round-trip",
+      "scenario": null,
+      "from": "Open",
+      "with": {},
+      "ends": "Open",
+      "steps": [
+        {
+          "event": "exit",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 2
+            }
+          },
+          "refused": false
+        },
+        {
+          "event": "enter",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 2
+            }
+          },
+          "refused": false
+        }
+      ],
+      "endData": {
+        "held": {
+          "t": "int",
+          "v": 0
+        }
+      },
+      "sent": {
+        "move": 1,
+        "mint": 1,
+        "burn": 1
+      },
+      "notSent": []
+    },
+    {
+      "id": "W2",
+      "name": "Stopped",
+      "scenario": null,
+      "from": "Open",
+      "with": {},
+      "ends": "Halted",
+      "steps": [
+        {
+          "event": "exit",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "refused": false
+        },
+        {
+          "event": "halt",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "exit",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "refused": true
+        },
+        {
+          "event": "enter",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "refused": false
+        }
+      ],
+      "endData": {
+        "held": {
+          "t": "int",
+          "v": 0
+        }
+      },
+      "sent": {},
+      "notSent": []
+    }
+  ],
+  "seams": [
+    {
+      "id": "X1",
+      "piece": "vault",
+      "body": "move and release cross from Adapter to Vault carrying the amount."
+    },
+    {
+      "id": "X2",
+      "piece": "token",
+      "body": "mint and burn cross from Adapter to Token carrying the amount."
+    },
+    {
+      "id": "X3",
+      "piece": "breaker",
+      "body": "halt crosses from Breaker to Adapter carrying nothing."
+    }
+  ],
+  "guarantees": [
+    {
+      "id": "K1",
+      "claim": "Credit held by the adapter equals the token supply",
+      "backing": {
+        "kind": "record",
+        "ref": "adapter#property:held-equals-supply"
+      }
+    }
+  ],
+  "wordsOnly": [
+    {
+      "id": "T1",
+      "text": "This piece promises nothing eventual."
+    }
+  ],
+  "table": [
+    {
+      "state": "Open",
+      "event": "exit",
+      "moves": [
+        "M1"
+      ],
+      "refusals": [
+        "R3"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Open",
+      "event": "enter",
+      "moves": [
+        "M2"
+      ],
+      "refusals": [
+        "R2"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Open",
+      "event": "halt",
+      "moves": [
+        "M4"
+      ],
+      "refusals": [],
+      "unconditional": []
+    },
+    {
+      "state": "Halted",
+      "event": "exit",
+      "moves": [],
+      "refusals": [
+        "R1"
+      ],
+      "unconditional": [
+        "R1"
+      ]
+    },
+    {
+      "state": "Halted",
+      "event": "enter",
+      "moves": [
+        "M3"
+      ],
+      "refusals": [
+        "R2"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Halted",
+      "event": "halt",
+      "moves": [],
+      "refusals": [
+        "R1"
+      ],
+      "unconditional": [
+        "R1"
+      ]
+    }
+  ],
+  "unsaid": [],
+  "saidTwice": [],
+  "hashes": {
+    "S1": "2dc0ea92",
+    "S2": "ab235827",
+    "E1": "d2a84fb7",
+    "E2": "3c7a98e6",
+    "E3": "27bd8252",
+    "M1": "bedff268",
+    "M2": "5a9c8009",
+    "M3": "c5468cd9",
+    "M4": "73630550",
+    "R1": "a9875744",
+    "R2": "02514039",
+    "R3": "d9dc2be9",
+    "A1": "add2e99f",
+    "W1": "f15d329e",
+    "W2": "503d5674",
+    "X1": "f8cba5eb",
+    "X2": "d8be73d4",
+    "X3": "6e012009",
+    "K1": "0f309b4d",
+    "T1": "cf2e6345"
+  }
+}

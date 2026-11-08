@@ -1,0 +1,271 @@
+{
+  "name": "ApalacheIR",
+  "version": "1.0",
+  "description": "https://apalache-mc.org/docs/adr/005adr-json.html",
+  "modules": [
+    {
+      "kind": "TlaModule",
+      "name": "counterexample",
+      "declarations": [
+        {
+          "type": "(() => Bool)",
+          "kind": "TlaOperDecl",
+          "name": "ConstInit",
+          "formalParams": [],
+          "isRecursive": false,
+          "body": {
+            "type": "Bool",
+            "kind": "ValEx",
+            "value": {
+              "kind": "TlaBool",
+              "value": true
+            }
+          }
+        },
+        {
+          "type": "(() => Bool)",
+          "kind": "TlaOperDecl",
+          "name": "State0",
+          "formalParams": [],
+          "isRecursive": false,
+          "body": {
+            "type": "Bool",
+            "kind": "OperEx",
+            "oper": "AND",
+            "args": [
+              {
+                "type": "Bool",
+                "kind": "OperEx",
+                "oper": "EQ",
+                "args": [
+                  {
+                    "type": "Str",
+                    "kind": "NameEx",
+                    "name": "s"
+                  },
+                  {
+                    "type": "Str",
+                    "kind": "ValEx",
+                    "value": {
+                      "kind": "TlaStr",
+                      "value": "Idle"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Bool",
+                "kind": "OperEx",
+                "oper": "EQ",
+                "args": [
+                  {
+                    "type": "Int",
+                    "kind": "NameEx",
+                    "name": "x"
+                  },
+                  {
+                    "type": "Int",
+                    "kind": "ValEx",
+                    "value": {
+                      "kind": "TlaInt",
+                      "value": 0
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "(() => Bool)",
+          "kind": "TlaOperDecl",
+          "name": "State1",
+          "formalParams": [],
+          "isRecursive": false,
+          "body": {
+            "type": "Bool",
+            "kind": "OperEx",
+            "oper": "AND",
+            "args": [
+              {
+                "type": "Bool",
+                "kind": "OperEx",
+                "oper": "EQ",
+                "args": [
+                  {
+                    "type": "Str",
+                    "kind": "NameEx",
+                    "name": "s"
+                  },
+                  {
+                    "type": "Str",
+                    "kind": "ValEx",
+                    "value": {
+                      "kind": "TlaStr",
+                      "value": "Busy"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Bool",
+                "kind": "OperEx",
+                "oper": "EQ",
+                "args": [
+                  {
+                    "type": "Int",
+                    "kind": "NameEx",
+                    "name": "x"
+                  },
+                  {
+                    "type": "Int",
+                    "kind": "ValEx",
+                    "value": {
+                      "kind": "TlaInt",
+                      "value": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "(() => Bool)",
+          "kind": "TlaOperDecl",
+          "name": "State2",
+          "formalParams": [],
+          "isRecursive": false,
+          "body": {
+            "type": "Bool",
+            "kind": "OperEx",
+            "oper": "AND",
+            "args": [
+              {
+                "type": "Bool",
+                "kind": "OperEx",
+                "oper": "EQ",
+                "args": [
+                  {
+                    "type": "Str",
+                    "kind": "NameEx",
+                    "name": "s"
+                  },
+                  {
+                    "type": "Str",
+                    "kind": "ValEx",
+                    "value": {
+                      "kind": "TlaStr",
+                      "value": "Busy"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Bool",
+                "kind": "OperEx",
+                "oper": "EQ",
+                "args": [
+                  {
+                    "type": "Int",
+                    "kind": "NameEx",
+                    "name": "x"
+                  },
+                  {
+                    "type": "Int",
+                    "kind": "ValEx",
+                    "value": {
+                      "kind": "TlaInt",
+                      "value": 2
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "(() => Bool)",
+          "kind": "TlaOperDecl",
+          "name": "State3",
+          "formalParams": [],
+          "isRecursive": false,
+          "body": {
+            "type": "Bool",
+            "kind": "OperEx",
+            "oper": "AND",
+            "args": [
+              {
+                "type": "Bool",
+                "kind": "OperEx",
+                "oper": "EQ",
+                "args": [
+                  {
+                    "type": "Str",
+                    "kind": "NameEx",
+                    "name": "s"
+                  },
+                  {
+                    "type": "Str",
+                    "kind": "ValEx",
+                    "value": {
+                      "kind": "TlaStr",
+                      "value": "Busy"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Bool",
+                "kind": "OperEx",
+                "oper": "EQ",
+                "args": [
+                  {
+                    "type": "Int",
+                    "kind": "NameEx",
+                    "name": "x"
+                  },
+                  {
+                    "type": "Int",
+                    "kind": "ValEx",
+                    "value": {
+                      "kind": "TlaInt",
+                      "value": 3
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "(() => Bool)",
+          "kind": "TlaOperDecl",
+          "name": "InvariantViolation",
+          "formalParams": [],
+          "isRecursive": false,
+          "body": {
+            "type": "Bool",
+            "kind": "OperEx",
+            "oper": "GE",
+            "args": [
+              {
+                "type": "Int",
+                "kind": "NameEx",
+                "name": "x"
+              },
+              {
+                "type": "Int",
+                "kind": "ValEx",
+                "value": {
+                  "kind": "TlaInt",
+                  "value": 3
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+name: Qualification
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts-and-tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.18.0', '24.3.0']
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  # Asks Harbor's questions again with the solvers its answers came from and fails on any answer
+  # that comes back different. The installer pins each solver by version and SHA-256, and the
+  # cache, keyed on the installer, keeps a second run from downloading anything.
+  recheck-harbor:
+    runs-on: ubuntu-latest
+    # A local recheck of Harbor took 155 seconds on 2026-11-07. The step allows three times that.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.3.0'
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/cache@v6
+        with:
+          path: .local/toolchain
+          key: toolchain-${{ runner.os }}-${{ hashFiles('qualification/install-toolchain.mjs') }}
+      - run: npm ci
+      - run: node qualification/install-toolchain.mjs --into .local/toolchain
+      - run: . .local/toolchain/env.sh && ./bin/dossier doctor --root qualification/fixture/dossiers
+      # Recheck exits 1 on a difference. It exits 0 when it lists answers as not run, so the summary
+      # must also show that every one of Harbor's answers was asked again.
+      - name: dossier recheck
+        timeout-minutes: 8
+        shell: bash
+        run: |
+          . .local/toolchain/env.sh
+          ./bin/dossier recheck --root qualification/fixture/dossiers | tee "$RUNNER_TEMP/recheck.log"
+          grep -Eq '^recheck: [0-9]+ same, 0 different, 0 not run$' "$RUNNER_TEMP/recheck.log" || { echo "recheck left answers not run; read the not run lines above"; exit 1; }

@@ -1,0 +1,130 @@
+[
+  {
+    "path": "spec/chart.md",
+    "ordinal": 1,
+    "kind": "call",
+    "id": "chart-call",
+    "setup": "components/timelock",
+    "description": "Complete call form; plan against Harbor Timelock without running the chart."
+  },
+  {
+    "path": "spec/checkers/alloy.md",
+    "ordinal": 1,
+    "kind": "call",
+    "id": "alloy-call",
+    "setup": "components/breaker",
+    "description": "Complete call form; plan against Harbor Breaker. The scope is not unbounded proof."
+  },
+  {
+    "path": "spec/checkers/apalache.md",
+    "ordinal": 1,
+    "kind": "call",
+    "id": "inductive-call",
+    "setup": "components/vault",
+    "description": "Complete call form; plan against Harbor Vault. This test does not execute induction."
+  },
+  {
+    "path": "spec/checkers/external.md",
+    "ordinal": 1,
+    "kind": "config-fragment",
+    "id": "external-config",
+    "setup": null,
+    "description": "Fragment of dossier.json; wrap in an object before JSON parsing."
+  },
+  {
+    "path": "spec/checkers/external.md",
+    "ordinal": 2,
+    "kind": "call",
+    "id": "external-call",
+    "setup": "components/token",
+    "description": "Complete call form; plan against Harbor Token with its declared replay runner."
+  },
+  {
+    "path": "spec/composition.md",
+    "ordinal": 1,
+    "kind": "composition",
+    "id": "composition-shape",
+    "setup": null,
+    "description": "Composition syntax example; its member and knowledge dependencies are not a complete system."
+  },
+  {
+    "path": "spec/composition.md",
+    "ordinal": 2,
+    "kind": "scenarios",
+    "id": "scenario-windows",
+    "setup": null,
+    "description": "Scenario fragment; read with Harbor actor declarations."
+  },
+  {
+    "path": "spec/composition.md",
+    "ordinal": 3,
+    "kind": "system",
+    "id": "control-prose",
+    "setup": "systems/control",
+    "description": "Complete system prose; compose using Harbor Control members, actors and wiring."
+  },
+  {
+    "path": "spec/composition.md",
+    "ordinal": 4,
+    "kind": "call",
+    "id": "system-call",
+    "setup": "systems/supply",
+    "description": "Complete cell call; plan against Harbor Supply and its all-honest scenario."
+  },
+  {
+    "path": "spec/evidence.md",
+    "ordinal": 1,
+    "kind": "decisions",
+    "id": "decision-chain",
+    "setup": null,
+    "description": "Illustrative decisions with invented passage hashes; the chain itself must parse intact. These words authorize nothing."
+  },
+  {
+    "path": "spec/language.md",
+    "ordinal": 1,
+    "kind": "template",
+    "id": "component-shape",
+    "setup": null,
+    "description": "Grammar template with placeholders; not a complete component."
+  },
+  {
+    "path": "spec/language.md",
+    "ordinal": 2,
+    "kind": "template",
+    "id": "boundary-forms",
+    "setup": null,
+    "description": "Grammar alternatives with placeholders; not declaration sentences to compile literally."
+  },
+  {
+    "path": "spec/language.md",
+    "ordinal": 3,
+    "kind": "givens",
+    "id": "given-fragments",
+    "setup": null,
+    "description": "Two independent excerpts; each must match its cited Harbor passage and compile in its own component."
+  },
+  {
+    "path": "spec/language.md",
+    "ordinal": 4,
+    "kind": "doubt",
+    "id": "doubt-entry",
+    "setup": null,
+    "description": "Complete doubt record with two alternatives; parsing does not settle the passage."
+  },
+  {
+    "path": "spec/models.md",
+    "ordinal": 1,
+    "kind": "template",
+    "id": "scaffold-shape",
+    "setup": null,
+    "description": "Schematic operator list with placeholders; not an executable TLA+ module."
+  },
+  {
+    "path": "spec/models.md",
+    "ordinal": 2,
+    "kind": "call",
+    "id": "tlc-call",
+    "setup": "components/timelock",
+    "description": "Complete call; plan against Harbor Timelock and its ordinary configuration."
+  }
+]

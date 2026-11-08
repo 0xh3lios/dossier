@@ -1,0 +1,21 @@
+---
+name: setup
+description: Prepare a repository for dossiers or repair its installation. Run the doctor, create dossiers/ with its marker, README, package.json, .gitignore and actors files, point it at the knowledge base when there is one, install xstate once the team agrees, read the plugin's fixture as a smoke test, and verify without writing reports. Use for "set this repo up for dossiers", "is the dossier toolchain working", and when verify reports that the plugin version changed. Authors no component or system dossier.
+allowed-tools: Bash(dossier *)
+---
+
+# Setup
+
+`dossier` is [`bin/dossier`](../../bin/dossier) at the root of this plugin. Where it is not on the PATH, run it by that path.
+
+You prepare a repository for the dossier method. You create nothing by hand. `dossier setup` writes the folder, and you say what it did.
+
+1. Look for a knowledge base, which is optional: a folder of module records, `modules/<id>/` with YAML blocks in Markdown, often a top-level folder such as `knowledge/` or `records/`. Ask once if you cannot tell. Setup works without one, and references then resolve to nothing.
+2. Run `dossier setup` from the repository root, with `--knowledge <path>` when there is a knowledge base. It creates `dossiers/` with `dossier.json`, `README.md`, `package.json`, `.gitignore`, `actors/actors.md`, `actors/scenarios.md`, `components/` and `systems/`. The `.gitignore` keeps `index.md`, which render rebuilds, each dossier's `trials/` and `.running/`, where trials run and leave their bundles, `_scratch/` and `node_modules/` out of git. New roots declare `storage: integrity-v1`. Existing files are kept, and the marker is updated under the root lock. When a `.gitignore` was already there, tell the team which of those paths it does not keep out. A marker with no `storage` field gets `storage: integrity-v1` while no dossier exists under the root. Setup prints the doctor's lines, reads the fixture as a smoke test and verifies this repository without writing reports. Show the findings. When the knowledge base is outside the repository, explain that its absolute path works on this machine only. Setup refuses a malformed marker, including one that names another storage, and a marker that names no storage while dossiers exist under it. It will not reconstruct a missing marker beside existing dossiers. Report the problem, and do not replace the marker by hand.
+3. Dependencies: unless the team has already said so, ask once whether to run `npm install` in `dossiers/` for `xstate` and `@xstate/graph`, the libraries the chart runs on. On yes, run `dossier setup --install`. Install nothing without their word. Meanwhile the chart uses the plugin's own copies, when the plugin's folder has them installed. Solver trials need a JDK and `TLA_TOOLS`, `ALLOY_JAR` and `APALACHE`, and [Install the solvers](../../docs/how-to/install-the-solvers.md) says where to get them.
+4. External runners: if the team has a fork replay or a simulator, show them the `external` declaration to add to `dossier.json` themselves, as [the external contract](../../spec/checkers/external.md) describes. `dossier.json` is theirs to edit, not yours.
+5. If the host asks before every command, offer once to allow the `dossier` command in its settings, so it runs without a prompt on every turn. Do it only on a yes.
+6. If initialization or publication was interrupted, inspect the locks with `dossier recover --root-lock --dry-run` or `dossier recover <dossier> lock --dry-run`. Only a demonstrably dead local owner can be recovered. A pending decision requires inspection and confirmation of its exact suffix. Follow [Publication and integrity](../../spec/storage.md) rather than editing locks or candidates.
+7. Say in one paragraph what works now, what is missing, and the next useful action. When the root verifies, that may be `start a dossier for <component>`, or `dossier import <module>` when the knowledge base has the module. `dossier verify` writes nothing. Use `dossier render` only when the ledgers and the index should be written.
+
+You never edit authority records by hand, never author component or system inputs during setup, and never install anything the team did not approve. Recovery preserves existing evidence and owner words.

@@ -1,0 +1,5 @@
+The tools the recorded outputs came from, as the outputs report them.
+openjdk version "21.0.2" 2024-01-16
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+APALACHE version: 0.62.4 | build: 7954daf
+org.alloytools.alloy.dist-6.2.0.jar, build date 2025-01-09T08:17:18.350Z

@@ -1,0 +1,30 @@
+Apalache recordings
+
+These files are Apalache's output for three runs on Smoke.tla, the small
+module kept beside them, and the counterexample that one of the runs wrote.
+The checker tests read them in place of a live run.
+
+  bounded-holds.txt      a bounded run of InvHolds, no error up to length 5
+  bounded-violated.txt   a bounded run of InvFails, violated in state 3
+  inductive-step.txt     the step of an inductive run of Inductive, no error
+                         at length 1
+  violation1.itf.json    the trace the violated run wrote, in ITF
+  violation1.json        the same counterexample in Apalache's JSON form
+
+Each ran with Apalache 0.62.4, with <out> an empty scratch folder:
+
+  $APALACHE check --inv=InvHolds --length=5 --out-dir=<out> Smoke.tla
+  $APALACHE check --inv=InvFails --length=<n> --out-dir=<out> Smoke.tla
+  $APALACHE check --inv=Inductive --length=1 --init=Inductive --out-dir=<out> Smoke.tla
+
+Each run's output is the .txt file named for it. The violated run's output
+does not record its length. It stopped at the violation in state 3, and
+violation1.itf.json and violation1.json are copied from the run folder that
+its Output directory line names.
+
+The commands are the argv the Apalache driver builds, as
+qualification/tests/checkers.test.ts asserts it.
+
+$APALACHE is the apalache-mc launcher. versions.txt in the folder above
+names the versions. $PLUGIN in the outputs is the plugin's root, as the
+runner names it when it records a trial.

@@ -1,0 +1,257 @@
+{
+  "schema": 1,
+  "dossier": "components/adapter",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/Adapter.tla",
+      "model/Adapter_W2.cfg"
+    ],
+    "expects": [
+      "NotW2",
+      "TypeOK"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nexecutes:\n  - model/Adapter.tla\n  - model/Adapter_W2.cfg\nreach: amounts up to 2; held up to 4\ntrace-data: held\nexpect:\n  TypeOK: holds\n  NotW2: violated; trace: Open/0 > Open/1 > Halted/1 > Halted/0\nbecause: |\n  W2 exits 1, halts, refuses an exit, then enters 1. The refused step changes no state.\n",
+    "reach": "amounts up to 2; held up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "NotW2": {
+        "expect": "violated",
+        "trace": [
+          "Open/0",
+          "Open/1",
+          "Halted/1",
+          "Halted/0"
+        ]
+      }
+    },
+    "because": "W2 exits 1, halts, refuses an exit, then enters 1. The refused step changes no state."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "NotW2"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "NotW2": "violated"
+    },
+    "violation": {
+      "kind": "invariant",
+      "name": "NotW2"
+    },
+    "trace": [
+      {
+        "index": 1,
+        "action": "Initial predicate",
+        "values": {
+          "state": "\"Open\"",
+          "live": "TRUE",
+          "w1_armed_sent_mint": "0",
+          "sent_release": "0",
+          "sent_mint": "0",
+          "w2_at": "0",
+          "w1_at": "0",
+          "held": "0",
+          "w1_armed_sent_burn": "0",
+          "sent_burn": "0",
+          "w1_armed_sent_move": "0",
+          "sent_move": "0"
+        }
+      },
+      {
+        "index": 2,
+        "action": "M1_Exit",
+        "values": {
+          "state": "\"Open\"",
+          "live": "TRUE",
+          "w1_armed_sent_mint": "0",
+          "sent_release": "0",
+          "sent_mint": "1",
+          "w2_at": "1",
+          "w1_at": "0",
+          "held": "1",
+          "w1_armed_sent_burn": "0",
+          "sent_burn": "0",
+          "w1_armed_sent_move": "0",
+          "sent_move": "1"
+        }
+      },
+      {
+        "index": 3,
+        "action": "M4_Halt",
+        "values": {
+          "state": "\"Halted\"",
+          "live": "FALSE",
+          "w1_armed_sent_mint": "0",
+          "sent_release": "0",
+          "sent_mint": "1",
+          "w2_at": "2",
+          "w1_at": "0",
+          "held": "1",
+          "w1_armed_sent_burn": "0",
+          "sent_burn": "0",
+          "w1_armed_sent_move": "0",
+          "sent_move": "1"
+        }
+      },
+      {
+        "index": 4,
+        "action": "M3_Enter",
+        "values": {
+          "state": "\"Halted\"",
+          "live": "FALSE",
+          "w1_armed_sent_mint": "0",
+          "sent_release": "1",
+          "sent_mint": "1",
+          "w2_at": "3",
+          "w1_at": "0",
+          "held": "0",
+          "w1_armed_sent_burn": "0",
+          "sent_burn": "1",
+          "w1_armed_sent_move": "0",
+          "sent_move": "1"
+        }
+      }
+    ],
+    "states": {
+      "generated": 81,
+      "distinct": 58,
+      "queued": 41,
+      "depth": 4
+    },
+    "actions": {
+      "M1_Exit": {
+        "move": "M1",
+        "event": "exit",
+        "targets": [],
+        "stays": true,
+        "distinct": 29,
+        "generated": 43
+      },
+      "M2_Enter": {
+        "move": "M2",
+        "event": "enter",
+        "targets": [],
+        "stays": true,
+        "distinct": 14,
+        "generated": 27
+      },
+      "M3_Enter": {
+        "move": "M3",
+        "event": "enter",
+        "targets": [],
+        "stays": true,
+        "distinct": 1,
+        "generated": 6
+      },
+      "M4_Halt": {
+        "move": "M4",
+        "event": "halt",
+        "targets": [
+          "Halted"
+        ],
+        "stays": false,
+        "distinct": 13,
+        "generated": 14
+      }
+    },
+    "init": {
+      "accepted": 2,
+      "generated": 2
+    },
+    "partial": [
+      "TypeOK"
+    ],
+    "errors": [
+      "The behavior up to this point is:"
+    ],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "b9c42d5f",
+      "NotW2": "7c956798"
+    },
+    "reach": {
+      "text": "amounts up to 2; held up to 4",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "2dc0ea92",
+        "S2": "ab235827",
+        "E1": "d2a84fb7",
+        "E2": "3c7a98e6",
+        "E3": "27bd8252",
+        "M1": "bedff268",
+        "M2": "5a9c8009",
+        "M3": "c5468cd9",
+        "M4": "73630550",
+        "R1": "a9875744",
+        "R2": "02514039",
+        "R3": "d9dc2be9",
+        "A1": "add2e99f",
+        "W1": "f15d329e",
+        "W2": "503d5674",
+        "X1": "f8cba5eb",
+        "X2": "d8be73d4",
+        "X3": "6e012009",
+        "K1": "0f309b4d",
+        "T1": "cf2e6345"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "7b42dc7c1831a88a",
+          "path": "modules/adapter/behavior/invariants.md"
+        }
+      },
+      "ir": "b1b83ebc2a2874da"
+    },
+    "executed": {
+      "model/Adapter.tla": "12bea82c7f234a39aa0467a03faf1d8dc2b5d5343c6b203b7cf3c528289e4729",
+      "model/Adapter_W2.cfg": "004840668b01171de6315108e30b2c353294803b1ab03784357548033d2ac78c"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/Adapter.tla": "12bea82c7f234a39aa0467a03faf1d8dc2b5d5343c6b203b7cf3c528289e4729",
+        "model/Adapter_W2.cfg": "004840668b01171de6315108e30b2c353294803b1ab03784357548033d2ac78c"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2321-tlc-b5f968",
+    "at": "2026-11-07T23:21:46.795Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "8b4b9f6a398ed435dcb53d9e5d818a17426eb2a02d5c6b12423ff1006b7f87c5"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

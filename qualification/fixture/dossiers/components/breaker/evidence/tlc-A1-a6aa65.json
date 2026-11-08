@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "dossier": "components/breaker",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/Breaker.cfg",
+      "model/Breaker.tla"
+    ],
+    "expects": [
+      "A1",
+      "TypeOK"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nexecutes:\n  - model/Breaker.tla\n  - model/Breaker.cfg\nreach: one breaker\nexpect:\n  TypeOK: holds\n  A1: holds\nbecause: |\n  stop is the only move and it sets halted as it enters Spent.\n",
+    "reach": "one breaker",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "A1": {
+        "expect": "holds"
+      }
+    },
+    "because": "stop is the only move and it sets halted as it enters Spent."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "A1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "A1": "holds"
+    },
+    "violation": null,
+    "trace": [],
+    "states": {
+      "generated": 2,
+      "distinct": 2,
+      "queued": 0,
+      "depth": 2
+    },
+    "actions": {
+      "M1_Stop": {
+        "move": "M1",
+        "event": "stop",
+        "targets": [
+          "Spent"
+        ],
+        "stays": false,
+        "distinct": 1,
+        "generated": 1
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "e508aa87",
+      "A1": "0dd62327"
+    },
+    "reach": {
+      "text": "one breaker",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "cfaad1f7",
+        "S2": "027ee8f5",
+        "E1": "bdc4c06a",
+        "M1": "776639fa",
+        "R1": "e3bde544",
+        "A1": "0ebb46c1",
+        "A2": "ad929dbe",
+        "W1": "a814d588",
+        "X1": "5d5a0ec4",
+        "K1": "d004a497",
+        "T1": "cf2e6345"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "8f4359bc3def3404",
+          "path": "modules/breaker/behavior/invariants.md"
+        }
+      },
+      "ir": "d7a0f8880a2c16ad"
+    },
+    "executed": {
+      "model/Breaker.tla": "548bf0d52107c1d2fec1bc6c47414c8b5c783c1a35cbcce901568a2e509cc1e4",
+      "model/Breaker.cfg": "f6fc43c5f1d0bc5fc1ad2d0ef2db994c00e794326b20f2fff769cd14707197e4"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/Breaker.cfg": "f6fc43c5f1d0bc5fc1ad2d0ef2db994c00e794326b20f2fff769cd14707197e4",
+        "model/Breaker.tla": "548bf0d52107c1d2fec1bc6c47414c8b5c783c1a35cbcce901568a2e509cc1e4"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2322-tlc-92c128",
+    "at": "2026-11-07T23:22:11.751Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "ebebf8ce4ca74e7e16ccfc2adbc7205400faca8515f544388ef31123c3b95997"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

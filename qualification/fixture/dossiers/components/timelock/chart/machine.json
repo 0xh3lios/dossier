@@ -1,0 +1,589 @@
+{
+  "ok": true,
+  "errors": [],
+  "name": "Timelock",
+  "tier": "modeled",
+  "module": "timelock",
+  "pins": [
+    "timelock#observation:delay-check-2026-11-01"
+  ],
+  "boundary": "The Timelock holds one governance plan at a time and lets anyone execute it once its delay has run out. It holds remaining, a count from 0 to 2. It holds early, a flag. It receives tick from the chain, schedule and cancel from Governance, and execute from the public. It sends change to the Vault. It never knows what a plan does once it runs.",
+  "context": [
+    {
+      "name": "remaining",
+      "type": "count",
+      "min": 0,
+      "max": 2,
+      "initial": 0
+    },
+    {
+      "name": "early",
+      "type": "flag",
+      "initial": false
+    }
+  ],
+  "effects": [
+    {
+      "name": "change",
+      "to": "the Vault",
+      "fields": []
+    }
+  ],
+  "states": [
+    {
+      "id": "S1",
+      "name": "Idle",
+      "path": [
+        "Idle"
+      ],
+      "key": "Idle",
+      "parent": null,
+      "text": "no plan waits.",
+      "final": false,
+      "initial": true,
+      "children": null,
+      "passages": [
+        "S1",
+        "R1"
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Scheduled",
+      "path": [
+        "Scheduled"
+      ],
+      "key": "Scheduled",
+      "parent": null,
+      "text": "one plan waits out its delay.",
+      "final": false,
+      "initial": false,
+      "children": null,
+      "passages": [
+        "S2",
+        "R2",
+        "R3"
+      ]
+    }
+  ],
+  "initial": "Idle",
+  "root": [
+    "Idle",
+    "Scheduled"
+  ],
+  "events": [
+    {
+      "id": "E1",
+      "name": "tick",
+      "sender": "the chain",
+      "fields": []
+    },
+    {
+      "id": "E2",
+      "name": "schedule",
+      "sender": "Governance",
+      "fields": []
+    },
+    {
+      "id": "E3",
+      "name": "execute",
+      "sender": "the public",
+      "fields": []
+    },
+    {
+      "id": "E4",
+      "name": "cancel",
+      "sender": "Governance",
+      "fields": []
+    }
+  ],
+  "eventCases": [
+    {
+      "type": "tick"
+    },
+    {
+      "type": "schedule"
+    },
+    {
+      "type": "execute"
+    },
+    {
+      "type": "cancel"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "M1",
+      "from": "Idle",
+      "event": "tick",
+      "stays": true,
+      "target": "Idle",
+      "guard": null,
+      "assigns": [],
+      "effects": []
+    },
+    {
+      "id": "M2",
+      "from": "Scheduled",
+      "event": "tick",
+      "stays": true,
+      "target": "Scheduled",
+      "guard": {
+        "t": "bin",
+        "op": ">",
+        "l": {
+          "t": "ref",
+          "name": "remaining"
+        },
+        "r": {
+          "t": "int",
+          "v": 0
+        }
+      },
+      "assigns": [
+        {
+          "name": "remaining",
+          "expr": {
+            "t": "bin",
+            "op": "-",
+            "l": {
+              "t": "ref",
+              "name": "remaining"
+            },
+            "r": {
+              "t": "int",
+              "v": 1
+            }
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M3",
+      "from": "Scheduled",
+      "event": "tick",
+      "stays": true,
+      "target": "Scheduled",
+      "guard": {
+        "t": "bin",
+        "op": "=",
+        "l": {
+          "t": "ref",
+          "name": "remaining"
+        },
+        "r": {
+          "t": "int",
+          "v": 0
+        }
+      },
+      "assigns": [],
+      "effects": []
+    },
+    {
+      "id": "M4",
+      "from": "Idle",
+      "event": "schedule",
+      "stays": false,
+      "target": "Scheduled",
+      "guard": null,
+      "assigns": [
+        {
+          "name": "remaining",
+          "expr": {
+            "t": "int",
+            "v": 2
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M5",
+      "from": "Scheduled",
+      "event": "execute",
+      "stays": false,
+      "target": "Idle",
+      "guard": {
+        "t": "bin",
+        "op": "=",
+        "l": {
+          "t": "ref",
+          "name": "remaining"
+        },
+        "r": {
+          "t": "int",
+          "v": 0
+        }
+      },
+      "assigns": [
+        {
+          "name": "early",
+          "expr": {
+            "t": "bin",
+            "op": ">",
+            "l": {
+              "t": "ref",
+              "name": "remaining"
+            },
+            "r": {
+              "t": "int",
+              "v": 0
+            }
+          }
+        }
+      ],
+      "effects": [
+        "change"
+      ]
+    },
+    {
+      "id": "M6",
+      "from": "Scheduled",
+      "event": "cancel",
+      "stays": false,
+      "target": "Idle",
+      "guard": null,
+      "assigns": [],
+      "effects": []
+    }
+  ],
+  "refusals": [
+    {
+      "id": "R1",
+      "states": [
+        "Idle"
+      ],
+      "events": [
+        "execute",
+        "cancel"
+      ],
+      "effects": [],
+      "cond": null
+    },
+    {
+      "id": "R2",
+      "states": [
+        "Scheduled"
+      ],
+      "events": [
+        "schedule"
+      ],
+      "effects": [],
+      "cond": null
+    },
+    {
+      "id": "R3",
+      "states": [
+        "Scheduled"
+      ],
+      "events": [
+        "execute"
+      ],
+      "effects": [],
+      "cond": {
+        "t": "bin",
+        "op": ">",
+        "l": {
+          "t": "ref",
+          "name": "remaining"
+        },
+        "r": {
+          "t": "int",
+          "v": 0
+        }
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "A1",
+      "while": null,
+      "cond": {
+        "t": "not",
+        "e": {
+          "t": "ref",
+          "name": "early"
+        }
+      },
+      "givens": []
+    }
+  ],
+  "structural": [],
+  "onces": [
+    {
+      "id": "O1",
+      "trigger": {
+        "state": "Scheduled"
+      },
+      "goal": {
+        "state": "Idle"
+      },
+      "givens": [
+        "G1",
+        "G2"
+      ]
+    }
+  ],
+  "withins": [
+    {
+      "id": "N1",
+      "k": 3,
+      "trigger": {
+        "state": "Scheduled"
+      },
+      "goal": {
+        "state": "Idle"
+      },
+      "givens": [
+        "G1",
+        "G2"
+      ]
+    }
+  ],
+  "givens": [
+    {
+      "id": "G1",
+      "assumption": "someone executes the plan as soon as its delay is out",
+      "otherwise": "N1 and O1 are void",
+      "actor": "the public",
+      "event": "execute",
+      "promptness": "prompt",
+      "when": null
+    },
+    {
+      "id": "G2",
+      "assumption": "the chain keeps ticking",
+      "otherwise": "O1 and N1 are void",
+      "actor": "the chain",
+      "event": null,
+      "promptness": "eventual",
+      "when": null
+    }
+  ],
+  "walks": [
+    {
+      "id": "W1",
+      "name": "Delayed",
+      "scenario": null,
+      "from": "Idle",
+      "with": {},
+      "ends": "Idle",
+      "steps": [
+        {
+          "event": "schedule",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "execute",
+          "args": {},
+          "refused": true
+        },
+        {
+          "event": "tick",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "tick",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "execute",
+          "args": {},
+          "refused": false
+        }
+      ],
+      "endData": {
+        "remaining": {
+          "t": "int",
+          "v": 0
+        }
+      },
+      "sent": {
+        "change": 1
+      },
+      "notSent": []
+    },
+    {
+      "id": "W2",
+      "name": "Cancelled",
+      "scenario": null,
+      "from": "Idle",
+      "with": {},
+      "ends": "Idle",
+      "steps": [
+        {
+          "event": "schedule",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "tick",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "cancel",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "execute",
+          "args": {},
+          "refused": true
+        }
+      ],
+      "endData": {},
+      "sent": {},
+      "notSent": [
+        "change"
+      ]
+    }
+  ],
+  "seams": [
+    {
+      "id": "X1",
+      "piece": "vault",
+      "body": "change crosses from Timelock to Vault carrying nothing."
+    }
+  ],
+  "guarantees": [
+    {
+      "id": "K1",
+      "claim": "execute succeeds only once the plan's delay has passed",
+      "backing": {
+        "kind": "record",
+        "ref": "timelock#property:execute-after-eta"
+      }
+    },
+    {
+      "id": "K2",
+      "claim": "A scheduled plan's delay cannot be shortened",
+      "backing": {
+        "kind": "none"
+      }
+    }
+  ],
+  "wordsOnly": [
+    {
+      "id": "T1",
+      "text": "What a plan changes is the Vault's business; here every plan raises the ceiling."
+    }
+  ],
+  "table": [
+    {
+      "state": "Idle",
+      "event": "tick",
+      "moves": [
+        "M1"
+      ],
+      "refusals": [],
+      "unconditional": []
+    },
+    {
+      "state": "Idle",
+      "event": "schedule",
+      "moves": [
+        "M4"
+      ],
+      "refusals": [],
+      "unconditional": []
+    },
+    {
+      "state": "Idle",
+      "event": "execute",
+      "moves": [],
+      "refusals": [
+        "R1"
+      ],
+      "unconditional": [
+        "R1"
+      ]
+    },
+    {
+      "state": "Idle",
+      "event": "cancel",
+      "moves": [],
+      "refusals": [
+        "R1"
+      ],
+      "unconditional": [
+        "R1"
+      ]
+    },
+    {
+      "state": "Scheduled",
+      "event": "tick",
+      "moves": [
+        "M2",
+        "M3"
+      ],
+      "refusals": [],
+      "unconditional": []
+    },
+    {
+      "state": "Scheduled",
+      "event": "schedule",
+      "moves": [],
+      "refusals": [
+        "R2"
+      ],
+      "unconditional": [
+        "R2"
+      ]
+    },
+    {
+      "state": "Scheduled",
+      "event": "execute",
+      "moves": [
+        "M5"
+      ],
+      "refusals": [
+        "R3"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Scheduled",
+      "event": "cancel",
+      "moves": [
+        "M6"
+      ],
+      "refusals": [],
+      "unconditional": []
+    }
+  ],
+  "unsaid": [],
+  "saidTwice": [],
+  "hashes": {
+    "S1": "e6a4c8b8",
+    "S2": "e39d3f70",
+    "E1": "5961722a",
+    "E2": "7f3e3029",
+    "E3": "17dd6db9",
+    "E4": "7348a8bc",
+    "M1": "402263d7",
+    "M2": "60fe8786",
+    "M3": "44d75429",
+    "M4": "87eca7f0",
+    "M5": "672a5cf3",
+    "M6": "cb6d8f36",
+    "R1": "c696f898",
+    "R2": "f17a4f63",
+    "R3": "18152481",
+    "A1": "b2a70598",
+    "O1": "ab9479de",
+    "N1": "55a58264",
+    "G1": "6a2a5abb",
+    "G2": "5e917103",
+    "W1": "bd05768e",
+    "W2": "ac96edaf",
+    "X1": "586d1988",
+    "K1": "6f727c67",
+    "K2": "ca30cbc8",
+    "T1": "f65d11b0"
+  }
+}

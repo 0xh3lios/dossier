@@ -1,0 +1,19 @@
+{
+  "name": "dossier-explorer",
+  "private": true,
+  "type": "module",
+  "description": "The explorer's page: built on the machine that serves it by dossier explore --install, never committed.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@xyflow/react": "12.12.0",
+    "elkjs": "0.12.0",
+    "react": "19.3.1",
+    "react-aria-components": "1.22.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

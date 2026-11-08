@@ -1,0 +1,76 @@
+# Usage statistics is OFF. We care about your privacy.
+# If you want to help our project, consider enabling statistics with config --enable-stats=true.
+
+Output directory: $PLUGIN/.local/tmp/smoke/out-fails/Smoke.tla/2026-11-03T13-22-35_11910121991958481877
+# APALACHE version: 0.62.4 | build: 7954daf                       I@13:22:35.910
+Tuning:                                                           I@13:22:35.916
+PASS #0: SanyParser                                               I@13:22:36.079
+PASS #1: TypeCheckerSnowcat                                       I@13:22:36.219
+ > Running Snowcat .::.                                           I@13:22:36.219
+ > Your types are purrfect!                                       I@13:22:36.316
+ > All expressions are typed                                      I@13:22:36.316
+PASS #2: ConfigurationPass                                        I@13:22:36.317
+  > Set the initialization predicate to Init                      I@13:22:36.318
+  > Set the transition predicate to Next                          I@13:22:36.319
+  > Set an invariant to InvFails                                  I@13:22:36.319
+PASS #3: DesugarerPass                                            I@13:22:36.321
+  > Desugaring...                                                 I@13:22:36.321
+PASS #4: InlinePass                                               I@13:22:36.324
+Leaving only relevant operators: CInitPrimed, Init, InitPrimed, InvFails, Next I@13:22:36.324
+PASS #5: TemporalPass                                             I@13:22:36.343
+  > Rewriting temporal operators...                               I@13:22:36.343
+  > No temporal property specified, nothing to encode             I@13:22:36.343
+PASS #6: InlinePass                                               I@13:22:36.343
+Leaving only relevant operators: CInitPrimed, Init, InitPrimed, InvFails, Next I@13:22:36.343
+PASS #7: PrimingPass                                              I@13:22:36.344
+  > Introducing InitPrimed for Init'                              I@13:22:36.345
+PASS #8: VCGen                                                    I@13:22:36.516
+  > Producing verification conditions from the invariant InvFails I@13:22:36.516
+  > VCGen produced 1 verification condition(s)                    I@13:22:36.519
+PASS #9: PreprocessingPass                                        I@13:22:36.524
+  > Before preprocessing: unique renaming                         I@13:22:36.524
+ > Applying standard transformations:                             I@13:22:36.528
+  > PrimePropagation                                              I@13:22:36.528
+  > Desugarer                                                     I@13:22:36.529
+  > UniqueRenamer                                                 I@13:22:36.529
+  > Normalizer                                                    I@13:22:36.530
+  > SetMembershipSimplifier                                       I@13:22:36.531
+  > Keramelizer                                                   I@13:22:36.532
+  > After preprocessing: UniqueRenamer                            I@13:22:36.533
+PASS #10: TransitionFinderPass                                    I@13:22:36.534
+  > Found 1 initializing transitions                              I@13:22:36.550
+  > Found 2 transitions                                           I@13:22:36.552
+  > No constant initializer                                       I@13:22:36.552
+  > Applying unique renaming                                      I@13:22:36.553
+PASS #11: OptimizationPass                                        I@13:22:36.554
+ > Applying optimizations:                                        I@13:22:36.557
+  > ConstSimplifier                                               I@13:22:36.557
+  > ExprOptimizer                                                 I@13:22:36.558
+  > SetMembershipSimplifier                                       I@13:22:36.559
+  > ConstSimplifier                                               I@13:22:36.559
+PASS #12: AnalysisPass                                            I@13:22:36.560
+ > Marking skolemizable existentials and sets to be expanded...   I@13:22:36.561
+  > Skolemization                                                 I@13:22:36.561
+  > Expansion                                                     I@13:22:36.562
+  > Remove unused let-in defs                                     I@13:22:36.562
+ > Running analyzers...                                           I@13:22:36.563
+  > Introduced expression grades                                  I@13:22:36.564
+PASS #13: BoundedChecker                                          I@13:22:36.564
+State 0: Checking 1 state invariants                              I@13:22:37.594
+State 0: state invariant 0 holds.                                 I@13:22:37.597
+Step 0: picking a transition out of 1 transition(s)               I@13:22:37.598
+State 1: Checking 1 state invariants                              I@13:22:37.605
+State 1: state invariant 0 holds.                                 I@13:22:37.605
+Step 1: picking a transition out of 2 transition(s)               I@13:22:37.607
+State 2: Checking 1 state invariants                              I@13:22:37.615
+State 2: state invariant 0 holds.                                 I@13:22:37.616
+Step 2: picking a transition out of 2 transition(s)               I@13:22:37.617
+State 3: Checking 1 state invariants                              I@13:22:37.622
+Check the trace in: $PLUGIN/.local/tmp/smoke/out-fails/Smoke.tla/2026-11-03T13-22-35_11910121991958481877/violation1.tla, $PLUGIN/.local/tmp/smoke/out-fails/Smoke.tla/2026-11-03T13-22-35_11910121991958481877/MCviolation1.out, $PLUGIN/.local/tmp/smoke/out-fails/Smoke.tla/2026-11-03T13-22-35_11910121991958481877/violation1.json, $PLUGIN/.local/tmp/smoke/out-fails/Smoke.tla/2026-11-03T13-22-35_11910121991958481877/violation1.itf.json I@13:22:37.709
+State 3: state invariant 0 violated.                              I@13:22:37.709
+Found 1 error(s)                                                  I@13:22:37.710
+The outcome is: Error                                             I@13:22:37.711
+Checker has found an error                                        I@13:22:37.730
+It took me 0 days  0 hours  0 min  1 sec                          I@13:22:37.730
+Total time: 1.817 sec                                             I@13:22:37.730
+EXITCODE: ERROR (12)

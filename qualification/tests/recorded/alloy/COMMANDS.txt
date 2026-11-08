@@ -1,0 +1,23 @@
+Alloy recordings
+
+These files are the Alloy Analyzer's output for three commands of Parcel.als,
+a small test model of orders and parcels that is not kept in the repository.
+The parser tests read them in place of a live run.
+
+  A3_no_shared    a check that finds no counterexample
+  A4_wrong        a check that finds a counterexample
+  W4_two_orders   a run that finds an instance
+
+Each command ran once with Alloy 6.2.0, from the folder holding Parcel.als,
+with <out> an empty scratch folder:
+
+  $JAVA -jar $ALLOY_JAR exec -q -c <command> -t xml -s sat4j -r 1 -u -1 -f -o <out> Parcel.als \
+    > $PLUGIN/qualification/tests/recorded/alloy/<command>.txt 2>&1
+  echo $? > $PLUGIN/qualification/tests/recorded/alloy/<command>.exit
+
+Every command exited 0, and with -q each printed nothing. The receipt.json and
+the solution XML each one wrote under <out> are copied into
+$PLUGIN/qualification/tests/recorded/alloy/<command>/.
+
+$JAVA is the JDK's java, $ALLOY_JAR the Alloy distribution jar, and $PLUGIN the
+plugin's root. versions.txt in the folder above names the versions.

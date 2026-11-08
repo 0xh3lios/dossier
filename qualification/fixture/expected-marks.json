@@ -1,0 +1,836 @@
+{
+  "components": {
+    "adapter": {
+      "tier": "modeled",
+      "marks": {
+        "S1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "S2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E3": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M3": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M4": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "R1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "R2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "R3": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "A1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "W1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": true
+        },
+        "W2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": true
+        },
+        "X1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "X2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "X3": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K1": {
+          "mark": "backed",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "T1": {
+          "mark": "text",
+          "owner": "unsettled",
+          "grounded": false
+        }
+      },
+      "backing": {
+        "K1": "backed"
+      },
+      "route": "Review",
+      "flags": [
+        "review owed"
+      ]
+    },
+    "breaker": {
+      "tier": "modeled",
+      "marks": {
+        "S1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "S2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "R1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "A1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "A2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "W1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "X1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K1": {
+          "mark": "backed",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "T1": {
+          "mark": "text",
+          "owner": "unsettled",
+          "grounded": false
+        }
+      },
+      "backing": {
+        "K1": "backed"
+      },
+      "route": "Review",
+      "flags": [
+        "review owed"
+      ]
+    },
+    "oracle": {
+      "tier": "modeled",
+      "marks": {
+        "S1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "S2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "E1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "E2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "E3": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "M1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "M2": {
+          "mark": "drawn",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "M3": {
+          "mark": "drawn",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "M4": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "M5": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "R1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "A1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "A2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "N1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "G1": {
+          "mark": "given",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "G2": {
+          "mark": "given",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "G3": {
+          "mark": "given",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "G4": {
+          "mark": "given",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "W1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "W2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K1": {
+          "mark": "backed",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "T1": {
+          "mark": "text",
+          "owner": "unsettled",
+          "grounded": false
+        }
+      },
+      "backing": {
+        "K1": "backed"
+      },
+      "route": "Encode",
+      "flags": [
+        "doubt open",
+        "review owed"
+      ]
+    },
+    "timelock": {
+      "tier": "modeled",
+      "marks": {
+        "S1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "S2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E3": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E4": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M3": {
+          "mark": "drawn",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M4": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M5": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M6": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "R1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "R2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "R3": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "A1": {
+          "mark": "proved",
+          "owner": "settled",
+          "grounded": false
+        },
+        "O1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "N1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "G1": {
+          "mark": "given",
+          "owner": "settled",
+          "grounded": false
+        },
+        "G2": {
+          "mark": "given",
+          "owner": "settled",
+          "grounded": false
+        },
+        "W1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "W2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "X1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K1": {
+          "mark": "backed",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K2": {
+          "mark": "assumed",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "T1": {
+          "mark": "text",
+          "owner": "unsettled",
+          "grounded": false
+        }
+      },
+      "backing": {
+        "K1": "backed",
+        "K2": "assumed"
+      },
+      "route": "Encode",
+      "flags": [
+        "review owed"
+      ]
+    },
+    "token": {
+      "tier": "modeled",
+      "marks": {
+        "S1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E3": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M3": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "R1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "R2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "A1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "W1": {
+          "mark": "drawn",
+          "owner": "unsettled",
+          "grounded": true
+        },
+        "X1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K1": {
+          "mark": "backed",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "T1": {
+          "mark": "text",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "T2": {
+          "mark": "text",
+          "owner": "unsettled",
+          "grounded": false
+        }
+      },
+      "backing": {
+        "K1": "backed"
+      },
+      "route": "Encode",
+      "flags": [
+        "review owed"
+      ]
+    },
+    "vault": {
+      "tier": "modeled",
+      "marks": {
+        "S1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E3": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E4": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "E5": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M1": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M2": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M3": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M4": {
+          "mark": "checked",
+          "owner": "settled",
+          "grounded": false
+        },
+        "M5": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "M6": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "R1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "R2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "R3": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "R4": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "A1": {
+          "mark": "proved",
+          "owner": "settled",
+          "grounded": false
+        },
+        "A2": {
+          "mark": "proved",
+          "owner": "settled",
+          "grounded": false
+        },
+        "W1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": true
+        },
+        "W2": {
+          "mark": "drawn",
+          "owner": "unsettled",
+          "grounded": true
+        },
+        "W3": {
+          "mark": "drawn",
+          "owner": "unsettled",
+          "grounded": true
+        },
+        "X1": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "X2": {
+          "mark": "checked",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K1": {
+          "mark": "backed",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K2": {
+          "mark": "backed",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K3": {
+          "mark": "backed",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "K4": {
+          "mark": "assumed",
+          "owner": "rejected",
+          "grounded": false
+        },
+        "T1": {
+          "mark": "text",
+          "owner": "unsettled",
+          "grounded": false
+        },
+        "T2": {
+          "mark": "text",
+          "owner": "unsettled",
+          "grounded": false
+        }
+      },
+      "backing": {
+        "K1": "backed",
+        "K2": "backed",
+        "K3": "backed",
+        "K4": "assumed"
+      },
+      "route": "Write",
+      "flags": [
+        "review owed"
+      ]
+    }
+  },
+  "systems": {
+    "control": {
+      "cells": {
+        "A1|all-honest": {
+          "mark": "proved",
+          "accepted": false
+        },
+        "A1|governance-captured": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "A1|executor-offline": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "A2|all-honest": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "A2|governance-captured": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "O1|all-honest": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "N1|all-honest": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "N1|governance-captured": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "N1|executor-offline": {
+          "mark": "violated",
+          "accepted": true
+        }
+      },
+      "walks": {
+        "W1|governance-captured": "checked"
+      },
+      "propertyHeld": {
+        "A1": "caught",
+        "A2": "caught",
+        "O1": "caught",
+        "N1": "caught"
+      },
+      "route": "Review",
+      "flags": [
+        "review owed"
+      ]
+    },
+    "supply": {
+      "cells": {
+        "A1|all-honest": {
+          "mark": "proved",
+          "accepted": false
+        },
+        "A1|user-malicious": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "A2|all-honest": {
+          "mark": "proved",
+          "accepted": false
+        },
+        "A2|user-malicious": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "A3|all-honest": {
+          "mark": "proved",
+          "accepted": false
+        },
+        "A3|user-malicious": {
+          "mark": "checked",
+          "accepted": false
+        }
+      },
+      "walks": {
+        "W1|all-honest": "checked"
+      },
+      "propertyHeld": {
+        "A1": "caught",
+        "A2": "caught",
+        "A3": "caught"
+      },
+      "route": "Review",
+      "flags": [
+        "review owed"
+      ]
+    },
+    "upkeep": {
+      "cells": {
+        "A1|all-honest": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "A1|lane-a-captured": {
+          "mark": "violated",
+          "accepted": true
+        },
+        "N1|all-honest": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "N1|lane-a-offline": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "N1|lanes-offline": {
+          "mark": "violated",
+          "accepted": true
+        },
+        "N1|lanes-down-one": {
+          "mark": "checked",
+          "accepted": false
+        },
+        "N1|lanes-down-two": {
+          "mark": "violated",
+          "accepted": true
+        },
+        "N1|stale-start": {
+          "mark": "checked",
+          "accepted": false
+        }
+      },
+      "walks": {},
+      "propertyHeld": {
+        "A1": "caught",
+        "N1": "caught"
+      },
+      "route": "Review",
+      "flags": [
+        "review owed"
+      ]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+node_modules/
+.local/
+_scratch/
+tmp/
+.DS_Store
+apps/explorer/dist/

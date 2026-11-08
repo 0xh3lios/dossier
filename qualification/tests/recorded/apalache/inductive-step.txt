@@ -1,0 +1,77 @@
+# Usage statistics is OFF. We care about your privacy.
+# If you want to help our project, consider enabling statistics with config --enable-stats=true.
+
+Output directory: $PLUGIN/.local/tmp/smoke/out-ind/Smoke.tla/2026-11-03T13-22-40_17283436376163183232
+# APALACHE version: 0.62.4 | build: 7954daf                       I@13:22:40.281
+Tuning:                                                           I@13:22:40.286
+PASS #0: SanyParser                                               I@13:22:40.431
+PASS #1: TypeCheckerSnowcat                                       I@13:22:40.555
+ > Running Snowcat .::.                                           I@13:22:40.556
+ > Your types are purrfect!                                       I@13:22:40.647
+ > All expressions are typed                                      I@13:22:40.647
+PASS #2: ConfigurationPass                                        I@13:22:40.648
+  > Set the initialization predicate to Inductive                 I@13:22:40.650
+  > Set the transition predicate to Next                          I@13:22:40.650
+  > Set an invariant to Inductive                                 I@13:22:40.650
+PASS #3: DesugarerPass                                            I@13:22:40.652
+  > Desugaring...                                                 I@13:22:40.652
+PASS #4: InlinePass                                               I@13:22:40.655
+Leaving only relevant operators: CInitPrimed, Inductive, InductivePrimed, Next I@13:22:40.655
+PASS #5: TemporalPass                                             I@13:22:40.671
+  > Rewriting temporal operators...                               I@13:22:40.671
+  > No temporal property specified, nothing to encode             I@13:22:40.671
+PASS #6: InlinePass                                               I@13:22:40.672
+Leaving only relevant operators: CInitPrimed, Inductive, InductivePrimed, Next I@13:22:40.672
+PASS #7: PrimingPass                                              I@13:22:40.673
+  > Introducing InductivePrimed for Inductive'                    I@13:22:40.675
+PASS #8: VCGen                                                    I@13:22:40.799
+  > Producing verification conditions from the invariant Inductive I@13:22:40.799
+  > VCGen produced 4 verification condition(s)                    I@13:22:40.802
+PASS #9: PreprocessingPass                                        I@13:22:40.807
+  > Before preprocessing: unique renaming                         I@13:22:40.807
+ > Applying standard transformations:                             I@13:22:40.811
+  > PrimePropagation                                              I@13:22:40.811
+  > Desugarer                                                     I@13:22:40.812
+  > UniqueRenamer                                                 I@13:22:40.813
+  > Normalizer                                                    I@13:22:40.814
+  > SetMembershipSimplifier                                       I@13:22:40.816
+  > Keramelizer                                                   I@13:22:40.817
+  > After preprocessing: UniqueRenamer                            I@13:22:40.819
+PASS #10: TransitionFinderPass                                    I@13:22:40.826
+  > Found 1 initializing transitions                              I@13:22:40.839
+  > Found 2 transitions                                           I@13:22:40.841
+  > No constant initializer                                       I@13:22:40.841
+  > Applying unique renaming                                      I@13:22:40.842
+PASS #11: OptimizationPass                                        I@13:22:40.843
+ > Applying optimizations:                                        I@13:22:40.847
+  > ConstSimplifier                                               I@13:22:40.847
+  > ExprOptimizer                                                 I@13:22:40.849
+  > SetMembershipSimplifier                                       I@13:22:40.849
+  > ConstSimplifier                                               I@13:22:40.850
+PASS #12: AnalysisPass                                            I@13:22:40.851
+ > Marking skolemizable existentials and sets to be expanded...   I@13:22:40.853
+  > Skolemization                                                 I@13:22:40.853
+  > Expansion                                                     I@13:22:40.853
+  > Remove unused let-in defs                                     I@13:22:40.854
+ > Running analyzers...                                           I@13:22:40.855
+  > Introduced expression grades                                  I@13:22:40.857
+PASS #13: BoundedChecker                                          I@13:22:40.857
+State 0: Checking 4 state invariants                              I@13:22:41.886
+State 0: state invariant 0 holds.                                 I@13:22:41.890
+State 0: state invariant 1 holds.                                 I@13:22:41.893
+State 0: state invariant 2 holds.                                 I@13:22:41.894
+State 0: state invariant 3 holds.                                 I@13:22:41.895
+Step 0: picking a transition out of 1 transition(s)               I@13:22:41.895
+State 1: Checking 4 state invariants                              I@13:22:41.899
+State 1: state invariant 0 holds.                                 I@13:22:41.900
+State 1: state invariant 1 holds.                                 I@13:22:41.901
+State 1: state invariant 2 holds.                                 I@13:22:41.902
+State 1: state invariant 3 holds.                                 I@13:22:41.902
+State 1: Checking 1 state invariants                              I@13:22:41.904
+State 1: state invariant 1 holds.                                 I@13:22:41.905
+Step 1: picking a transition out of 2 transition(s)               I@13:22:41.905
+The outcome is: NoError                                           I@13:22:41.910
+Checker reports no error up to computation length 1               I@13:22:41.910
+It took me 0 days  0 hours  0 min  1 sec                          I@13:22:41.911
+Total time: 1.627 sec                                             I@13:22:41.911
+EXITCODE: OK

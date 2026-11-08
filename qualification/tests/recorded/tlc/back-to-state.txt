@@ -1,0 +1,61 @@
+@!@!@STARTMSG 2116:1 @!@!@
+Temporal properties were violated.
+
+@!@!@ENDMSG 2116 @!@!@
+
+@!@!@STARTMSG 2217:4 @!@!@
+14: <User line 243, col 9 to line 243, col 118 of module unfair>
+/\ join_state = "Halted"
+/\ vault_line = 2
+/\ vault_state = "Open"
+/\ pause_state = "Plotted"
+/\ vault_free = 0
+/\ join_sent_move = 3
+/\ pause_early = FALSE
+/\ mom_state = "Spent"
+/\ join_sent_burn = 4
+/\ mom_sent_halt = 1
+/\ pause_remaining = 0
+/\ w1_at = 0
+/\ join_sent_release = 4
+/\ join_sent_mint = 3
+/\ join_live = FALSE
+/\ join_held = 0
+/\ vault_debt = 1
+/\ vault_joined = 1
+/\ n1_ticks = 2
+/\ pause_sent_change = 0
+/\ mom_halted = TRUE
+
+@!@!@ENDMSG 2217 @!@!@
+
+@!@!@STARTMSG 2217:4 @!@!@
+15: <vault_M4_Release line 174, col 5 to line 181, col 17 of module unfair>
+/\ join_state = "Halted"
+/\ vault_line = 2
+/\ vault_state = "Open"
+/\ pause_state = "Plotted"
+/\ vault_free = 1
+/\ join_sent_move = 3
+/\ pause_early = FALSE
+/\ mom_state = "Spent"
+/\ join_sent_burn = 4
+/\ mom_sent_halt = 1
+/\ pause_remaining = 0
+/\ w1_at = 0
+/\ join_sent_release = 4
+/\ join_sent_mint = 3
+/\ join_live = FALSE
+/\ join_held = 0
+/\ vault_debt = 1
+/\ vault_joined = 0
+/\ n1_ticks = 2
+/\ pause_sent_change = 0
+/\ mom_halted = TRUE
+
+@!@!@ENDMSG 2217 @!@!@
+
+@!@!@STARTMSG 2122:4 @!@!@
+14: Back to state: <vault_M3_Move line 163, col 5 to line 170, col 17 of module unfair>
+
+@!@!@ENDMSG 2122 @!@!@

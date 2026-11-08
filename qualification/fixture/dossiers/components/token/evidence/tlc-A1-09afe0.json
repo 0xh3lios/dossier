@@ -1,0 +1,156 @@
+{
+  "schema": 1,
+  "dossier": "components/token",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/Token.cfg",
+      "model/Token.tla"
+    ],
+    "expects": [
+      "A1",
+      "TypeOK"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nexecutes:\n  - model/Token.tla\n  - model/Token.cfg\nreach: amounts up to 2; supply up to 4\nexpect:\n  TypeOK: holds\n  A1: holds\nbecause: |\n  mint is guarded by the cap and burn only lowers the supply.\n",
+    "reach": "amounts up to 2; supply up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "A1": {
+        "expect": "holds"
+      }
+    },
+    "because": "mint is guarded by the cap and burn only lowers the supply."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "A1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "A1": "holds"
+    },
+    "violation": null,
+    "trace": [],
+    "states": {
+      "generated": 84,
+      "distinct": 14,
+      "queued": 0,
+      "depth": 5
+    },
+    "actions": {
+      "M1_Mint": {
+        "move": "M1",
+        "event": "mint",
+        "targets": [],
+        "stays": true,
+        "distinct": 7,
+        "generated": 33
+      },
+      "M2_Burn": {
+        "move": "M2",
+        "event": "burn",
+        "targets": [],
+        "stays": true,
+        "distinct": 3,
+        "generated": 36
+      },
+      "M3_Transfer": {
+        "move": "M3",
+        "event": "transfer",
+        "targets": [],
+        "stays": true,
+        "distinct": 3,
+        "generated": 14
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "fc7b7968",
+      "A1": "79221368"
+    },
+    "reach": {
+      "text": "amounts up to 2; supply up to 4",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "b60d32db",
+        "E1": "fb62f7b5",
+        "E2": "e14753fa",
+        "E3": "486165aa",
+        "M1": "77f01296",
+        "M2": "e2aa4e54",
+        "M3": "0b52cdcb",
+        "R1": "04a14621",
+        "R2": "8fd6c9d2",
+        "A1": "8494bc9e",
+        "W1": "1548a99c",
+        "X1": "568ed06f",
+        "K1": "79b73c9a",
+        "T1": "cf2e6345",
+        "T2": "101fbe78"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "9dbf540264cc615a",
+          "path": "modules/token/behavior/invariants.md"
+        }
+      },
+      "ir": "e3f4cadfeac59a31"
+    },
+    "executed": {
+      "model/Token.tla": "bce1acbdd8bd3e3fcdf4f3aaa2655aa6c5f85a86e7954433b0bbcdba26e0d8e3",
+      "model/Token.cfg": "f6fc43c5f1d0bc5fc1ad2d0ef2db994c00e794326b20f2fff769cd14707197e4"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/Token.cfg": "f6fc43c5f1d0bc5fc1ad2d0ef2db994c00e794326b20f2fff769cd14707197e4",
+        "model/Token.tla": "bce1acbdd8bd3e3fcdf4f3aaa2655aa6c5f85a86e7954433b0bbcdba26e0d8e3"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2321-tlc-84d374",
+    "at": "2026-11-07T23:21:51.762Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "8c766cd52db1672f6b3ad9c44ad33f87a96e3c7c4f5476c1d88fb55131e53076"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

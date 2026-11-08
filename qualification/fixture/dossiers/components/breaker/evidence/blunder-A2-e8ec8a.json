@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "dossier": "components/breaker",
+  "question": {
+    "kind": "blunder",
+    "checker": "alloy",
+    "executes": [
+      "model/blunders/rogue.als"
+    ],
+    "expects": [
+      "A2_halts_from_governance"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: blunder\nblunder: the seam no longer says halts come from Breakers\nexecutes:\n  - model/blunders/rogue.als\nreach: scope 4\nexpect:\n  A2_halts_from_governance: counterexample\nbecause: |\n  An Other may send a halt, and the assert finds it.\n",
+    "reach": "scope 4",
+    "expect": {
+      "A2_halts_from_governance": {
+        "expect": "counterexample"
+      }
+    },
+    "because": "An Other may send a halt, and the assert finds it."
+  },
+  "answer": {
+    "enabled": [
+      "A2_halts_from_governance"
+    ],
+    "outcomes": {
+      "A2_halts_from_governance": "counterexample"
+    },
+    "reach": {
+      "text": "scope 4",
+      "scope": "for 4",
+      "values": {
+        "scope": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "cfaad1f7",
+        "S2": "027ee8f5",
+        "E1": "bdc4c06a",
+        "M1": "776639fa",
+        "R1": "e3bde544",
+        "A1": "0ebb46c1",
+        "A2": "ad929dbe",
+        "W1": "a814d588",
+        "X1": "5d5a0ec4",
+        "K1": "d004a497",
+        "T1": "cf2e6345"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "8f4359bc3def3404",
+          "path": "modules/breaker/behavior/invariants.md"
+        }
+      },
+      "ir": "d7a0f8880a2c16ad"
+    },
+    "executed": {
+      "model/blunders/rogue.als": "53ecac2189058dfdfbae91bdd95b865ecc42fc2e590d9d4080366428e4e2b6c0"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/blunders/rogue.als": "53ecac2189058dfdfbae91bdd95b865ecc42fc2e590d9d4080366428e4e2b6c0"
+      },
+      "shared": [],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2322-blunder-13b1bb",
+    "at": "2026-11-07T23:22:15.878Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "alloy": "org.alloytools.alloy.dist-6.2.0.jar"
+    },
+    "bundle": "d7b75734d5cae491f4dda897f0310d878d06c928af50016086533c41c50bc68e"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

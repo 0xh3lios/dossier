@@ -1,0 +1,4 @@
+# ChatGPT and Codex read this beside SKILL.md. Only the owner invokes decide, never the model on its own,
+# as disable-model-invocation says to Claude Code.
+policy:
+  allow_implicit_invocation: false

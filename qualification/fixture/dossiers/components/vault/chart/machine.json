@@ -1,0 +1,931 @@
+{
+  "ok": true,
+  "errors": [],
+  "name": "Vault",
+  "tier": "modeled",
+  "module": "vault",
+  "pins": [
+    "vault#observation:checkpoint-2026-11-01"
+  ],
+  "boundary": "The Vault is Harbor's ledger of debt and internal credit. It holds debt, an amount of HRD up to 4. It holds free, an amount of HRD up to 4. It holds issued, an amount of HRD up to 4. It holds ceiling, a count from 2 to 4, starting at 2. It receives borrow and repay from the User, move and release from the Adapter, and change from the Timelock. It never knows who holds the HRD the Adapter mints.",
+  "context": [
+    {
+      "name": "debt",
+      "type": "amount",
+      "min": 0,
+      "max": 4,
+      "unit": "HRD",
+      "initial": 0
+    },
+    {
+      "name": "free",
+      "type": "amount",
+      "min": 0,
+      "max": 4,
+      "unit": "HRD",
+      "initial": 0
+    },
+    {
+      "name": "issued",
+      "type": "amount",
+      "min": 0,
+      "max": 4,
+      "unit": "HRD",
+      "initial": 0
+    },
+    {
+      "name": "ceiling",
+      "type": "count",
+      "min": 2,
+      "max": 4,
+      "initial": 2
+    }
+  ],
+  "effects": [],
+  "states": [
+    {
+      "id": "S1",
+      "name": "Open",
+      "path": [
+        "Open"
+      ],
+      "key": "Open",
+      "parent": null,
+      "text": "the vault accepts borrowing, repayments and credit moves.",
+      "final": false,
+      "initial": true,
+      "children": null,
+      "passages": [
+        "S1",
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ]
+    }
+  ],
+  "initial": "Open",
+  "root": [
+    "Open"
+  ],
+  "events": [
+    {
+      "id": "E1",
+      "name": "borrow",
+      "sender": "the User",
+      "fields": [
+        {
+          "name": "amount",
+          "type": "amount",
+          "min": 0,
+          "max": 2,
+          "unit": "HRD"
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "name": "repay",
+      "sender": "the User",
+      "fields": [
+        {
+          "name": "amount",
+          "type": "amount",
+          "min": 0,
+          "max": 2,
+          "unit": "HRD"
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "name": "move",
+      "sender": "the Adapter",
+      "fields": [
+        {
+          "name": "amount",
+          "type": "amount",
+          "min": 0,
+          "max": 2,
+          "unit": "HRD"
+        }
+      ]
+    },
+    {
+      "id": "E4",
+      "name": "release",
+      "sender": "the Adapter",
+      "fields": [
+        {
+          "name": "amount",
+          "type": "amount",
+          "min": 0,
+          "max": 2,
+          "unit": "HRD"
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "name": "change",
+      "sender": "the Timelock",
+      "fields": []
+    }
+  ],
+  "eventCases": [
+    {
+      "type": "borrow",
+      "amount": 0
+    },
+    {
+      "type": "borrow",
+      "amount": 1
+    },
+    {
+      "type": "borrow",
+      "amount": 2
+    },
+    {
+      "type": "repay",
+      "amount": 0
+    },
+    {
+      "type": "repay",
+      "amount": 1
+    },
+    {
+      "type": "repay",
+      "amount": 2
+    },
+    {
+      "type": "move",
+      "amount": 0
+    },
+    {
+      "type": "move",
+      "amount": 1
+    },
+    {
+      "type": "move",
+      "amount": 2
+    },
+    {
+      "type": "release",
+      "amount": 0
+    },
+    {
+      "type": "release",
+      "amount": 1
+    },
+    {
+      "type": "release",
+      "amount": 2
+    },
+    {
+      "type": "change"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "M1",
+      "from": "Open",
+      "event": "borrow",
+      "stays": true,
+      "target": "Open",
+      "guard": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "bin",
+          "op": "+",
+          "l": {
+            "t": "ref",
+            "name": "debt"
+          },
+          "r": {
+            "t": "field",
+            "name": "amount"
+          }
+        },
+        "r": {
+          "t": "ref",
+          "name": "ceiling"
+        }
+      },
+      "assigns": [
+        {
+          "name": "debt",
+          "expr": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "debt"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        },
+        {
+          "name": "free",
+          "expr": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "free"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M2",
+      "from": "Open",
+      "event": "repay",
+      "stays": true,
+      "target": "Open",
+      "guard": {
+        "t": "bin",
+        "op": "and",
+        "l": {
+          "t": "bin",
+          "op": "<=",
+          "l": {
+            "t": "field",
+            "name": "amount"
+          },
+          "r": {
+            "t": "ref",
+            "name": "free"
+          }
+        },
+        "r": {
+          "t": "bin",
+          "op": "<=",
+          "l": {
+            "t": "field",
+            "name": "amount"
+          },
+          "r": {
+            "t": "ref",
+            "name": "debt"
+          }
+        }
+      },
+      "assigns": [
+        {
+          "name": "debt",
+          "expr": {
+            "t": "bin",
+            "op": "-",
+            "l": {
+              "t": "ref",
+              "name": "debt"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        },
+        {
+          "name": "free",
+          "expr": {
+            "t": "bin",
+            "op": "-",
+            "l": {
+              "t": "ref",
+              "name": "free"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M3",
+      "from": "Open",
+      "event": "move",
+      "stays": true,
+      "target": "Open",
+      "guard": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "field",
+          "name": "amount"
+        },
+        "r": {
+          "t": "ref",
+          "name": "free"
+        }
+      },
+      "assigns": [
+        {
+          "name": "free",
+          "expr": {
+            "t": "bin",
+            "op": "-",
+            "l": {
+              "t": "ref",
+              "name": "free"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        },
+        {
+          "name": "issued",
+          "expr": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "issued"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M4",
+      "from": "Open",
+      "event": "release",
+      "stays": true,
+      "target": "Open",
+      "guard": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "field",
+          "name": "amount"
+        },
+        "r": {
+          "t": "ref",
+          "name": "issued"
+        }
+      },
+      "assigns": [
+        {
+          "name": "issued",
+          "expr": {
+            "t": "bin",
+            "op": "-",
+            "l": {
+              "t": "ref",
+              "name": "issued"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        },
+        {
+          "name": "free",
+          "expr": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "free"
+            },
+            "r": {
+              "t": "field",
+              "name": "amount"
+            }
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M5",
+      "from": "Open",
+      "event": "change",
+      "stays": true,
+      "target": "Open",
+      "guard": {
+        "t": "bin",
+        "op": "<",
+        "l": {
+          "t": "ref",
+          "name": "ceiling"
+        },
+        "r": {
+          "t": "int",
+          "v": 4
+        }
+      },
+      "assigns": [
+        {
+          "name": "ceiling",
+          "expr": {
+            "t": "bin",
+            "op": "+",
+            "l": {
+              "t": "ref",
+              "name": "ceiling"
+            },
+            "r": {
+              "t": "int",
+              "v": 1
+            }
+          }
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "M6",
+      "from": "Open",
+      "event": "change",
+      "stays": true,
+      "target": "Open",
+      "guard": {
+        "t": "bin",
+        "op": "=",
+        "l": {
+          "t": "ref",
+          "name": "ceiling"
+        },
+        "r": {
+          "t": "int",
+          "v": 4
+        }
+      },
+      "assigns": [],
+      "effects": []
+    }
+  ],
+  "refusals": [
+    {
+      "id": "R1",
+      "states": [
+        "Open"
+      ],
+      "events": [
+        "borrow"
+      ],
+      "effects": [],
+      "cond": {
+        "t": "bin",
+        "op": ">",
+        "l": {
+          "t": "bin",
+          "op": "+",
+          "l": {
+            "t": "ref",
+            "name": "debt"
+          },
+          "r": {
+            "t": "field",
+            "name": "amount"
+          }
+        },
+        "r": {
+          "t": "ref",
+          "name": "ceiling"
+        }
+      }
+    },
+    {
+      "id": "R2",
+      "states": [
+        "Open"
+      ],
+      "events": [
+        "repay"
+      ],
+      "effects": [],
+      "cond": {
+        "t": "bin",
+        "op": "or",
+        "l": {
+          "t": "bin",
+          "op": ">",
+          "l": {
+            "t": "field",
+            "name": "amount"
+          },
+          "r": {
+            "t": "ref",
+            "name": "free"
+          }
+        },
+        "r": {
+          "t": "bin",
+          "op": ">",
+          "l": {
+            "t": "field",
+            "name": "amount"
+          },
+          "r": {
+            "t": "ref",
+            "name": "debt"
+          }
+        }
+      }
+    },
+    {
+      "id": "R3",
+      "states": [
+        "Open"
+      ],
+      "events": [
+        "move"
+      ],
+      "effects": [],
+      "cond": {
+        "t": "bin",
+        "op": ">",
+        "l": {
+          "t": "field",
+          "name": "amount"
+        },
+        "r": {
+          "t": "ref",
+          "name": "free"
+        }
+      }
+    },
+    {
+      "id": "R4",
+      "states": [
+        "Open"
+      ],
+      "events": [
+        "release"
+      ],
+      "effects": [],
+      "cond": {
+        "t": "bin",
+        "op": ">",
+        "l": {
+          "t": "field",
+          "name": "amount"
+        },
+        "r": {
+          "t": "ref",
+          "name": "issued"
+        }
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "A1",
+      "while": null,
+      "cond": {
+        "t": "bin",
+        "op": "=",
+        "l": {
+          "t": "ref",
+          "name": "debt"
+        },
+        "r": {
+          "t": "bin",
+          "op": "+",
+          "l": {
+            "t": "ref",
+            "name": "free"
+          },
+          "r": {
+            "t": "ref",
+            "name": "issued"
+          }
+        }
+      },
+      "givens": []
+    },
+    {
+      "id": "A2",
+      "while": null,
+      "cond": {
+        "t": "bin",
+        "op": "<=",
+        "l": {
+          "t": "ref",
+          "name": "debt"
+        },
+        "r": {
+          "t": "ref",
+          "name": "ceiling"
+        }
+      },
+      "givens": []
+    }
+  ],
+  "structural": [],
+  "onces": [],
+  "withins": [],
+  "givens": [],
+  "walks": [
+    {
+      "id": "W1",
+      "name": "Borrow",
+      "scenario": null,
+      "from": "Open",
+      "with": {},
+      "ends": "Open",
+      "steps": [
+        {
+          "event": "borrow",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 2
+            }
+          },
+          "refused": false
+        },
+        {
+          "event": "repay",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "refused": false
+        }
+      ],
+      "endData": {
+        "debt": {
+          "t": "int",
+          "v": 1
+        },
+        "free": {
+          "t": "int",
+          "v": 1
+        }
+      },
+      "sent": {},
+      "notSent": []
+    },
+    {
+      "id": "W2",
+      "name": "Overdraw",
+      "scenario": null,
+      "from": "Open",
+      "with": {},
+      "ends": "Open",
+      "steps": [
+        {
+          "event": "borrow",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 2
+            }
+          },
+          "refused": false
+        },
+        {
+          "event": "borrow",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "refused": true
+        }
+      ],
+      "endData": {
+        "debt": {
+          "t": "int",
+          "v": 2
+        }
+      },
+      "sent": {},
+      "notSent": []
+    },
+    {
+      "id": "W3",
+      "name": "Raised",
+      "scenario": null,
+      "from": "Open",
+      "with": {},
+      "ends": "Open",
+      "steps": [
+        {
+          "event": "borrow",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 2
+            }
+          },
+          "refused": false
+        },
+        {
+          "event": "borrow",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "refused": true
+        },
+        {
+          "event": "change",
+          "args": {},
+          "refused": false
+        },
+        {
+          "event": "borrow",
+          "args": {
+            "amount": {
+              "t": "int",
+              "v": 1
+            }
+          },
+          "refused": false
+        }
+      ],
+      "endData": {
+        "debt": {
+          "t": "int",
+          "v": 3
+        },
+        "ceiling": {
+          "t": "int",
+          "v": 3
+        }
+      },
+      "sent": {},
+      "notSent": []
+    }
+  ],
+  "seams": [
+    {
+      "id": "X1",
+      "piece": "adapter",
+      "body": "move and release cross from Adapter to Vault carrying the amount."
+    },
+    {
+      "id": "X2",
+      "piece": "timelock",
+      "body": "change crosses from Timelock to Vault carrying nothing."
+    }
+  ],
+  "guarantees": [
+    {
+      "id": "K1",
+      "claim": "Debt equals free plus issued on the deployed Vault",
+      "backing": {
+        "kind": "certora",
+        "path": "certora/Vault.spec",
+        "rule": "debtEqualsCredit",
+        "commit": "1a2b9f8e"
+      }
+    },
+    {
+      "id": "K2",
+      "claim": "A borrow increases debt by exactly the amount borrowed",
+      "backing": {
+        "kind": "certora",
+        "path": "certora/Vault.spec",
+        "rule": "borrowIncreasesDebt",
+        "commit": "1a2b9f8e"
+      }
+    },
+    {
+      "id": "K3",
+      "claim": "Only the Adapter moves credit between free and issued",
+      "backing": {
+        "kind": "certora",
+        "path": "certora/Vault.spec",
+        "rule": "onlyAdapterMovesCredit",
+        "commit": "1a2b9f8e"
+      }
+    },
+    {
+      "id": "K4",
+      "claim": "The ceiling is raised only by an executed plan",
+      "backing": {
+        "kind": "none"
+      }
+    }
+  ],
+  "wordsOnly": [
+    {
+      "id": "T1",
+      "text": "This piece promises nothing eventual."
+    },
+    {
+      "id": "T2",
+      "text": "Collateral and prices are outside the Vault's abstraction; the ceiling stands in for every limit."
+    }
+  ],
+  "table": [
+    {
+      "state": "Open",
+      "event": "borrow",
+      "moves": [
+        "M1"
+      ],
+      "refusals": [
+        "R1"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Open",
+      "event": "repay",
+      "moves": [
+        "M2"
+      ],
+      "refusals": [
+        "R2"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Open",
+      "event": "move",
+      "moves": [
+        "M3"
+      ],
+      "refusals": [
+        "R3"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Open",
+      "event": "release",
+      "moves": [
+        "M4"
+      ],
+      "refusals": [
+        "R4"
+      ],
+      "unconditional": []
+    },
+    {
+      "state": "Open",
+      "event": "change",
+      "moves": [
+        "M5",
+        "M6"
+      ],
+      "refusals": [],
+      "unconditional": []
+    }
+  ],
+  "unsaid": [],
+  "saidTwice": [],
+  "hashes": {
+    "S1": "932f7987",
+    "E1": "277c6691",
+    "E2": "f6402f38",
+    "E3": "ef202696",
+    "E4": "f5a96bcd",
+    "E5": "bc5fa558",
+    "M1": "5cafd080",
+    "M2": "d7217020",
+    "M3": "4c33377c",
+    "M4": "005fc9ee",
+    "M5": "fdad2723",
+    "M6": "cf40bb4b",
+    "R1": "4176a82c",
+    "R2": "d5c670e4",
+    "R3": "6350aeba",
+    "R4": "03c6ef18",
+    "A1": "a7ce3014",
+    "A2": "a6767eb7",
+    "W1": "b9cc8dfb",
+    "W2": "e511df2b",
+    "W3": "456db00a",
+    "X1": "b13f3498",
+    "X2": "75de9c3e",
+    "K1": "a72322bf",
+    "K2": "f9f2026c",
+    "K3": "2c53e665",
+    "K4": "d9ce0e5b",
+    "T1": "cf2e6345",
+    "T2": "d4da3500"
+  }
+}

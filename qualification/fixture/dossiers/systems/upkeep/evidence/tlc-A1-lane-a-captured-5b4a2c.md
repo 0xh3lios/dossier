@@ -1,0 +1,1 @@
+retelling: tick, then lane A posts 0 while the price is 2: last becomes 2 and price 0, two steps apart. A1 fails as called; the band holds only while the lanes are honest, which is what G3 and G4 say.

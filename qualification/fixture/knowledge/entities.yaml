@@ -1,0 +1,32 @@
+format_version: 1
+entities:
+  - id: entity-harbor-vault
+    name: Vault
+    kind: contract
+    chain: Ethereum
+    address: "0x7a1b3e5c9d2f4a6b8c0d1e2f3a4b5c6d7e8f9a0b"
+  - id: entity-harbor-adapter
+    name: Adapter
+    kind: contract
+    chain: Ethereum
+    address: "0x2c8e4f1a7b9d3e5c6a0f2b4d6e8a1c3f5b7d9e02"
+  - id: entity-harbor-token
+    name: HRD
+    kind: contract
+    chain: Ethereum
+    address: "0x9f3d1b5a7c2e4068a1c3e5b7d9f2a4c6e8b0d2f4"
+  - id: entity-harbor-timelock
+    name: Timelock
+    kind: contract
+    chain: Ethereum
+    address: "0x4e6a8c0f2b5d7191a3c5e7f9b1d3a5c7e9f0b2d4"
+  - id: entity-harbor-breaker
+    name: Breaker
+    kind: contract
+    chain: Ethereum
+    address: "0x6b0d2f4a8c1e3579b2d4f6a8c0e1b3d5f7a9c1e3"
+  - id: entity-harbor-oracle
+    name: Oracle
+    kind: contract
+    chain: Ethereum
+    address: "0x1d5f7b9a3c6e8042f1a3c5e7b9d0f2a4c6e8b1d3"

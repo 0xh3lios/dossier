@@ -1,0 +1,14 @@
+{
+  "name": "dossier",
+  "owner": {
+    "name": "dossier"
+  },
+  "description": "Installs the Dossier skills keep, setup, review, decide and explore.",
+  "plugins": [
+    {
+      "name": "dossier",
+      "source": "./",
+      "description": "A toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the specification and the models, then runs the checks. TLC, Apalache and Alloy, not the agent, decide whether each property holds. You review the specification and decide what a counterexample means."
+    }
+  ]
+}

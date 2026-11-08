@@ -1,0 +1,23 @@
+{
+  "name": "dossier",
+  "interface": {
+    "displayName": "Dossier"
+  },
+  "plugins": [
+    {
+      "name": "dossier",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/0xh3lios/dossier.git"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools",
+      "interface": {
+        "displayName": "Dossier"
+      }
+    }
+  ]
+}

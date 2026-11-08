@@ -1,0 +1,171 @@
+{
+  "schema": 1,
+  "dossier": "components/adapter",
+  "question": {
+    "kind": "tlc",
+    "checker": "tlc",
+    "executes": [
+      "model/Adapter.cfg",
+      "model/Adapter.tla"
+    ],
+    "expects": [
+      "A1",
+      "TypeOK"
+    ],
+    "property": null,
+    "scenario": null,
+    "walk": null
+  },
+  "call": {
+    "text": "kind: tlc\nexecutes:\n  - model/Adapter.tla\n  - model/Adapter.cfg\nreach: amounts up to 2; held up to 4\nexpect:\n  TypeOK: holds\n  A1: holds\nbecause: |\n  Only halt enters Halted and it clears live; nothing sets live again.\n",
+    "reach": "amounts up to 2; held up to 4",
+    "expect": {
+      "TypeOK": {
+        "expect": "holds"
+      },
+      "A1": {
+        "expect": "holds"
+      }
+    },
+    "because": "Only halt enters Halted and it clears live; nothing sets live again."
+  },
+  "answer": {
+    "enabled": [
+      "TypeOK",
+      "A1"
+    ],
+    "outcomes": {
+      "TypeOK": "holds",
+      "A1": "holds"
+    },
+    "violation": null,
+    "trace": [],
+    "states": {
+      "generated": 1906,
+      "distinct": 443,
+      "queued": 0,
+      "depth": 10
+    },
+    "actions": {
+      "M1_Exit": {
+        "move": "M1",
+        "event": "exit",
+        "targets": [],
+        "stays": true,
+        "distinct": 124,
+        "generated": 601
+      },
+      "M2_Enter": {
+        "move": "M2",
+        "event": "enter",
+        "targets": [],
+        "stays": true,
+        "distinct": 116,
+        "generated": 590
+      },
+      "M3_Enter": {
+        "move": "M3",
+        "event": "enter",
+        "targets": [],
+        "stays": true,
+        "distinct": 48,
+        "generated": 473
+      },
+      "M4_Halt": {
+        "move": "M4",
+        "event": "halt",
+        "targets": [
+          "Halted"
+        ],
+        "stays": false,
+        "distinct": 154,
+        "generated": 241
+      }
+    },
+    "init": {
+      "accepted": 1,
+      "generated": 1
+    },
+    "partial": [],
+    "errors": [],
+    "warnings": [],
+    "properties": {
+      "TypeOK": "b9c42d5f",
+      "A1": "cef8e7df"
+    },
+    "reach": {
+      "text": "amounts up to 2; held up to 4",
+      "constants": {
+        "MaxSent": "4"
+      },
+      "values": {
+        "MaxSent": 4
+      }
+    },
+    "result": "as-called",
+    "miscalls": []
+  },
+  "basis": {
+    "snapshot": {
+      "passages": {
+        "S1": "2dc0ea92",
+        "S2": "ab235827",
+        "E1": "d2a84fb7",
+        "E2": "3c7a98e6",
+        "E3": "27bd8252",
+        "M1": "bedff268",
+        "M2": "5a9c8009",
+        "M3": "c5468cd9",
+        "M4": "73630550",
+        "R1": "a9875744",
+        "R2": "02514039",
+        "R3": "d9dc2be9",
+        "A1": "add2e99f",
+        "W1": "f15d329e",
+        "W2": "503d5674",
+        "X1": "f8cba5eb",
+        "X2": "d8be73d4",
+        "X3": "6e012009",
+        "K1": "0f309b4d",
+        "T1": "cf2e6345"
+      },
+      "records": {},
+      "backing": {
+        "K1": {
+          "status": "backed",
+          "hash": "7b42dc7c1831a88a",
+          "path": "modules/adapter/behavior/invariants.md"
+        }
+      },
+      "ir": "b1b83ebc2a2874da"
+    },
+    "executed": {
+      "model/Adapter.tla": "12bea82c7f234a39aa0467a03faf1d8dc2b5d5343c6b203b7cf3c528289e4729",
+      "model/Adapter.cfg": "f6fc43c5f1d0bc5fc1ad2d0ef2db994c00e794326b20f2fff769cd14707197e4"
+    },
+    "inputIdentity": {
+      "strategy": "private-copy",
+      "files": {
+        "model/Adapter.cfg": "f6fc43c5f1d0bc5fc1ad2d0ef2db994c00e794326b20f2fff769cd14707197e4",
+        "model/Adapter.tla": "12bea82c7f234a39aa0467a03faf1d8dc2b5d5343c6b203b7cf3c528289e4729"
+      },
+      "shared": [
+        "tla:Naturals"
+      ],
+      "limitation": "Hashes identify private copies of declared files and supported local model imports. Toolchains, shared libraries, chart runtime, external runner commands/root/cwd, and undeclared tool-specific dynamic reads are not frozen. External runners must use the supplied files map for declared inputs. This is not a hermetic execution."
+    }
+  },
+  "established": {
+    "trial": "2026-11-07-2321-tlc-47e689",
+    "at": "2026-11-07T23:21:45.342Z",
+    "versions": {
+      "dossier": "0.1.0",
+      "node": "26.4.0",
+      "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
+    },
+    "bundle": "ad1f79a0b8a664f282f7f76905d15d3a2d7e73e74c7676411f0c5fabc01794d4"
+  },
+  "previous": null,
+  "narrowed": null,
+  "replaced": null
+}

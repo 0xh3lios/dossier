@@ -1,0 +1,1 @@
+retelling: tick, tick: the first tick makes the price stale with both lanes still down, the second passes before the window ends, and the counter reaches 2. N1 fails as called; one block of outage is survivable and two are not.

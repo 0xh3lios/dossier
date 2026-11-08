@@ -1,0 +1,65 @@
+<alloy builddate="2025-01-09T08:17:18.350Z">
+
+<instance bitwidth="4" maxseq="6" mintrace="-1" maxtrace="-1" command="Check A4_wrong for 6" filename="" tracelength="1" looplength="1">
+
+<sig label="seq/Int" ID="0" parentID="1" builtin="yes">
+</sig>
+
+<sig label="Int" ID="1" parentID="2" builtin="yes">
+</sig>
+
+<sig label="String" ID="3" parentID="2" builtin="yes">
+</sig>
+
+<sig label="this/Packed" ID="4" parentID="5" one="yes">
+   <atom label="Packed$0"/>
+</sig>
+
+<sig label="this/Shipped" ID="6" parentID="5" one="yes">
+   <atom label="Shipped$0"/>
+</sig>
+
+<sig label="this/Delivered" ID="7" parentID="5" one="yes">
+   <atom label="Delivered$0"/>
+</sig>
+
+<sig label="this/Returned" ID="8" parentID="5" one="yes">
+   <atom label="Returned$0"/>
+</sig>
+
+<sig label="this/Cancelled" ID="9" parentID="5" one="yes">
+   <atom label="Cancelled$0"/>
+</sig>
+
+<sig label="this/Phase" ID="5" parentID="2" abstract="yes">
+</sig>
+
+<sig label="this/Order" ID="10" parentID="2">
+   <atom label="Order$0"/>
+</sig>
+
+<field label="parcels" ID="11" parentID="10">
+   <tuple> <atom label="Order$0"/> <atom label="Parcel$0"/> </tuple>
+   <types> <type ID="10"/> <type ID="12"/> </types>
+</field>
+
+<sig label="this/Parcel" ID="12" parentID="2">
+   <atom label="Parcel$0"/>
+</sig>
+
+<field label="phase" ID="13" parentID="12">
+   <tuple> <atom label="Parcel$0"/> <atom label="Shipped$0"/> </tuple>
+   <types> <type ID="12"/> <type ID="5"/> </types>
+</field>
+
+<sig label="univ" ID="2" builtin="yes">
+</sig>
+
+<skolem label="$A4_wrong_p" ID="14">
+   <tuple> <atom label="Parcel$0"/> </tuple>
+   <types> <type ID="12"/> </types>
+</skolem>
+
+</instance>
+
+</alloy>
