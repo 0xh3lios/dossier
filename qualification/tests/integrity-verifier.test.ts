@@ -22,26 +22,28 @@ function fixture(t: TestContext) {
   t.after(() => rmSync(work, { recursive: true, force: true }));
   cpSync(join(plugin, 'qualification/fixture'), work, { recursive: true, preserveTimestamps: true });
   const root = join(work, 'dossiers');
-  const verify = (write = false) => verifyAll({ root, version: '0.1.0', ...(write ? { write } : {}) });
+  const verify = (write = false) => verifyAll({ root, version: '0.2.0', ...(write ? { write } : {}) });
   return { work, root, verify };
 }
 
 // Compare protected conclusions; display rows and timestamps are intentionally
 // absent. These expectations do not use expected-marks.json.
-function conclusions(result: Verified) {
+function conclusions(result: Verified, compareReviewFreshness = true) {
+  const flags = (a: Verified['parts'][number] | Verified['compositions'][number]) => a.flags.filter(f => compareReviewFreshness || f.name !== 'review stale');
   return {
     root: { route: result.route, tripwires: result.tripwires },
-    parts: result.parts.map(a => ({ ref: a.ref, tier: a.tier, marks: a.marks, owner: a.owner, backing: a.backing, doubts: a.doubts, route: a.route, summary: a.summary, tripwires: a.tripwires, flags: a.flags })),
-    compositions: result.compositions.map(a => ({ ref: a.ref, cells: a.cells, walks: a.walks, owner: a.owner, propertyHeld: a.propertyHeld, route: a.route, summary: a.summary, tripwires: a.tripwires, flags: a.flags })),
+    parts: result.parts.map(a => ({ ref: a.ref, tier: a.tier, marks: a.marks, owner: a.owner, backing: a.backing, doubts: a.doubts, route: a.route, summary: a.summary, tripwires: a.tripwires, flags: flags(a) })),
+    compositions: result.compositions.map(a => ({ ref: a.ref, cells: a.cells, walks: a.walks, owner: a.owner, propertyHeld: a.propertyHeld, route: a.route, summary: a.summary, tripwires: a.tripwires, flags: flags(a) })),
   };
 }
-// The records a view may not touch: the answers and their readings, the manifests and the decisions.
-const records = (tree: Record<string, string>) => Object.fromEntries(Object.entries(tree).filter(([name]) => name.includes('/evidence/') || name.endsWith('/integrity.json') || name.endsWith('/decisions.log')));
+// The records a view may not touch: answers, readings, reviews, manifests and decisions.
+const records = (tree: Record<string, string>) => Object.fromEntries(Object.entries(tree).filter(([name]) => name.includes('/evidence/') || name.includes('/reviews/') || name.endsWith('/integrity.json') || name.endsWith('/decisions.log')));
 // A dossier's entries by name; an entry removed with its reading, as a hand outside the tools would
 // remove it; and both restored from the shipped fixture, as version control would restore them.
 const entries = (dir: string) => readdirSync(join(dir, 'evidence')).filter(name => name.endsWith('.json')).map(name => name.slice(0, -5)).sort();
 const remove = (dir: string, name: string) => { for (const file of [`${name}.json`, `${name}.md`]) rmSync(join(dir, 'evidence', file)); };
 const restore = (dir: string, ref: string, name: string) => { for (const file of [`${name}.json`, `${name}.md`]) cpSync(join(plugin, 'qualification/fixture/dossiers', ref, 'evidence', file), join(dir, 'evidence', file), { preserveTimestamps: true }); };
+const reviewInventory = (result: Verified) => [...result.parts, ...result.compositions].map(a => [a.ref, a.reviews.map(r => r.file)]);
 const control = (result: Verified) => result.compositions.find(a => a.id === 'control')!;
 const timelock = (result: Verified) => result.parts.find(a => a.id === 'timelock')!;
 const appendCandidate = (dir: string, decision: Parameters<typeof formatDecision>[0]) => {
@@ -63,9 +65,12 @@ test('Harbor keeps a proof, bounded checks and an accepted violation distinct, a
   assert.deepEqual(fingerprint(w.work), before);
 });
 
-test('current views can be edited or deleted without changing marks, routes or history; render recreates reports only', t => {
+test('current views preserve formal conclusions and history; deleting a review-pinned view stales that review', t => {
   const w = fixture(t);
-  const baseline = conclusions(w.verify());
+  const original = w.verify(), baseline = conclusions(original);
+  const formal = conclusions(original, false);
+  const pinned = [...original.parts, ...original.compositions].flatMap(a => a.reviews.filter(r => r.record?.basis.some(b => b.root === 'dossiers' && /\/(model\/generated\/|chart\/(machine\.json|grid\.md)$)/.test(b.path))).map(r => `${a.ref}/${r.file}`));
+  assert.ok(pinned.length > 0, 'the fixture includes reviews that explicitly inspected generated views');
   const before = records(fingerprint(w.work));
   writeFileSync(join(w.root, 'index.md'), 'An arbitrary, non-authoritative report.\n');
   for (const a of [...w.verify().parts, ...w.verify().compositions]) writeFileSync(join(a.dir, 'ledger.md'), 'A disposable view with no machine-form history.\n');
@@ -77,12 +82,19 @@ test('current views can be edited or deleted without changing marks, routes or h
   }
   for (const a of w.verify().compositions) { rmSync(join(a.dir, 'ledger.md')); rmSync(join(a.dir, 'model/generated'), { recursive: true, force: true }); }
   const deleted = fingerprint(w.work);
-  assert.deepEqual(conclusions(w.verify()), baseline);
+  const after = w.verify();
+  assert.deepEqual(conclusions(after, false), formal);
+  assert.deepEqual(reviewInventory(after), reviewInventory(original), 'every original review remains reported');
+  for (const a of [...after.parts, ...after.compositions]) for (const review of a.reviews) {
+    const bound = pinned.includes(`${a.ref}/${review.file}`);
+    assert.equal(review.status, bound ? 'stale' : 'current', `${a.ref}/${review.file}`);
+    if (bound) assert.ok(review.reasons.some(reason => /cannot read dossiers:.*\/(model\/generated\/|chart\/(machine\.json|grid\.md))/.test(reason)), review.reasons.join('; '));
+  }
   assert.deepEqual(fingerprint(w.work), deleted, 'default verification is read-only');
   w.verify(true);
   assert.ok(existsSync(join(w.root, 'index.md')));
   for (const a of w.verify().compositions) assert.equal(existsSync(join(a.dir, 'model/generated')), false, 'render is not execution preparation');
-  assert.deepEqual(conclusions(w.verify()), baseline);
+  assert.deepEqual(conclusions(w.verify()), conclusions(after), 'render does not refresh reviews or recreate execution preparation');
   assert.deepEqual(records(fingerprint(w.work)), before);
 });
 
@@ -111,12 +123,21 @@ test('read-only default preserves bytes and mtimes on success and corruption, wi
   assert.ok(timelock(check()).tripwires.some(problem => problem.name === 'integrity malformed'));
 });
 
-test('relevant edits lapse evidence and acceptance while scenario notes do not', t => {
+test('scenario notes preserve formal evidence and acceptance, stale the compositions\' byte-bound reviews and no part\'s; relevant edits lapse the evidence', t => {
   const w = fixture(t);
-  const baseline = conclusions(w.verify());
+  const original = w.verify(), baseline = conclusions(original, false);
+  assert.ok([...original.parts, ...original.compositions].every(a => a.reviews.length > 0 && a.reviews.every(r => r.status === 'current')));
   const scenarios = join(w.root, 'actors/scenarios.md');
   writeFileSync(scenarios, readFileSync(scenarios, 'utf8') + '\nReader note: this does not change any scenario.\n');
-  assert.deepEqual(conclusions(w.verify()), baseline);
+  const notes = w.verify();
+  assert.deepEqual(conclusions(notes, false), baseline);
+  assert.deepEqual(reviewInventory(notes), reviewInventory(original), 'every original review remains reported');
+  // Scenarios belong to compositions: a part's review does not bind scenarios.md.
+  for (const a of notes.compositions) for (const review of a.reviews) {
+    assert.equal(review.status, 'stale');
+    assert.ok(review.reasons.some(reason => reason.includes('changed dossiers:actors/scenarios.md')));
+  }
+  for (const a of notes.parts) for (const review of a.reviews) assert.equal(review.status, 'current', `${a.ref} ${review.file}`);
   const path = join(w.root, 'compositions/control/prose.md');
   writeFileSync(path, readFileSync(path, 'utf8').replace('[N1] Within 3 ticks', '[N1] Within 2 ticks'));
   const c = control(w.verify());

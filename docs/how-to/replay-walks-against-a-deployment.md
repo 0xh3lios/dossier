@@ -52,3 +52,5 @@ Play a part's example walks against something that is not a model: a fork of the
 ## Check
 
 The part's ledger shows `grounded` beside each walk the runner lists under `covers`, when the trial's answer came back as called. The call expects every walk to pass, so an answer in which one fails is miscalled and grounds none of them. A guarantee whose backing is `external <runner>` becomes `backed` once an answer from that runner comes back as called and lists its K id under `covers`. A failed replay is a miscall the agent must classify, and the usual cause is the prose rather than the deployment. The answer keeps what your runner printed under `evidence`. It is in the entry for the call's question, under the dossier's `evidence/`, and `dossier show` prints it. Dossier does not verify the runner itself, so version it with your code.
+
+A replay's answer is evidence of the kind `external-cases`. A [claim](../explanation/behaviors.md) mapped to it has evidence for the cases the runner executed, and it reads supported only after a review of the mapping. The kind alone does not show that the runner exercised the source, which a reviewer has to judge.

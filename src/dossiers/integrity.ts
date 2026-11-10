@@ -7,6 +7,25 @@ import { readMarker, UsageError } from './root.ts';
 
 export const INTEGRITY = 'integrity.json';
 export const STORAGE = 'integrity-v1';
+// The earliest plugin version whose roots this plugin reads. dossier.json names the version that set
+// a root up. A root set up before this one holds records in a format this plugin does not read, and
+// nothing converts it. A later release that keeps the formats leaves this as it is.
+export const EARLIEST_ROOT = '0.2.0';
+export const isVersion = (value: unknown): value is string => typeof value === 'string' && /^\d+\.\d+\.\d+$/.test(value);
+// Negative, zero or positive as a is before, equal to or after b.
+export function compareVersions(a: string, b: string): number {
+  const x = a.split('.').map(Number), y = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i];
+  return 0;
+}
+// The plugin's own version, from package.json; both plugin manifests carry the same one.
+export const pluginVersion = (): string => JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
+// Why dossier.json's plugin version is not one this plugin reads, or null.
+export function versionProblem(plugin: unknown, running: string = pluginVersion()): string | null {
+  if (!isVersion(plugin) || compareVersions(plugin, EARLIEST_ROOT) < 0) return `dossier.json names plugin ${JSON.stringify(plugin ?? null)}; this plugin reads roots set up by dossier ${EARLIEST_ROOT} or later and converts none`;
+  if (compareVersions(plugin, running) > 0) return `dossier.json names plugin ${plugin}, later than this dossier ${running}`;
+  return null;
+}
 export interface DecisionHead { algorithm: 'sha256-prefix'; bytes: number; digest: string }
 // The per-dossier manifest: the digest of every entry in evidence/, by its name, and the exact
 // committed prefix of decisions.log.
@@ -46,13 +65,14 @@ export function validateIntegrity(value: unknown): Integrity {
 // What is wrong with a root's storage format, or null when it names integrity-v1. A root marker
 // that names another storage, does not read, or names none is never a format this plugin reads.
 // (readMarker reports another storage as a malformed marker; this says what it names.)
-export function storageProblem(root: string): string | null {
+export function storageProblem(root: string, running: string = pluginVersion()): string | null {
   if (!existsSync(join(root, 'dossier.json'))) return 'dossier.json is missing';
   const marker = readMarker(root);
   const storage = (marker as { storage?: unknown }).storage;
   if (storage !== undefined && storage !== STORAGE) return `dossier.json names storage ${JSON.stringify(storage)}; this plugin reads ${STORAGE} only`;
   if (marker.error) return 'dossier.json does not read';
-  return storage === undefined ? `dossier.json names no storage; this plugin reads ${STORAGE} only` : null;
+  if (storage === undefined) return `dossier.json names no storage; this plugin reads ${STORAGE} only`;
+  return versionProblem(marker.plugin, running);
 }
 
 export function storageMode(root: string): 'current' | 'invalid' {

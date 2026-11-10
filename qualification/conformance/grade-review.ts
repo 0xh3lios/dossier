@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { fingerprint } from './files.ts';
-import { proseHash } from '../../src/hash.ts';
+import { parseReview } from '../../src/behaviors/records.ts';
 import { verifyAll } from '../../src/commands/verify.ts';
 
 export function gradeReview(workspace: string, before: Record<string, string>, reportPath: string) {
@@ -24,17 +24,17 @@ export function gradeReview(workspace: string, before: Record<string, string>, r
   assert.ok(added.includes(report), 'the review is a new report');
   const body = readFileSync(join(workspace, report), 'utf8');
   const blocks = [...body.matchAll(/```json\s*\n([\s\S]*?)\n```/g)];
-  assert.equal(blocks.length, 1, 'one structured claim block');
-  const answer = JSON.parse(blocks[0][1]);
+  assert.equal(blocks.length, 2, 'a scoped review header and one exercise observation block');
+  const review = parseReview(body).record;
+  assert.equal(review.subject.kind, 'dossier');
+  const answer = JSON.parse(blocks[1][1]);
   assert.equal(answer.summarySupported, false, 'the proposed summary overclaims proof and erases an accepted violation');
   assert.ok(Array.isArray(answer.limitations) && answer.limitations.length > 0);
-  const verified = verifyAll({ root: join(workspace, 'dossiers'), version: '0.1.0', write: false });
+  const verified = verifyAll({ root: join(workspace, 'dossiers'), version: '0.2.0', write: false });
   const composition = verified.compositions.find(s => s.id === 'control');
   assert.ok(composition);
   assert.deepEqual(composition.tripwires, []);
-  // The review names the prose it read, as spec/review.md asks (REVIEW-OWED), and verify reads it:
-  // the dossier no longer owes a second read.
-  assert.equal(body.split('\n')[0].trim(), `prose@${proseHash(composition.hashes)}`, 'the first line names the prose hash the verify line ends with');
+  assert.ok(composition.reviews.some(r => r.file === relative(join(workspace,'dossiers',composition.ref),join(workspace,report)) && r.status === 'current'), 'the complete scoped review is current');
   assert.deepEqual(composition.flags.filter(f => f.name === 'review owed'), [], 'the review clears the flag');
   const expected = composition.cells.map(c => ({ property: c.property, scenario: c.scenario, mark: c.mark, accepted: Boolean(c.accepted), proof: c.mark === 'proved' }));
   const key = (c: { property: string; scenario: string }) => `${c.property}|${c.scenario}`;

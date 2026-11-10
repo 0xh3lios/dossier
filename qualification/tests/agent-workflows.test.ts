@@ -67,13 +67,13 @@ test('workflow preparations supply raw inputs and freeze protected starting reco
     assert.equal((await checkIR({ root: plugin, ir })).outcome, 'pass');
   }
   // The supplied parts start with the manifests a begin leaves: no answers, no decisions.
-  const started = verifyAll({ root: compose.root, version: '0.1.0', write: false });
+  const started = verifyAll({ root: compose.root, version: '0.2.0', write: false });
   assert.deepEqual(started.tripwires, []);
   for (const c of started.parts) { assert.deepEqual(c.tripwires, [], c.ref); assert.deepEqual(c.answers, [], c.ref); }
   const refresh = prepare(t, 'refresh-decision');
   assert.ok(readFileSync(join(refresh.workspace, 'dossiers/compositions/control/calls/continuation.md'), 'utf8').includes('N1: holds'));
   const before = fingerprint(refresh.workspace);
-  const initial = verifyAll({ root: refresh.root, version: '0.1.0', write: false });
+  const initial = verifyAll({ root: refresh.root, version: '0.2.0', write: false });
   const control = initial.compositions.find(s => s.id === 'control')!;
   const n1 = control.cells.filter(c => c.property === 'N1');
   assert.equal(n1.length, 3);
@@ -195,7 +195,7 @@ test('refresh and decision grading follows each answer to its entry, records a m
   const blunder = w.trial('control', 'current-blunder.md', 'Removing the prompt-executor tick restriction permits the counter to reach three with the plan unresolved. N1 detects this fault at its current two-tick bound.\n');
   const riskWords = 'I accept that the two-tick deadline can fail while the executor is offline. This acceptance does not assert recovery or make N1 true.';
   w.run(['decide', 'compositions/control', 'risk', 'N1', 'executor-offline', '--', riskWords]);
-  const current = verifyAll({ root: w.root, version: '0.1.0', write: false }).compositions.find(s => s.id === 'control')!;
+  const current = verifyAll({ root: w.root, version: '0.2.0', write: false }).compositions.find(s => s.id === 'control')!;
   const answer = { composition: 'control', initialAcceptanceCurrent: false, continuationTrial: continuation, proof: false, cells: current.cells.map(c => ({ property: c.property, scenario: c.scenario, mark: c.mark, accepted: Boolean(c.accepted) })), refreshedTrials: refreshed, blunderTrial: blunder, riskWords, limitations: ['The other six cells remain stale after the generated module changed; acceptance leaves the offline property violated.'] };
   w.write('answer.md', 'The old N1 risk decision was bound to different words. The prepared prediction miscalled; current N1 is violated offline and the supplied risk words accept that violation. Other properties retain stale evidence.\n');
   w.write('answer.json', JSON.stringify(answer));

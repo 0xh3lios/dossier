@@ -1,85 +1,59 @@
-// A second read is owed (spec/review.md): a dossier with marks a reviewer judges and no review under
-// reviews/ naming its current prose is flagged `review owed`, its next step is Review once nothing else
-// is owed, and the root routes to Review after everything else. A review whose first line names the
-// prose, as the dossier's verify line ends, clears both; one of an earlier wording says which prose it
-// read; one that names none counts for none.
+// Scoped review freshness is independent of solver freshness and exact owner decisions.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { proseHash } from '../../src/hash.ts';
 import { verifyAll } from '../../src/commands/verify.ts';
-import { reviewOwedWhy } from '../../src/verify/analyze.ts';
-import { summaryLine } from '../../src/verify/render.ts';
-import { routeRoot } from '../../src/verify/route.ts';
-import type { Analysis } from '../../src/verify/analyze.ts';
+import { requiredReviewBasis } from '../../src/behaviors/dependencies.ts';
+import { reviewCoverageItems } from '../../src/behaviors/records.ts';
+import type { ReviewRecord, ReviewSubject } from '../../src/behaviors/types.ts';
+const fixture=join(fileURLToPath(new URL('../../',import.meta.url)),'qualification/fixture');
 
-const fixture = join(fileURLToPath(new URL('../../', import.meta.url)), 'qualification/fixture');
-
-test('why a second read is owed: marks a reviewer judges, and no review at the current prose', () => {
-  const hashes = { A1: 'a1', S1: 's1' };
-  const now = proseHash(hashes);
-  assert.equal(reviewOwedWhy([], hashes, false), null, 'nothing a reviewer judges yet');
-  assert.equal(reviewOwedWhy([], hashes, true), `no review at prose@${now}`);
-  assert.equal(reviewOwedWhy([{ file: '2026-11-07-review.md', prose: now }], hashes, true), null);
-  assert.equal(reviewOwedWhy([{ file: 'a.md', prose: now }, { file: 'b.md', prose: 'abcdef' }], hashes, true), null, 'any review at the current prose counts');
-  assert.equal(reviewOwedWhy([{ file: 'a.md', prose: 'abcdef' }], hashes, true), `reviews/a.md read prose@abcdef; now prose@${now}`);
-  assert.equal(reviewOwedWhy([{ file: 'a.md', prose: null }], hashes, true), `reviews/a.md read prose@none named; now prose@${now}`);
+// These temporary copies supply synthetic judgments; real Harbor reviews stay intact.
+test('a full current review clears dossier debt; a changed explanation owes the review again, keeps the assessments and leaves formal evidence intact',t=>{
+ const work=mkdtempSync(join(tmpdir(),'dossier-review-'));t.after(()=>rmSync(work,{recursive:true,force:true}));cpSync(fixture,work,{recursive:true,filter:path=>basename(path)!=='reviews'});
+ const root=join(work,'dossiers');
+ let v=verifyAll({root,version:'0.2.0'}), a=v.compositions.find(a=>a.id==='control')!;
+ const collection=a.behaviorCollection!;
+ const subject:ReviewSubject={kind:'dossier',dossier:a.ref,behaviors:collection.collection!.record.behaviors};
+ const basis=requiredReviewBasis(subject,{root,analysis:a,analyses:Object.fromEntries([...v.parts,...v.compositions].map(a=>[a.ref,a])),knowledge:v.knowledge,collection});
+ assert.deepEqual(basis.issues,[]);
+ const review:ReviewRecord={format:'dossier-review@0.2.0',subject,basis:basis.files,coverage:{examined:reviewCoverageItems(subject),unexamined:[]},replaces:[],assessments:collection.behaviors.flatMap(b=>b.record.claims.flatMap(c=>c.mappings.map(m=>({mapping:`${b.record.id}/${c.id}/${m.id}`,result:'too-broad' as const,rationale:'This synthetic assessment checks debt discharge, not positive support.',limitations:[]}))))};
+ mkdirSync(join(a.dir,'reviews'),{recursive:true});writeFileSync(join(a.dir,'reviews','binding.md'),'```json\n'+JSON.stringify(review,null,2)+'\n```\n\nThe independent semantic judgments are outside this mechanical fixture.\n');
+ v=verifyAll({root,version:'0.2.0'});a=v.compositions.find(a=>a.id==='control')!;
+ assert.equal(a.reviewOwed,null);assert.equal(a.route.pass,'Report');
+ const cells=JSON.stringify(a.cells), first=subject.behaviors[0];
+ appendFileSync(join(a.dir,'behaviors',`${first}.md`),'\nA changed explanation.\n');
+ a=verifyAll({root,version:'0.2.0'}).compositions.find(a=>a.id==='control')!;
+ assert.ok(a.reviewOwed);assert.equal(JSON.stringify(a.cells),cells);
+ assert.equal(a.reviews[0].status,'current');assert.deepEqual(a.reviews[0].changed,{claims:[],explanations:[first]});
+ assert.ok(a.behaviors!.behaviors.find(b=>b.id===first)!.claims.every(c=>c.mappings.every(m=>m.assessment.state==='assessed')),'every assessment stays in effect');
+});
+test('a prose hash is not a review format and cannot clear review debt',t=>{
+ const work=mkdtempSync(join(tmpdir(),'dossier-review-invalid-'));t.after(()=>rmSync(work,{recursive:true,force:true}));cpSync(fixture,work,{recursive:true,filter:path=>basename(path)!=='reviews'});const root=join(work,'dossiers'),dir=join(root,'compositions/control');
+ mkdirSync(join(dir,'reviews'),{recursive:true});writeFileSync(join(dir,'reviews','old.md'),'prose@abcdef\n\nNo findings.\n');
+ const a=verifyAll({root,version:'0.2.0'}).compositions.find(a=>a.id==='control')!;
+ assert.ok(a.reviewOwed);assert.equal(a.reviews.find(r=>r.file==='reviews/old.md')?.status,'invalid');assert.ok(a.tripwires.some(t=>t.name==='invalid review'));
 });
 
-test('on Harbor, every dossier owes a second read: the flag, the next step once nothing else is owed, and the review that clears it', t => {
-  const work = mkdtempSync(join(tmpdir(), 'dossier-review-'));
-  t.after(() => rmSync(work, { recursive: true, force: true }));
-  cpSync(fixture, work, { recursive: true });
-  const root = join(work, 'dossiers');
-  let v = verifyAll({ root, version: '0.1.0' });
-  const all = [...v.parts, ...v.compositions];
-  for (const a of all) {
-    const now = proseHash(a.hashes);
-    assert.deepEqual(a.flags.filter(f => f.name === 'review owed'), [{ name: 'review owed', where: `no review at prose@${now}` }], a.ref);
-    assert.ok(summaryLine(a).endsWith(` · prose@${now}`), 'the verify line ends with the prose hash a review names');
-  }
-  // Harbor's compositions and two of its parts owe nothing else, so the review is their next step.
-  assert.deepEqual(all.filter(a => a.route.pass === 'Review').map(a => a.ref).sort(), ['compositions/control', 'compositions/supply', 'compositions/upkeep', 'parts/adapter', 'parts/breaker']);
-  assert.ok(all.every(a => a.route.pass !== 'Report'), 'no dossier reports before its second read');
-  assert.equal(v.route.pass, 'Encode', 'the root routes to Review only once nothing else is owed');
-
-  // A review whose first line names the current prose clears the flag, and the composition reports.
-  const control = v.compositions.find(a => a.ref === 'compositions/control')!;
-  const now = proseHash(control.hashes);
-  const dir = join(root, 'compositions', 'control');
-  mkdirSync(join(dir, 'reviews'), { recursive: true });
-  writeFileSync(join(dir, 'reviews', '2026-11-07-review.md'), `prose@${now}\n\n${summaryLine(control)}\n\nNo findings.\n`);
-  v = verifyAll({ root, version: '0.1.0' });
-  let again = v.compositions.find(a => a.ref === 'compositions/control')!;
-  assert.deepEqual(again.flags.filter(f => f.name === 'review owed'), []);
-  assert.deepEqual(again.route, { pass: 'Report', why: ['nothing owed'], read: 'spec/evidence.md' });
-
-  // Only the first line names the prose: a review that quotes the hash further down, in a copied
-  // verify line, names none, and the read is still owed.
-  writeFileSync(join(dir, 'reviews', '2026-11-07-review.md'), `# Review\n\n${summaryLine(control)}\n\nNo findings.\n`);
-  v = verifyAll({ root, version: '0.1.0' });
-  again = v.compositions.find(a => a.ref === 'compositions/control')!;
-  assert.deepEqual(again.flags.filter(f => f.name === 'review owed'), [{ name: 'review owed', where: `reviews/2026-11-07-review.md read prose@none named; now prose@${now}` }], 'a hash quoted below the first line names nothing');
-
-  // A review of an earlier wording says which prose it read, and the read is owed again.
-  writeFileSync(join(dir, 'reviews', '2026-11-07-review.md'), 'prose@000000\n\nNo findings.\n');
-  v = verifyAll({ root, version: '0.1.0' });
-  again = v.compositions.find(a => a.ref === 'compositions/control')!;
-  const why = `reviews/2026-11-07-review.md read prose@000000; now prose@${now}`;
-  assert.deepEqual(again.flags.filter(f => f.name === 'review owed'), [{ name: 'review owed', where: why }]);
-  assert.deepEqual(again.route, { pass: 'Review', why: [why], read: 'spec/review.md' });
-
+test('a focused review binds the authored model and configuration its mapped answer executed',()=>{
+ const root=join(fixture,'dossiers'),v=verifyAll({root,version:'0.2.0'}),a=v.parts.find(p=>p.id==='timelock')!;
+ const subject:ReviewSubject={kind:'behavior',dossier:a.ref,behaviors:['cancel-plan']};
+ const basis=requiredReviewBasis(subject,{root,analysis:a,analyses:Object.fromEntries([...v.parts,...v.compositions].map(a=>[a.ref,a])),knowledge:v.knowledge,collection:a.behaviorCollection!});
+ assert.deepEqual(basis.issues,[]);
+ assert.ok(basis.files.some(f=>f.path==='parts/timelock/model/Timelock.tla'));
+ assert.ok(basis.files.some(f=>f.path.startsWith('parts/timelock/model/') && f.path.endsWith('.cfg')));
 });
 
-test('the root routes to Review after everything else, and to Report once every second read is in', () => {
-  const stub = (ref: string, pass: string, why: string[]) => ({ kind: ref.startsWith('compositions/') ? 'composition' : 'part', ref, title: ref, tripwires: [], wiring: { members: ['x'] }, route: { pass, why, read: '' } }) as unknown as Analysis;
-  const owed = stub('parts/vault', 'Review', ['no review at prose@abc123']);
-  const done = stub('compositions/control', 'Report', ['nothing owed']);
-  assert.deepEqual(routeRoot([owed], [done]), { pass: 'Review', why: ['parts/vault: no review at prose@abc123'], read: 'spec/review.md', target: 'parts/vault' });
-  const encode = stub('parts/token', 'Encode', ['calls pending: a']);
-  assert.equal(routeRoot([owed, encode], [done]).pass, 'Encode', 'a loop still owed comes first');
-  assert.deepEqual(routeRoot([stub('parts/vault', 'Report', ['nothing owed'])], [done]), { pass: 'Report', why: ['nothing owed'], read: 'spec/evidence.md', target: null });
+test('a current but wholly unexamined dossier review leaves review debt visible',t=>{
+ const work=mkdtempSync(join(tmpdir(),'dossier-review-partial-'));t.after(()=>rmSync(work,{recursive:true,force:true}));cpSync(fixture,work,{recursive:true,filter:path=>basename(path)!=='reviews'});
+ const root=join(work,'dossiers'),v=verifyAll({root,version:'0.2.0'}),a=v.parts.find(p=>p.id==='timelock')!,collection=a.behaviorCollection!;
+ const subject:ReviewSubject={kind:'dossier',dossier:a.ref,behaviors:collection.collection!.record.behaviors};
+ const basis=requiredReviewBasis(subject,{root,analysis:a,analyses:Object.fromEntries([...v.parts,...v.compositions].map(a=>[a.ref,a])),knowledge:v.knowledge,collection});
+ const review:ReviewRecord={format:'dossier-review@0.2.0',subject,basis:basis.files,coverage:{examined:[],unexamined:reviewCoverageItems(subject).map(item=>({item,reason:'Not examined.'}))},replaces:[],assessments:collection.behaviors.flatMap(b=>b.record.claims.flatMap(c=>c.mappings.map(m=>({mapping:`${b.record.id}/${c.id}/${m.id}`,result:'inconclusive' as const,rationale:'Not examined.',limitations:[]}))))};
+ mkdirSync(join(a.dir,'reviews'),{recursive:true});writeFileSync(join(a.dir,'reviews','partial.md'),'```json\n'+JSON.stringify(review,null,2)+'\n```\n\nNo semantic examination has been performed.\n');
+ const after=verifyAll({root,version:'0.2.0'}).parts.find(p=>p.id==='timelock')!;
+ assert.equal(after.reviews.find(r=>r.file==='reviews/partial.md')?.status,'current');assert.ok(after.reviewOwed);
 });

@@ -385,7 +385,7 @@ describe('knowledgeFor', () => {
   it('opens the root that dossier.json names, relative to the dossiers root', () => {
     const dossiers = join(scratch, 'project', 'dossiers');
     mkdirSync(dossiers, { recursive: true });
-    writeFileSync(join(dossiers, 'dossier.json'), JSON.stringify({ version: '0.1.0', knowledge: { root: relative(dossiers, FIXTURE) } }, null, 2));
+    writeFileSync(join(dossiers, 'dossier.json'), JSON.stringify({ version: '0.2.0', knowledge: { root: relative(dossiers, FIXTURE) } }, null, 2));
     const k = knowledgeFor(dossiers);
     assert.equal(k.kind, 'records');
     assert.equal(k.root, FIXTURE);
@@ -397,9 +397,9 @@ describe('knowledgeFor', () => {
     const bare = join(scratch, 'bare', 'dossiers');
     mkdirSync(bare, { recursive: true });
     assert.equal(knowledgeFor(bare).kind, 'none');
-    writeFileSync(join(bare, 'dossier.json'), JSON.stringify({ version: '0.1.0' }));
+    writeFileSync(join(bare, 'dossier.json'), JSON.stringify({ version: '0.2.0' }));
     assert.equal(knowledgeFor(bare).kind, 'none');
-    writeFileSync(join(bare, 'dossier.json'), JSON.stringify({ version: '0.1.0', knowledge: 'none' }));
+    writeFileSync(join(bare, 'dossier.json'), JSON.stringify({ version: '0.2.0', knowledge: 'none' }));
     assert.equal(knowledgeFor(bare).kind, 'none');
     assert.equal(knowledgeFor(join(scratch, 'missing')).kind, 'none');
   });

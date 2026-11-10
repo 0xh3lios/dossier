@@ -18,7 +18,7 @@ function fixture(t: TestContext) {
   t.after(() => rmSync(work, { recursive: true, force: true }));
   cpSync(join(plugin, 'qualification/fixture'), work, { recursive: true });
   const root = join(work, 'dossiers');
-  return { root, verify: () => verifyAll({ root, version: '0.1.0' }) };
+  return { root, verify: () => verifyAll({ root, version: '0.2.0' }) };
 }
 
 // This is an explicitly synthetic reader fixture, not a new solver execution.

@@ -1,6 +1,6 @@
 # Prose
 
-The [prose language specification](../../spec/language.md) owns the accepted forms and their meaning. Use it when authoring or interpreting passages. This reference is an index; it does not maintain another grammar.
+The [prose language specification](../../spec/language.md) owns the accepted forms and their meaning. Use it when authoring or interpreting passages. This reference is an index; it does not maintain another grammar. Prose is the formal specification. A dossier's [behaviors](../explanation/behaviors.md) explain it in words, and they are not written in these forms.
 
 | Input | Contract |
 | --- | --- |

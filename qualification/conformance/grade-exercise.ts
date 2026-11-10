@@ -29,8 +29,8 @@ export async function gradeExercise(evaluation: string) {
   else if (manifest.exercise === 'review') {
     const { gradeReview } = await import('./grade-review.ts');
     const dir = 'dossiers/compositions/control/reviews';
-    const reports = readdirSync(join(manifest.workspace, dir)).filter(n => n.endsWith('.md'));
-    assert.equal(reports.length, 1);
+    const reports = readdirSync(join(manifest.workspace, dir)).filter(n => n.endsWith('.md') && !Object.hasOwn(manifest.workspaceBefore, `${dir}/${n}`));
+    assert.equal(reports.length, 1, 'the exercise adds exactly one review beyond its frozen starting inventory');
     result = gradeReview(manifest.workspace, manifest.workspaceBefore, `${dir}/${reports[0]}`);
   } else {
     assert.ok(['compose-probe', 'refresh-decision'].includes(manifest.exercise), 'known exercise');

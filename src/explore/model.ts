@@ -12,8 +12,25 @@ import type { Expr, Value } from '../prose/expr.ts';
 import type { Backing } from '../prose/prose.ts';
 import type { Answer } from '../trials/answers.ts';
 import type { Meanings } from './meanings.ts';
+import type { BehaviorReport } from '../behaviors/report.ts';
+import { REPORT_FORMAT } from '../behaviors/formats.ts';
 
 type Analysis = PartAnalysis | CompositionAnalysis;
+export function behaviorReportOf(a: Analysis): BehaviorReport {
+  if (a.behaviors?.format !== REPORT_FORMAT) throw new Error(`${a.ref}: the explorer requires a current behavior report`);
+  return a.behaviors;
+}
+// The report as the page reads it: the report itself, with the text of the authored files it names,
+// the orientation, each behavior's explanation and each review's findings, read where they are kept.
+export function readerReport(a: Analysis) {
+  const report = behaviorReportOf(a), collection = a.behaviorCollection;
+  const bodyOf = (id: string) => collection?.behaviors.find(b => b.record.id === id)?.body ?? '';
+  return {
+    ...report, orientation: collection?.collection?.body ?? '',
+    behaviors: report.behaviors.map(b => ({ ...b, body: bodyOf(b.id) })),
+    reviews: { ...report.reviews, reviews: report.reviews.reviews.map(r => ({ ...r, body: a.reviews.find(x => x.file === r.file)?.body ?? '' })) },
+  };
+}
 const label = (x: Expr | null | undefined) => (x == null ? null : toLabel(x));
 const literal = (x: Expr | null | undefined): Value | null => (x == null ? null : x.t === 'lit' || x.t === 'int' || x.t === 'bool' ? x.v : 'name' in x ? x.name : toLabel(x));
 const withMeans = (notes: Note[], meanings: Meanings) => notes.map(n => ({ ...n, means: meanings.flag(n.name) }));
@@ -64,8 +81,8 @@ export function evidenceOf(a: Analysis) {
 export function rootModel(v: Verified, root: string, version: string, meanings: Meanings) {
   const compact = (a: PartAnalysis) => Object.fromEntries(Object.entries(a.marks).map(([k, m]) => [k, m.mark]));
   const dossiers = [
-    ...v.parts.map(a => ({ kind: 'part', id: a.id, title: a.title, tier: a.tier, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, inCompositions: compositionsOf(v, a.id), marks: compact(a) })),
-    ...v.compositions.map(a => ({ kind: 'composition', id: a.id, title: a.title, tier: 'composition', route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, members: a.wiring.members.map(m => m.part), marks: Object.fromEntries(a.cells.map(c => [`${c.property}/${c.scenario}`, cellWords(c)])) })),
+    ...v.parts.map(a => ({ kind: 'part', id: a.id, title: a.title, tier: a.tier, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, behaviorSummary: behaviorReportOf(a).summary, behaviorTitles: behaviorReportOf(a).behaviors.map(b => b.title), inCompositions: compositionsOf(v, a.id), marks: compact(a) })),
+    ...v.compositions.map(a => ({ kind: 'composition', id: a.id, title: a.title, tier: 'composition', route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, behaviorSummary: behaviorReportOf(a).summary, behaviorTitles: behaviorReportOf(a).behaviors.map(b => b.title), members: a.wiring.members.map(m => m.part), marks: Object.fromEntries(a.cells.map(c => [`${c.property}/${c.scenario}`, cellWords(c)])) })),
   ];
   const parts = v.parts.map(a => ({
     id: a.id, title: a.title, tier: a.tier,
@@ -79,22 +96,31 @@ export function rootModel(v: Verified, root: string, version: string, meanings: 
   return { root, version, route: v.route, tripwires: v.tripwires, dossiers, parts, compositions, actors, scenarios, legend: meanings.legend };
 }
 
-// Every address the palette reaches: dossiers, passages, doubts, walks, cells and answers.
+// Every address the palette reaches, each by its id: dossiers, passages, doubts, walks, cells,
+// answers, behaviors and claims.
 export function addresses(v: Verified) {
   const out: { group: string; label: string; sub: string; href: string }[] = [];
   const snip = (t: string) => String(t || '').replace(/\s+/g, ' ').slice(0, 90);
+  const counted = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
   for (const a of v.parts) {
     out.push({ group: 'Parts', label: a.id, sub: `${a.title} · ${a.tier}`, href: `#/part/${a.id}` });
-    for (const p of a.prose.passages.filter(p => !p.retired)) out.push({ group: 'Passages', label: `${a.id} ${p.id}`, sub: snip(p.text), href: `#/part/${a.id}?sel=${p.id}` });
-    for (const d of a.doubts) out.push({ group: 'Doubts', label: `${a.id} ${d.id}`, sub: `${d.status} · on ${d.on.join(' ')}`, href: `#/part/${a.id}?sel=${d.on[0] || ''}&tab=play&play=doubt:${d.id}:a:0` });
-    for (const w of a.ir.walks) out.push({ group: 'Walks', label: `${a.id} ${w.id}`, sub: w.name || '', href: `#/part/${a.id}?tab=play&play=walk:${w.id}:0` });
-    for (const x of a.answers) out.push({ group: 'Evidence', label: `${a.id} ${x.name}`, sub: x.entry?.established.trial || '', href: `#/part/${a.id}?tab=evidence&entry=${x.name}` });
+    for (const p of a.prose.passages.filter(p => !p.retired)) out.push({ group: 'Passages', label: `${a.id} ${p.id}`, sub: snip(p.text), href: `#/part/${a.id}?view=model&sel=${p.id}` });
+    for (const d of a.doubts) out.push({ group: 'Doubts', label: `${a.id} ${d.id}`, sub: `${d.status} · on ${d.on.join(' ')}`, href: `#/part/${a.id}?view=model&sel=${d.on[0] || ''}&tab=play&play=doubt:${d.id}:a:0` });
+    for (const w of a.ir.walks) out.push({ group: 'Walks', label: `${a.id} ${w.id}`, sub: w.name || '', href: `#/part/${a.id}?view=model&tab=play&play=walk:${w.id}:0` });
+    for (const x of a.answers) out.push({ group: 'Evidence', label: `${a.id} ${x.name}`, sub: x.entry?.established.trial || '', href: `#/part/${a.id}?view=model&tab=evidence&entry=${x.name}` });
   }
   for (const a of v.compositions) {
-    out.push({ group: 'Compositions', label: a.id, sub: `${a.title} · ${a.wiring.members.length} members`, href: `#/composition/${a.id}` });
-    for (const p of a.prose.passages.filter(p => !p.retired)) out.push({ group: 'Passages', label: `${a.id} ${p.id}`, sub: snip(p.text), href: `#/composition/${a.id}?tab=properties&sel=${p.id}` });
-    for (const c of a.cells) out.push({ group: 'Cells', label: `${a.id} ${c.property} ${c.scenario}`, sub: c.mark, href: `#/composition/${a.id}?cell=${c.property}:${c.scenario}` });
-    for (const x of a.answers) out.push({ group: 'Evidence', label: `${a.id} ${x.name}`, sub: x.entry?.established.trial || '', href: `#/composition/${a.id}?tab=evidence&entry=${x.name}` });
+    out.push({ group: 'Compositions', label: a.id, sub: `${a.title} · ${counted(a.wiring.members.length, 'member')}`, href: `#/composition/${a.id}` });
+    for (const p of a.prose.passages.filter(p => !p.retired)) out.push({ group: 'Passages', label: `${a.id} ${p.id}`, sub: snip(p.text), href: `#/composition/${a.id}?view=model&tab=properties&sel=${p.id}` });
+    for (const c of a.cells) out.push({ group: 'Cells', label: `${a.id} ${c.property} ${c.scenario}`, sub: c.mark, href: `#/composition/${a.id}?view=model&cell=${c.property}:${c.scenario}` });
+    for (const x of a.answers) out.push({ group: 'Evidence', label: `${a.id} ${x.name}`, sub: x.entry?.established.trial || '', href: `#/composition/${a.id}?view=model&tab=evidence&entry=${x.name}` });
+  }
+  for (const a of [...v.parts, ...v.compositions]) {
+    const base = `#/${a.kind}/${a.id}`;
+    for (const b of behaviorReportOf(a).behaviors) {
+      out.push({ group: 'Behaviors', label: `${a.id} ${b.id}`, sub: `${b.title} · ${counted(b.claims.length, 'claim')}`, href: `${base}?behavior=${encodeURIComponent(b.id)}` });
+      for (const c of b.claims) out.push({ group: 'Claims', label: `${a.id} ${c.key}`, sub: `${c.label} · ${snip(c.statement)}`, href: `${base}?behavior=${encodeURIComponent(b.id)}&claim=${encodeURIComponent(c.id)}` });
+    }
   }
   return out;
 }
@@ -111,7 +137,7 @@ export function partModel(v: Verified, a: PartAnalysis, meanings: Meanings) {
   for (const p of passages) { const last = sections.at(-1); if (last && last.name === p.section) last.passages.push(p); else sections.push({ name: p.section, passages: [p] }); }
   return {
     kind: 'part', id: a.id, title: a.title, tier: a.tier, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires,
-    reviewOwed: a.reviewOwed, inCompositions: compositionsOf(v, a.id), boundary: a.prose.boundary?.text || a.prose.lead.join(' '),
+    behaviors: readerReport(a), reviewOwed: a.reviewOwed, inCompositions: compositionsOf(v, a.id), boundary: a.prose.boundary?.text || a.prose.lead.join(' '),
     sections, marks,
     chart: {
       initial: ir.initial,
@@ -180,6 +206,7 @@ export function compositionModel(v: Verified, a: CompositionAnalysis, meanings: 
   const scenarioIds = [...new Set([...claimed, ...a.cells.map(c => c.scenario)])];
   return {
     kind: 'composition', id: a.id, title: a.title, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed,
+    behaviors: readerReport(a),
     members: a.wiring.members.map(m => ({ id: m.part, role: m.role, pins: m.pins })),
     wiring: a.wiring.wiring, free: a.wiring.free, closure: a.wiring.closure, closureMissing: a.closureMissing,
     // Why the wiring does not compose, as the composer says, for a composition whose graph is empty.
@@ -215,10 +242,15 @@ export function actorOfAction(actorIds: string[], senders: string[], chain: stri
 export function compositionTrace(v: Verified, a: CompositionAnalysis, property: string, scenario: string) {
   const cell = a.cells.find(c => c.property === property && c.scenario === scenario);
   if (!cell?.trace) return null;
+  const steps = compositionTraceSteps(v, a, cell.trace);
+  return { property, scenario, mark: cell.mark, reach: cell.reach?.text || null, accepted: cell.accepted, steps };
+}
+
+function compositionTraceSteps(v: Verified, a: CompositionAnalysis, trace: Answer['trace']) {
   const split = memberOfVariable(a.wiring.members.map(m => m.part));
   const actorOf = actorOfAction(a.composed.actors || [], a.composed.parts || [], v.actors.actors.find(x => x.kind === 'chain')?.id ?? null);
   let before: Record<string, Value> | null = null;
-  const steps = traceRows(cell.trace).map(r => {
+  const steps = traceRows(trace).map(r => {
     const values = r.values || {};
     const per: Record<string, Record<string, Value>> = {};
     for (const [k, val] of Object.entries(values)) { const [m, name] = split(k); if (m) (per[m] ||= {})[name] = val; }
@@ -228,5 +260,16 @@ export function compositionTrace(v: Verified, a: CompositionAnalysis, property: 
     if (r.values) before = values;
     return step;
   });
-  return { property, scenario, mark: cell.mark, reach: cell.reach?.text || null, accepted: cell.accepted, steps };
+  return steps;
+}
+
+export function compositionWalk(v: Verified, a: CompositionAnalysis, id: string, scenario: string) {
+  const walk = a.walks.find(w => w.id === id && w.scenario === scenario);
+  const read = walk?.entry ? a.answers.find(x => x.name === walk.entry) : null;
+  if (!walk || !read?.entry?.answer.trace) return null;
+  return {
+    id, scenario, mark: walk.mark, entry: read.name,
+    reach: read.entry.answer.reach?.text || null,
+    steps: compositionTraceSteps(v, a, read.entry.answer.trace),
+  };
 }

@@ -6,10 +6,11 @@
 // review. With --install, and only when verify passes and the observed marks equal
 // qualification/fixture/expected-marks.json, the output's dossiers/ replaces the fixture's, without
 // the local trial bundles, which Harbor does not commit. Nothing else ever writes to
-// qualification/fixture.
+// qualification/fixture's records. Reviews are not in the seed: a review binds its evidence entries,
+// which a rebuild writes afresh, so a rebuilt Harbor has none until independent reviewers write them.
 // Needs the toolchain (JAVA, TLA_TOOLS, ALLOY_JAR, APALACHE); see .local/toolchain/env.sh.
 //   node qualification/rebuild-fixture.mjs --out /tmp/harbor-current [--install]
-import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
+import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { basename, join, dirname, resolve, sep } from 'node:path';
@@ -60,7 +61,7 @@ export function prepareFixture({ out } = {}) {
   for (const [kind, ids] of [['parts', parts], ['compositions', compositions]]) for (const id of ids) {
     seed.push(`dossiers/${kind}/${id}/prose.md`);
     if (kind === 'compositions') seed.push(`dossiers/${kind}/${id}/wiring.md`);
-    for (const name of ['doubts.md', 'margin.md']) if (existsSync(join(fixture, 'dossiers', kind, id, name))) seed.push(`dossiers/${kind}/${id}/${name}`);
+    for (const name of ['doubts.md', 'margin.md', 'README.md', 'behaviors']) if (existsSync(join(fixture, 'dossiers', kind, id, name))) seed.push(`dossiers/${kind}/${id}/${name}`);
   }
   for (const path of seed) isolatedTree(join(fixture, path));
   const marker = JSON.parse(readFileSync(join(fixture, 'dossiers/dossier.json'), 'utf8'));
@@ -315,7 +316,7 @@ trial('vault', 'inductive-a1', { read: 'Inv_A1 is TypeOK and A1. Apalache shows 
 apalacheCall('vault', 'inductive-a2-strengthened', 'A2', 'unbounded; TypeOK, A1 and A2 inductive', 'With A1 in the invariant, free is at most debt, so a borrow keeps free within TypeOK while the ceiling guards debt.');
 trial('vault', 'inductive-a2-strengthened', { read: 'Inv_A2 now carries A1 as a lemma. The step and the base both pass; the entry keeps the earlier miscall as its previous answer.\n' });
 trial('vault', 'blunder-lostfree', { read: 'blunder: borrow raises debt and leaves free alone. After one borrow of 1, debt is 1 and free plus issued is 0; A1 fails. A1 is not hollow: it is tied to every move that touches debt.\n' });
-trial('vault', 'blunder-noceiling', { read: 'blunder: the ceiling no longer guards borrow. Two borrows of 2 reach debt 4 against ceiling 2; A2 fails.\n' });
+trial('vault', 'blunder-noceiling', { read: 'blunder: the ceiling no longer guards borrow. The counterexample borrows beyond the unchanged ceiling; A2 fails.\n' });
 trial('vault', 'replay', { read: 'grounded: W1, W2 and W3 replayed on the stand-in deployment end where the prose says, with the refused step reverting.\n' });
 
 // adapter
@@ -337,7 +338,7 @@ tlcCall('token', 'ordinary', null, 'amounts up to 2; supply up to 4', { TypeOK: 
 replayCall('token', 'the stand-in deployment', ['W1'], 'Mint, transfer and burn leave the supply at zero.');
 trial('token', 'chart');
 trial('token', 'ordinary');
-trial('token', 'blunder-uncapped', { read: 'blunder: no cap on mint. Three mints of 2 reach supply 6; A1 fails.\n' });
+trial('token', 'blunder-uncapped', { read: 'blunder: no cap on mint. A mint carries supply past the cap; A1 fails.\n' });
 trial('token', 'replay');
 
 // timelock
@@ -354,7 +355,7 @@ trial('timelock', 'witness-w2', { read: 'retelling: Idle/0 --schedule--> Schedul
 trial('timelock', 'witness-w1', { read: 'retelling: Idle/0 --schedule--> Scheduled/2 (M4) --tick--> Scheduled/1 (M2) --tick--> Scheduled/0 (M2) --execute--> Idle/0 (M5), change sent once.\ncovers: W1 by the matched trace.\n' });
 trial('timelock', 'inductive-a1');
 trial('timelock', 'blunder-early', { read: 'blunder: execute fires with remaining 2 and records early. A1 fails on the second step.\n' });
-trial('timelock', 'blunder-impatient', { read: 'blunder: ticks no longer wait for a due execute. Four ticks pass in Scheduled with remaining 0 and the counter exceeds 3; N1 fails. N1 is not hollow: it rests on G1.\n' });
+trial('timelock', 'blunder-impatient', { read: 'blunder: ticks no longer wait for a due execute. Four ticks pass in Scheduled: remaining falls from 2 to 1 to 0, then stays at 0 while the deadline counter exceeds 3; N1 fails. N1 is not hollow: it rests on G1.\n' });
 trial('timelock', 'blunder-unfair', { read: 'blunder: without fairness on the executor a scheduled plan can wait forever once its delay is out; O1 fails on a stuttering path. O1 is not hollow: it rests on G1.\n' });
 
 // breaker
@@ -379,7 +380,7 @@ witnessCall('oracle', 'W2', 'stale up to 3; price and last up to 4', 'stale pric
 trial('oracle', 'witness-w2', { read: 'retelling: Fresh/0/2/2 --tick--> Stale/1/2/2 (M1) --post-b 3--> Fresh/0/3/2 (M5), then post-a 3 is refused (R1).\ncovers: W2 by its own matched witness, including its final price and last.\n' });
 trial('oracle', 'witness-w1', { read: 'retelling: Fresh/0 --tick--> Stale/1 (M1) --post-a 2--> Fresh/0 (M4).\ncovers: W1 by the matched trace.\n' });
 trial('oracle', 'blunder-unrefreshed', { read: 'blunder: a post leaves stale at 1 while entering Fresh; A1 fails there.\n' });
-trial('oracle', 'blunder-idlelanes', { read: 'blunder: ticks no longer wait for a due post; two ticks in Stale take the counter past 1 and N1 fails.\n' });
+trial('oracle', 'blunder-idlelanes', { read: 'blunder: ticks no longer wait for a due post; the first tick enters Stale and the next raises its counter to 2, so N1 fails.\n' });
 trial('oracle', 'blunder-jumpy', { read: 'blunder: the only-when Givens no longer bind the posts. A post of 0 after a price of 2 leaves last at 2 and price at 0; A2 fails on the first post. A2 is not hollow: it rests on G3 and G4.\n' });
 
 // 6. Compositions: generate, then one trial per cell plus blunders.
@@ -433,7 +434,7 @@ write(join(sys('control'), 'model', 'extras.tla'), `\\* Lemma for the inductive 
 ask('compositions/control', 'a1-all-honest-strengthened', 'apalache', 'A1', { scenario: 'all-honest', inv: 'Inv_A1_lemma', reach: "unbounded; TypeOK, the Vault's conservation and A1 inductive", expect: { Inv_A1_lemma: 'holds' }, because: "execute is guarded by remaining 0 whoever Governance is, and the conservation lemma keeps the Vault's data within TypeOK." });
 trial('compositions/control', 'a1-all-honest-strengthened', { read: 'Inv_A1_lemma carries the Vault\'s conservation. The step and the base pass. The plain call\'s miscall was classified and the owner forgot it, and the publication of this answer removed it.\n' });
 for (const c of ['a1-governance-captured', 'a1-executor-offline', 'a2-all-honest', 'a2-governance-captured', 'o1-all-honest', 'n1-all-honest', 'n1-governance-captured']) trial('compositions/control', c);
-trial('compositions/control', 'n1-executor-offline', { read: 'retelling: schedule, tick, tick, tick, tick: the plan is ready after two ticks and nobody executes it; N1 fails as called. This cell is violated by design of the scenario: the executor is the public, and an offline public is what N1 is conditioned on.\n' });
+trial('compositions/control', 'n1-executor-offline', { read: 'retelling: schedule, tick, tick, tick, tick: the plan is ready after two ticks and nobody executes it; N1 fails as called. This cell is violated by design of the scenario: the executor is the public, and the offline scenario removes the prompt-execution assumption on which N1 relies.\n' });
 trial('compositions/control', 'blunder-early', { read: 'blunder: execute ignores the delay; early is set on the first execute and A1 fails.\n' });
 trial('compositions/control', 'blunder-unrelayed', { read: 'blunder: stop no longer reaches the Adapter. halted is set while the Adapter stays Open; A2 fails.\n' });
 trial('compositions/control', 'blunder-impatient', { read: 'blunder: ticks no longer wait for a due execute; four ticks in Scheduled take the counter past 3 and N1 fails. N1 is not hollow.\n' });
@@ -479,7 +480,7 @@ run(['decide', 'compositions/supply', 'accept', 'A1', 'A2', 'A3', '--', 'supply 
 run(['decide', 'compositions/upkeep', 'risk', 'N1', 'lanes-offline', '--', 'both lanes down is an incident, not a design flaw']);
 run(['decide', 'compositions/upkeep', 'risk', 'N1', 'lanes-down-two', '--', 'two blocks without a lane is the same incident, shorter; one block is what the lanes are sized for']);
 run(['decide', 'compositions/upkeep', 'risk', 'A1', 'lane-a-captured', '--', 'a captured lane posts any price; the band is what honest lanes promise, not what the Oracle enforces']);
-run(['decide', 'compositions/control', 'risk', 'N1', 'executor-offline', '--', 'an offline executor is the very thing N1 is conditioned on; governance re-plans']);
+run(['decide', 'compositions/control', 'risk', 'N1', 'executor-offline', '--', 'an offline executor removes the prompt-execution assumption; governance re-plans']);
 write(join(comp('oracle'), 'doubts.md'), `## D1
 on: M3
 assumed: a
@@ -505,6 +506,11 @@ return { output, verified: r.status, observed };
 // tripwire and its observed marks equal expected-marks.json, the reviewed golden. The golden is
 // never written here: a rebuild that moves a mark stops, and the move is reviewed by hand. The
 // swap goes through hidden siblings, so an interruption leaves the old dossiers/ or the new one.
+function removeEmptyFolders(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) if (entry.isDirectory()) removeEmptyFolders(join(dir, entry.name));
+  if (!readdirSync(dir).length) rmdirSync(dir);
+}
+
 export function installFixture({ output, verified, observed }) {
   if (verified !== 0) throw new Error(`verify exited ${verified} on the rebuild; the fixture is unchanged`);
   const expected = JSON.parse(readFileSync(join(fixture, 'expected-marks.json'), 'utf8'));
@@ -520,6 +526,8 @@ export function installFixture({ output, verified, observed }) {
   // The bundles in trials/ and .running/ stay with the rebuild: Harbor commits its answers, not its trials' bundles.
   const local = /[\\/](?:parts|compositions)[\\/][^\\/]+[\\/](?:trials|\.running)(?:[\\/]|$)/;
   cpSync(join(output, 'dossiers'), staging, { recursive: true, preserveTimestamps: true, filter: source => !local.test(source.slice(join(output, 'dossiers').length)) });
+  // A folder that its trials emptied, such as calls/, is not in a clone, so the fixture keeps none.
+  removeEmptyFolders(staging);
   renameSync(target, replaced);
   renameSync(staging, target);
   rmSync(replaced, { recursive: true, force: true });

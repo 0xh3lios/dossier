@@ -208,14 +208,14 @@
     }
   },
   "established": {
-    "trial": "2026-11-08-2337-blunder-cf93a1",
-    "at": "2026-11-08T23:37:55.527Z",
+    "trial": "2026-11-09-2229-blunder-cf93a1",
+    "at": "2026-11-09T22:29:44.590Z",
     "versions": {
-      "dossier": "0.1.1",
+      "dossier": "0.2.0",
       "node": "26.4.0",
       "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
     },
-    "bundle": "3dacd949d019d79977958b59e57821973d08c40cd37343e22da626e1c509fb62"
+    "bundle": "a1560b4b9ce803fe217f06dfb4423d84165d41d635f4e68740b2dbb1680b2821"
   },
   "previous": null,
   "narrowed": null,

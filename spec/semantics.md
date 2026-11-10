@@ -6,7 +6,7 @@ These terms define what Dossier represents and what its evidence means. The [pro
 
 The dossiers keep a checked account of how a system behaves: one abstraction per part, compositions that wire parts together around one concern, properties checked by solvers under scenarios, and every claim tied to the evidence that backs it and the assumptions it rests on.
 
-The readers are the owners. They read prose, pictures and a matrix. The ledger tells them which sentences a checker established, within what reach, under which scenario, resting on which guarantees, and which sentences are only words.
+Readers and agents start with the behavior collection, which introduces the system and explains its mechanisms through scoped claims and their evidence. From there they read the shared prose, pictures and a matrix. The ledger tells them which sentences a checker established, within what reach, under which scenario, resting on which guarantees, and which sentences are only words.
 
 ## The three roles
 
@@ -30,7 +30,11 @@ Use these exactly. Define any other word where it first appears, and nowhere els
 
 **Decision.** What an owner says about a dossier, recorded by `dossier decide` in `decisions.log` in their own words: begin, accept, reject, answer, risk, forget, retire. Each line is chained to the one before by a hash.
 
-**Prose.** The abstraction in words. The only place meaning lives. The chart, the models and the wiring cite it and add nothing to it.
+**Behavior.** One mechanism explained for a reader, `behaviors/<id>.md`, with claims that can each be judged by itself and the mappings proposed to their evidence. A dossier's behavior collection, in its `README.md`, introduces it and gives the reading order. [Behavior collections](behaviors.md) defines the files and a claim's standing.
+
+**Review.** An independent assessment of one behavior or of a whole dossier, `reviews/<name>.md`: its explanations, its mappings and their evidence, bound to the exact files that were read. It grants no solver outcome and no owner's decision.
+
+**Prose.** The shared formal abstraction in words. The chart, the models and the wiring cite it and add no formal meaning to it. Behaviors explain and question it, and may make claims about the source or a deployment, each with its own scope. A disagreement between a behavior and the prose has to be resolved explicitly.
 
 **Passage.** One paragraph with a stable id and one claim. The kinds: S State, E Event, M Move, R Refusal, A Always, O Once, N Within, G Given, W Walk, X Seam, K Guarantee, T Words only. An id is never renumbered and never reused.
 

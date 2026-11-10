@@ -162,7 +162,7 @@ export function CompositionView({ id, params }) {
           : !elements ? <Loading what="the graph" />
           : <Graph graphKey={g.key} bounds={{ width: g.l.width, height: g.l.height }} nodes={elements.nodes} edges={elements.edges} colorMode={colorMode} label={`Composition ${s.id}`}
               onSelect={nid => setParams({ sel: nid })}
-              onActivate={nid => { const n = g.model.nodes.find(x => x.id === nid); if (n?.kind === 'member') location.hash = `/c/${nid}?from=${s.id}`; else if (n?.kind === 'outside') location.hash = `/c/${nid.slice(4)}`; else setParams({ sel: nid }); }} />}
+              onActivate={nid => { const n = g.model.nodes.find(x => x.id === nid); if (n?.kind === 'member') location.hash = `/part/${nid}?from=${s.id}`; else if (n?.kind === 'outside') location.hash = `/part/${nid.slice(4)}`; else setParams({ sel: nid }); }} />}
       </div>
       <div className="side-r">
         <CompositionHead s={s} />

@@ -21,6 +21,9 @@ import { loadPart, loadComposition, compositionModuleText } from '../dossiers/lo
 import { readWiring } from '../dossiers/wiring.ts';
 import { actorId, findActor } from '../dossiers/actors.ts';
 import { listParts } from '../dossiers/root.ts';
+import { attachBehaviors } from '../behaviors/attach.ts';
+import type { BehaviorCollection, EvaluatedReview } from '../behaviors/types.ts';
+import type { BehaviorReport } from '../behaviors/report.ts';
 import type { Actor, ActorsModel } from '../dossiers/actors.ts';
 import type { AcceptedRisk, ChainBreak, DecisionLine, ForgottenAnswer, LatestDecision, OwnerState } from '../dossiers/decisions.ts';
 import type { Doubt } from '../dossiers/doubts.ts';
@@ -62,27 +65,6 @@ export interface AnswerRow {
 }
 // A part's seams, read by the parts that state the other side.
 export interface SeamSet { id: string; title: string; seams: SeamForm[] }
-// A review under reviews/, by file name, with the prose hash its first line names, `prose@<hash>`, as
-// the review skill writes it from the verify summary line (spec/review.md, REVIEW-OWED). A hash quoted
-// further down, in a copied verify line or a finding, names nothing.
-export interface ReviewRead { file: string; prose: string | null }
-function reviewsOf(dir: string): ReviewRead[] {
-  const folder = join(dir, 'reviews');
-  if (!existsSync(folder)) return [];
-  return readdirSync(folder).filter(n => n.endsWith('.md') && !n.startsWith('.')).sort().map(file => {
-    const m = readFileSync(join(folder, file), 'utf8').split('\n')[0].trim().match(/^prose@([0-9a-f]{6})$/);
-    return { file, prose: m ? m[1] : null };
-  });
-}
-// Whether a second read is owed (spec/review.md): the dossier holds marks a reviewer judges, and no
-// review names its current prose. Why, for the flag and the next step, or null.
-export function reviewOwedWhy(reviews: ReviewRead[], hashes: Record<string, string>, judged: boolean): string | null {
-  if (!judged) return null;
-  const now = proseHash(hashes);
-  if (reviews.some(r => r.prose === now)) return null;
-  const latest = reviews.at(-1);
-  return latest ? `reviews/${latest.file} read prose@${latest.prose || 'none named'}; now prose@${now}` : `no review at prose@${now}`;
-}
 // What both analyses add to the dossier as loaded.
 interface Analyzed {
   ref: string;
@@ -102,7 +84,9 @@ interface Analyzed {
   superseded: Record<string, string>;
   supersededRemovable: string[];
   // The reviews under reviews/, and why a second read is owed, or null (spec/review.md).
-  reviews: ReviewRead[];
+  reviews: EvaluatedReview[];
+  behaviorCollection?: BehaviorCollection;
+  behaviors?: BehaviorReport;
   reviewOwed: string | null;
   // What readEvidence found wrong in evidence/ outside any one entry (EvidenceRead.notes).
   evidenceNotes: Note[];
@@ -204,7 +188,7 @@ function rowsOf(answers: AnswerRead[], gone: Record<string, string>, superseded:
 
 // With `answers`, the answers are the ones given instead of the ones in evidence/: how a publication
 // asks which answers are superseded among the entries it is about to leave.
-export function analyzePart({ root, id, loaded, knowledge, pluginVersion, marker, actors, others = [], usedBy = [], parts, retired, reportActors = false, answers: given }: { root: string; id: string; loaded?: PartLoad | null; knowledge: LoadedKnowledge; pluginVersion?: string; marker?: Marker; actors?: ActorsModel | null; others?: SeamSet[]; usedBy?: string[]; parts?: string[]; retired?: string[]; reportActors?: boolean; answers?: AnswerRead[] }): PartAnalysis {
+export function analyzePart({ root, id, loaded, knowledge, pluginVersion, marker, actors, others = [], usedBy = [], parts, retired, reportActors = false, answers: given, includeBehaviors = true }: { root: string; id: string; loaded?: PartLoad | null; knowledge: LoadedKnowledge; pluginVersion?: string; marker?: Marker; actors?: ActorsModel | null; others?: SeamSet[]; usedBy?: string[]; parts?: string[]; retired?: string[]; reportActors?: boolean; answers?: AnswerRead[]; includeBehaviors?: boolean }): PartAnalysis {
   // Filled in below.
   const f = (loaded || loadPart(root, id)) as PartAnalysis;
   f.kind = 'part'; f.ref = `parts/${id}`; f.title = f.ir.name || id; f.pluginVersion = pluginVersion; f.marker = marker;
@@ -236,7 +220,7 @@ export function analyzePart({ root, id, loaded, knowledge, pluginVersion, marker
   const expected = JSON.stringify(ir, null, 2) + '\n';
   f.chart = { gaps: [] };
   f.chart.blunders = existsSync(join(dir, 'chart', 'blunders')) ? readdirSync(join(dir, 'chart', 'blunders')).filter(x => x.endsWith('.json')).sort() : [];
-  f.reviews = reviewsOf(dir);
+  f.reviews = [];
 
   // Models as they stand.
   f.modules = {}; f.cfgs = {}; f.als = {}; f.modelFiles = [];
@@ -332,7 +316,7 @@ export function analyzePart({ root, id, loaded, knowledge, pluginVersion, marker
     const now: Now = { snapshot: { passages: g.hashes, ir: g.irHash, records: g.pins, backing: backingNow }, file: path => g.files[path] ?? null };
     const cov = coversOf({ completed: g.completed, ir, hashes: g.hashes });
     g.marks = ir.ok ? marksOf({ ir, tier: g.tier, ...cov, now, forgotten: name => forgivenBy(g, name), counterpart: g.counterpart, backing: g.backing, openDoubtOn: g.openDoubtOn, owner: g.owner }) : {};
-    g.reviewOwed = reviewOwedWhy(g.reviews, g.hashes, Object.values(g.marks).some(m => ['checked', 'proved', 'backed'].includes(m.mark)));
+    g.reviewOwed = Object.values(g.marks).some(m => ['checked', 'proved', 'backed'].includes(m.mark)) ? 'no current dossier review with complete scoped basis and coverage' : null;
     ({ tripwires: g.tripwires, flags: g.flags } = partTripwires(g));
     const active = prose.passages.filter(p => !p.retired);
     const count = (pred: (p: Passage) => unknown) => active.filter(pred).length;
@@ -354,15 +338,16 @@ export function analyzePart({ root, id, loaded, knowledge, pluginVersion, marker
     answers, gone: goneAmong(answers, present), ground: a => groundOf(a, 'part', ir, f.hashes),
     conclusions: list => conclusionsOf(conclude({ ...f }, list)), forgiven: name => forgivenBy(f, name), bound: name => f.integrity.manifest?.evidence[name],
   }));
-  return conclude(f, answers);
+  const result = conclude(f, answers);
+  return includeBehaviors ? attachBehaviors(root, result, { [result.ref]: result }, knowledge) : result;
 }
 
-export function analyzeComposition({ root, id, parts, knowledge, pluginVersion, marker, answers: given }: { root: string; id: string; parts?: Record<string, PartLoad | null>; knowledge: LoadedKnowledge; pluginVersion?: string; marker?: Marker; answers?: AnswerRead[] }): CompositionAnalysis {
+export function analyzeComposition({ root, id, parts, knowledge, pluginVersion, marker, answers: given, includeBehaviors = true, memberAnalyses = {} }: { root: string; id: string; parts?: Record<string, PartLoad | null>; knowledge: LoadedKnowledge; pluginVersion?: string; marker?: Marker; answers?: AnswerRead[]; includeBehaviors?: boolean; memberAnalyses?: Record<string, PartAnalysis> }): CompositionAnalysis {
   // Filled in below.
   const f = loadComposition(root, id, { parts }) as CompositionAnalysis;
   f.kind = 'composition'; f.ref = `compositions/${id}`; f.title = f.prose.title || id; f.pluginVersion = pluginVersion; f.marker = marker;
   const { dir } = f;
-  f.reviews = reviewsOf(dir);
+  f.reviews = [];
   f.integrity = readIntegrity(dir, root);
   const { decisions, broken } = parseDecisions(f.integrity.decisions);
   f.decisions = decisions; f.broken = broken;
@@ -424,7 +409,7 @@ export function analyzeComposition({ root, id, parts, knowledge, pluginVersion, 
     ({ cells: g.cells, propertyHeld: g.propertyHeld } = cellsOf({ composition: g, completed: g.completed, snapshotNow, risks: g.risks, forgotten: name => forgivenBy(g, name) }));
     if (g.closureMissing.length) for (const c of g.cells) c.open = true;
     g.walks = walksOf({ prose: g.prose, completed: g.completed, snapshotNow });
-    g.reviewOwed = reviewOwedWhy(g.reviews, g.hashes, g.cells.some(c => ['checked', 'proved', 'violated', 'implied'].includes(c.mark)));
+    g.reviewOwed = g.cells.some(c => ['checked', 'proved', 'violated', 'implied'].includes(c.mark)) ? 'no current dossier review with complete scoped basis and coverage' : null;
     ({ tripwires: g.tripwires, flags: g.flags } = compositionTripwires(g));
     const of = (mark: string) => g.cells.filter(c => c.mark === mark).length;
     g.summary = { properties: g.prose.properties.length, scenarios: [...new Set(g.cells.map(c => c.scenario))].length, cells: g.cells.length, proved: of('proved'), checked: of('checked'), implied: of('implied'), violated: of('violated'), accepted: g.cells.filter(c => c.accepted).length, lapsed: of('lapsed'), pending: of('pending'), miscalled: of('miscalled'), held: Object.values(g.propertyHeld).filter(v => v === 'held').length, hollow: Object.values(g.propertyHeld).filter(v => v === 'hollow').length, open: g.closureMissing.length, doubtsOpen: g.doubts.filter(d => d.status !== 'closed').length };
@@ -437,7 +422,15 @@ export function analyzeComposition({ root, id, parts, knowledge, pluginVersion, 
     answers, gone: goneAmong(answers, present), ground: a => groundOf(a, 'composition', null, f.hashes),
     conclusions: list => conclusionsOf(conclude({ ...f }, list)), forgiven: name => forgivenBy(f, name), bound: name => f.integrity.manifest?.evidence[name],
   }));
-  return conclude(f, answers);
+  const result = conclude(f, answers);
+  if (!includeBehaviors) return result;
+  const analyses: Record<string, Analysis> = { [result.ref]: result };
+  // The members' analyses as verify already made them, or made here for a composition analyzed alone.
+  for (const member of result.wiring.members) if (result.memberLoads[member.part]) {
+    const child = memberAnalyses[`parts/${member.part}`] || analyzePart({ root, id: member.part, loaded: { ...result.memberLoads[member.part]! }, knowledge, actors: result.actors, includeBehaviors: false });
+    analyses[child.ref] = child;
+  }
+  return attachBehaviors(root, result, analyses, knowledge);
 }
 
 export function seamsOf(parts: Record<string, PartLoad>): SeamSet[] {

@@ -13,8 +13,12 @@ export interface CommandContext { root: string; version: string }
 export type Command = (command: string, args: string[], context: CommandContext) => Promise<number>;
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const modules = { verify: 'verify', render: 'render', recover: 'recover', draw: 'draw', scaffold: 'scaffold', trial: 'trial', call: 'call', show: 'show', blunder: 'blunder', recheck: 'recheck', decide: 'decide', where: 'where', import: 'import', doctor: 'doctor', setup: 'setup', explore: 'explore' } as Record<string, string>;
-const [command, ...args] = process.argv.slice(2);
+const modules = { 'review-basis': 'review-basis', verify: 'verify', render: 'render', recover: 'recover', draw: 'draw', scaffold: 'scaffold', trial: 'trial', call: 'call', show: 'show', blunder: 'blunder', recheck: 'recheck', decide: 'decide', where: 'where', import: 'import', doctor: 'doctor', setup: 'setup', explore: 'explore' } as Record<string, string>;
+// `--root <path>` may stand before the command as well as after it, as in `dossier --root x verify`.
+const argv = process.argv.slice(2), leading: string[] = [];
+while (argv[0] === '--root' && argv.length > 2) leading.push(...argv.splice(0, 2));
+const [command, ...rest] = argv;
+const args = [...rest, ...leading];
 
 const usage = `usage: dossier <command> [args] [--root <path>]
   verify [--brief] [--json] [<dossier>...]
@@ -45,6 +49,8 @@ const usage = `usage: dossier <command> [args] [--root <path>]
   decide <dossier> <verb> ... -- "<words>"
       record a decision: begin [charted|modeled|composition] | accept <ids> | reject <id>
       | answer D<n> a|b | risk <property> <scenario> | forget <entry>@<digest> | retire
+  review-basis <dossier> [--behavior <id>] [--json]
+      print the required review fingerprints and coverage checklist; records no assessment
   where <ref>
       what a part, composition, property, scenario, actor or record touches
   explore [--install] [--port <n>] [--limit <n>]
@@ -57,7 +63,7 @@ const usage = `usage: dossier <command> [args] [--root <path>]
       prepare dossiers/ here or under --dir, or the folder --root names, as a dossiers root
   version
       print the toolkit's version
-Every command takes --root <path> to name the dossiers root. Otherwise it uses DOSSIER_ROOT, or
+Every command takes --root <path>, before or after it, to name the dossiers root. Otherwise it uses DOSSIER_ROOT, or
 the nearest dossier.json, dossiers/dossier.json or .dossier-root at or above the working directory.
 <dossier> is a bare id, parts/<id> or compositions/<id>.`;
 

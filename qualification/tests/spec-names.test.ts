@@ -20,6 +20,9 @@ function sources(dir: string): string[] {
   });
 }
 const code = sources(join(plugin, 'src')).join('\n');
+// These fail() helpers emit named diagnostics. Other parsers use fail() for
+// message text that attachBehaviors reports under its own diagnostic name.
+const failures = ['src/models/compose.ts', 'src/dossiers/integrity.ts'].map(path => readFileSync(join(plugin, path), 'utf8')).join('\n');
 // The records' own problems carry their tripwire's name: integrity.json's as a problem's name, and
 // evidence/'s as a note's name or as the first argument of an entry's problem(), never in its detail.
 const records = ['src/dossiers/integrity.ts', 'src/trials/answers.ts'].map(path => readFileSync(join(plugin, path), 'utf8')).join('\n');
@@ -29,8 +32,9 @@ test('every tripwire spec/evidence.md names is one the code emits, and every one
   // The table's first column.
   const named = new Set(section('Tripwires').split('\n').filter(line => line.startsWith('| `')).flatMap(line => ticked(line.split(' | ')[0])));
   const emitted = new Set([
-    ...all(/\btrip\('([^']+)'/g), ...all(/\bfail\('([^']+)'/g), ...all(/\bname: '([^']+)'/g, records),
+    ...all(/\btrip\('([^']+)'/g), ...all(/\bfail\('([^']+)'/g, failures), ...all(/\bname: '([^']+)'/g, records),
     ...all(/\bproblem\('([^']+)'/g, records),
+    ...all(/\.tripwires\.push\(\{ name: '([^']+)'/g),
   ]);
   assert.deepEqual([...named].filter(n => !emitted.has(n)).sort(), [], 'named in the spec, emitted by no code');
   assert.deepEqual([...emitted].filter(n => !named.has(n)).sort(), [], 'emitted by the code, named in no spec row');
@@ -38,7 +42,7 @@ test('every tripwire spec/evidence.md names is one the code emits, and every one
 
 test('every flag spec/evidence.md names is one the code emits, and every one the code emits is named there', () => {
   const named = new Set(ticked(section('Flags')).filter(name => /^[a-zA-Z_ ]+$/.test(name)));
-  const emitted = new Set([...all(/\bflag\('([^']+)'/g), ...all(/'(doubt answer (?:stale|unbound))'/g)]);
+  const emitted = new Set([...all(/\bflag\('([^']+)'/g), ...all(/'(doubt answer (?:stale|unbound))'/g), ...all(/\.flags\.push\(\{ name: '([^']+)'/g)]);
   assert.deepEqual([...named].filter(n => !emitted.has(n)).sort(), [], 'named in the spec, emitted by no code');
   assert.deepEqual([...emitted].filter(n => !named.has(n)).sort(), [], 'emitted by the code, named in no spec paragraph');
 });

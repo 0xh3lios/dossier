@@ -4,7 +4,7 @@ Find out what happens in a situation that no claim is about yet, such as "what h
 
 ## Steps
 
-1. **Ask it.** Put the what-if as you would to a colleague.
+1. **Ask it.** Put the what-if as you would to a colleague. The agent states the question and its scope before it runs anything.
 
 2. **Read the chart first.** The chart's grid of states and events shows the events each state refuses, and for a what-if about one part it is often enough. The agent draws and reads it. Nothing is recorded.
 
@@ -14,13 +14,13 @@ Find out what happens in a situation that no claim is about yet, such as "what h
 
 5. **Read the answer as a walk.** The agent says who did what, in which block, and where the part ended up.
 
-6. **Decide whether to keep it.** The agent offers to keep what it found as a walk in the part or the composition, or as a property and a scenario in a composition. Not every what-if needs keeping. A walk you do not keep comes out of the prose, and verify flags its answer `question gone`. The next publication in that dossier, which ends any trial there whose answer is not refused, removes the answer's entry from `evidence/`.
+6. **Decide whether to keep it.** The agent offers to keep what it found as a walk in the part or the composition, or as a property and a scenario in a composition. It can also keep the question alone, as a hypothesis in a [behavior](write-a-behavior.md), which runs nothing and unsettles no passage. The claim then waits there until someone checks it. Not every what-if needs keeping. A walk you do not keep comes out of the prose, and verify flags its answer `question gone`. The next publication in that dossier, which ends any trial there whose answer is not refused, removes the answer's entry from `evidence/`, unless a behavior's mapping still depends on it.
 
 ## Try a proposed change
 
 A what-if about a change that has not been made, such as "what if the delay were one block?", is tried by writing the change into the prose and rerunning what it touches. Work on a branch of the repository, so the current record stays as it is.
 
-1. **Describe the change.** Say what would differ: a delay, a range, a new emergency path, a member added to a composition. The agent writes a change of behavior into the prose and updates the part's model to match, since a refined model is kept when the scaffold runs again. A new member or a change of wiring goes into the composition's `wiring.md`. A passage whose words change is unsettled again, and the answers that rested on what changed lapse. A passage, a walk or a file the change removes leaves the answers whose questions name it flagged `question gone`, until the next publication in that dossier removes their entries.
+1. **Describe the change.** Say what would differ: a delay, a range, a new emergency path, a member added to a composition. The agent writes the change into the prose and updates the part's model to match, since a refined model is kept when the scaffold runs again. A new member or a change of wiring goes into the composition's `wiring.md`. A passage whose words change is unsettled again, and the answers that rested on what changed lapse. A passage, a walk or a file the change removes leaves the answers whose questions name it flagged `question gone`, until the next publication in that dossier removes their entries.
 
 2. **Rerun what lapsed.** The agent writes new calls for the answers that lapsed and runs them, parts first and compositions after, under the scenarios the properties already claim. When the change raises a case no scenario covers, such as a key the new path trusts turning malicious, the agent proposes a scenario for it.
 

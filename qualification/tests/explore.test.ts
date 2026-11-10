@@ -5,7 +5,7 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { request } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -19,7 +19,7 @@ import { buildState, EXPLORER, install, sourceHash } from '../../src/explore/bui
 import { readMeanings } from '../../src/explore/meanings.ts';
 import { chartRun, compileWalkText, explainAt } from '../../src/explore/run.ts';
 import { NoFreePort, quiet, startExplorer } from '../../src/explore/server.ts';
-import { actorOfAction, memberOfVariable } from '../../src/explore/model.ts';
+import { actorOfAction, behaviorReportOf, memberOfVariable } from '../../src/explore/model.ts';
 import type { Explorer } from '../../src/explore/server.ts';
 import type { VerifyJson } from '../../src/commands/verify.ts';
 
@@ -34,11 +34,12 @@ function harborCopy(): string {
   for (const part of ['dossiers', 'knowledge', 'protocol', 'tools']) cpSync(join(pluginRoot, 'qualification', 'fixture', part), join(dir, part), { recursive: true });
   return dir;
 }
-// A GET, or another method, with the Host header as given.
+// A GET, or another method, with the Host header as given. Each request gets its own
+// connection: synchronous fixture reads between tests can outlast an idle pooled socket.
 function ask(url: string, { method = 'GET', host }: { method?: string; host?: string } = {}): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
-    const req = request({ hostname: u.hostname, port: u.port, path: u.pathname + u.search, method, headers: host ? { host } : {} }, res => {
+    const req = request({ hostname: u.hostname, port: u.port, path: u.pathname + u.search, method, agent: false, headers: host ? { host } : {} }, res => {
       let body = '';
       res.setEncoding('utf8').on('data', d => { body += d; }).on('end', () => resolve({ status: res.statusCode!, body }));
     });
@@ -72,6 +73,17 @@ function changeEvent(ex: Explorer, write: () => void): Promise<string> {
 }
 const get = async (ex: Explorer, path: string) => { const r = await ask(ex.url + path.slice(1)); assert.equal(r.status, 200, `${path}: ${r.body.slice(0, 200)}`); return JSON.parse(r.body); };
 
+// The page's report is verify's, with the text of the authored files it names read from them: the
+// orientation, each behavior's explanation and each review's findings.
+const withoutText = (report: any) => ({ ...Object.fromEntries(Object.entries(report).filter(([k]) => k !== 'orientation')), behaviors: report.behaviors.map(({ body: _, ...b }: { body: string }) => b), reviews: { ...report.reviews, reviews: report.reviews.reviews.map(({ body: _, ...r }: { body: string }) => r) } });
+const bodyOf = (file: string) => readFileSync(file, 'utf8').replace(/^```json\n[\s\S]*?\n```\r?\n?/, '');
+function assertText(report: any, ref: string) {
+  const dir = join(pluginRoot, 'qualification/fixture/dossiers', ref);
+  assert.equal(report.orientation, bodyOf(join(dir, 'README.md')), `${ref}: the orientation is the README's`);
+  for (const b of report.behaviors) assert.equal(b.body, bodyOf(join(dir, 'behaviors', `${b.id}.md`)), `${ref} ${b.id}`);
+  for (const r of report.reviews.reviews) assert.equal(r.body, bodyOf(join(dir, r.file)), `${ref} ${r.file}`);
+}
+
 describe('the explorer over a copy of Harbor', () => {
   let dir: string, root: string, ex: Explorer;
   before(async () => {
@@ -92,8 +104,11 @@ describe('the explorer over a copy of Harbor', () => {
       assert.deepEqual(d.marks, Object.fromEntries(Object.entries(c.marks).map(([k, m]) => [k, m.mark])), c.id);
       assert.deepEqual(d.route, c.route, c.id);
       assert.deepEqual(d.summary, c.summary, c.id);
+      assert.deepEqual(d.behaviorSummary, c.behaviors!.summary, `${c.id}: board counts come from the behavior report`);
       assert.deepEqual(d.flags.map((f: { name: string }) => f.name), c.flags.map(f => f.name), c.id);
       const model = await get(ex, `/api/part/${c.id}`);
+      assert.deepEqual(withoutText(model.behaviors), c.behaviors, `${c.id}: all claim facets match verify`);
+      assertText(model.behaviors, `parts/${c.id}`);
       assert.deepEqual(Object.fromEntries(Object.entries(model.marks).map(([k, m]) => [k, (m as { mark: string }).mark])), d.marks, c.id);
       assert.deepEqual(model.evidence.map((e: { entry: string }) => e.entry).sort(), c.answers.map(a => a.entry).sort(), `${c.id}: one row for each answer`);
     }
@@ -101,7 +116,43 @@ describe('the explorer over a copy of Harbor', () => {
       const model = await get(ex, `/api/composition/${s.id}`);
       assert.deepEqual(model.cells.map((c: { property: string; scenario: string; mark: string }) => `${c.property} ${c.scenario} ${c.mark}`), s.cells.map(c => `${c.property} ${c.scenario} ${c.mark}`), s.id);
       assert.deepEqual(model.route, s.route, s.id);
+      assert.deepEqual(withoutText(model.behaviors), s.behaviors, `${s.id}: composition claim facets match verify`);
+      assertText(model.behaviors, `compositions/${s.id}`);
     }
+  });
+
+  it('makes behaviors and claims addressable without hiding their model targets', async () => {
+    const addresses = await get(ex, '/api/addresses');
+    // The palette matches what an entry's label and sub say, so a behavior's id must be among them.
+    const behavior = addresses.find((x: { href: string }) => x.href === '#/part/timelock?behavior=cancel-plan');
+    assert.ok(behavior, 'the behavior has an address');
+    assert.match(`${behavior.label} ${behavior.sub}`, /\bcancel-plan\b/, 'and its id reaches it');
+    assert.ok(addresses.some((x: { href: string }) => x.href === '#/part/timelock?behavior=cancel-plan&claim=C3'));
+    assert.ok(addresses.some((x: { href: string }) => x.href === '#/composition/control?behavior=resolve-plan&claim=C1'));
+    assert.ok(addresses.filter((x: { group: string }) => ['Passages', 'Walks', 'Cells', 'Evidence'].includes(x.group)).every((x: { href: string }) => x.href.includes('view=model')));
+    const model = await get(ex, '/api/part/timelock');
+    const cancellation = model.behaviors.behaviors.find((b: { id: string }) => b.id === 'cancel-plan');
+    assert.equal(cancellation.claims.find((c: { id: string }) => c.id === 'C3').standing, 'hypothesis');
+    assert.ok(model.behaviors.coverage.unassociated.some((x: { id: string }) => x.id === 'M3'), 'unassociated model material remains accessible');
+  });
+
+  it('plays the recorded composition walk for its exact scenario', async () => {
+    const walk = await get(ex, '/api/composition/control/walk/W1/governance-captured');
+    assert.equal(walk.id, 'W1');
+    assert.equal(walk.scenario, 'governance-captured');
+    assert.equal(walk.mark, 'checked');
+    assert.equal(walk.steps[0].members.timelock.state, 'Idle');
+    assert.equal(walk.steps.at(-1).members.timelock.state, 'Idle');
+    assert.equal(walk.steps.at(-1).members.vault.ceiling, 3);
+    assert.ok(walk.steps.some((step: { actor: string | null }) => step.actor === 'governance'));
+    assert.equal((await ask(ex.url + 'api/composition/control/walk/W1/all-honest')).status, 404, 'a witness in one scenario supplies no walk in another');
+  });
+
+  it('requires the current report format instead of presenting the old layout', () => {
+    const analysis = verifyAll({ root, version, write: false }).parts[0];
+    assert.throws(() => behaviorReportOf({ ...analysis, behaviors: undefined }), /requires a current behavior report/);
+    const older = { ...analysis, behaviors: { ...analysis.behaviors, format: 'dossier-behavior-report@0.1.1' } } as unknown as typeof analysis;
+    assert.throws(() => behaviorReportOf(older), /requires a current behavior report/);
   });
 
   it('explains every mark and cell in the reference page\'s words', async () => {
@@ -117,6 +168,20 @@ describe('the explorer over a copy of Harbor', () => {
     const marks = readFileSync(join(pluginRoot, 'docs', 'reference', 'marks.md'), 'utf8');
     for (const row of page.legend.marks) assert.ok(marks.includes(`| \`${row.mark}\` | ${row.for} |`), `${row.mark} for ${row.for} is a row of the page`);
     assert.ok(page.legend.cells.length >= 8);
+  });
+
+  it('explains every claim standing, freshness and kind of evidence the engine reports in the reference page\'s words', async () => {
+    // The names are read from the engine's source, so a standing or a kind added there needs its row.
+    const page = await get(ex, '/api/root');
+    const source = (file: string) => readFileSync(join(pluginRoot, 'src', 'behaviors', file), 'utf8');
+    const quoted = (text: string) => [...text.matchAll(/'([^']+)'/g)].map(m => m[1]);
+    const labels = quoted(source('report.ts').match(/const labels: Record<ClaimStanding, string> = \{([\s\S]*?)\};/)![1]).filter(word => !['evidence-available'].includes(word));
+    const freshness = quoted(source('resolve.ts').match(/export type Freshness = ([^;]+);/)![1]);
+    const kinds = quoted(source('resolve.ts').match(/export type EvidenceKind = ([^;]+);/)![1]);
+    const named = (rows: { name: string; means: string }[]) => rows.filter(r => r.means).map(r => r.name).sort();
+    assert.deepEqual(named(page.legend.standing), [...new Set(labels)].sort());
+    assert.deepEqual(named(page.legend.freshness), freshness.sort());
+    assert.deepEqual(named(page.legend.evidence), kinds.sort());
   });
 
   it('decides each explored step and replays each walk with the chart\'s own code, as the checks do', async () => {
@@ -181,6 +246,7 @@ describe('the explorer over a copy of Harbor', () => {
       if (d.kind === 'composition') {
         const s = await get(ex, `/api/composition/${d.id}`);
         for (const c of s.cells.filter((x: { steps: number }) => x.steps)) await get(ex, `/api/composition/${d.id}/trace/${c.property}/${c.scenario}`);
+        for (const w of s.walks.filter((x: { mark: string }) => x.mark === 'checked')) await get(ex, `/api/composition/${d.id}/walk/${w.id}/${w.scenario}`);
         continue;
       }
       const c = await get(ex, `/api/part/${d.id}`);
@@ -473,5 +539,50 @@ describe('the explorer\'s names and folders', () => {
       const doctor = spawnSync(bin, ['doctor', '--root', root], { encoding: 'utf8', env });
       assert.match(doctor.stdout, /explorer: page not built: run dossier explore --install/);
     } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+});
+
+
+describe('behavior navigation', () => {
+  it('links scoped targets and authored explanations into the reader', async () => {
+    const navigation = await import(new URL('../../apps/explorer/src/behavior-navigation.js', import.meta.url).href);
+    assert.equal(navigation.targetHref({ kind: 'cell', dossier: 'compositions/control', property: 'N1', scenario: 'executor-offline' }), '#/composition/control?view=model&tab=cells&cell=N1%3Aexecutor-offline&scenario=executor-offline');
+    assert.equal(navigation.documentHref('cancel-plan.md', 'parts/timelock/behaviors/schedule-and-execute.md'), '#/part/timelock?behavior=cancel-plan');
+    assert.equal(navigation.documentHref('../../../compositions/control/README.md', 'parts/timelock/behaviors/complete-plan.md'), '#/composition/control');
+    assert.equal(navigation.documentHref('../prose.md', 'parts/timelock/behaviors/cancel-plan.md'), '#/part/timelock?view=model&tab=detail');
+    assert.equal(navigation.documentHref('javascript:alert(1)', 'parts/timelock/README.md'), null);
+    assert.equal(navigation.dossierHref('../outside'), null);
+    assert.equal(navigation.targetHref({ kind: 'knowledge', ref: 'timelock#property:execute-after-eta' }), null, 'a knowledge identity is not a made-up model address');
+    assert.equal(navigation.targetLabel({ kind: 'cell', dossier: 'compositions/control', property: 'N1', scenario: 'executor-offline' }, 'compositions/control'), 'N1 × executor-offline');
+    assert.equal(navigation.targetLabel({ kind: 'passage', dossier: 'parts/timelock', id: 'A1', side: 'model' }, 'compositions/control'), 'timelock A1', 'a member is named, the dossier itself is not');
+  });
+
+  it('reads the report in the format the engine writes', async () => {
+    const { REPORT_FORMAT } = await import('../../src/behaviors/formats.ts');
+    assert.ok(readFileSync(join(pluginRoot, 'apps/explorer/src/BehaviorView.jsx'), 'utf8').includes(`const REPORT = '${REPORT_FORMAT}';`), 'the page refuses any report but the engine\'s');
+  });
+
+  it('lists a dossier\'s behaviors once: the README\'s own reading-order list leaves the orientation', async () => {
+    const navigation = await import(new URL('../../apps/explorer/src/behavior-navigation.js', import.meta.url).href);
+    const text = ['# Control', '', 'Control connects four parts.', '', 'Read the behaviors in this order:', '', '1. [Delay a change](behaviors/delayed-change.md#delay): the delay under honest actors.', '2. [Halt exits](behaviors/emergency-halt.md)', '', 'The [wiring](wiring.md) connects them.', '', '- [Supply](../supply/README.md) owns the accounting.'].join('\n');
+    const split = navigation.splitOrientation(text, 'compositions/control', ['delayed-change', 'emergency-halt']);
+    assert.equal(split.text, ['# Control', '', 'Control connects four parts.', '', 'The [wiring](wiring.md) connects them.', '', '- [Supply](../supply/README.md) owns the accounting.'].join('\n'));
+    assert.deepEqual(split.blurbs, { 'delayed-change': 'the delay under honest actors' }, 'the words after a link become that behavior\'s subtitle');
+    const other = '- [Another dossier\'s behavior](../supply/behaviors/preserve-credit.md)';
+    assert.equal(navigation.splitOrientation(other, 'compositions/control', ['preserve-credit']).text, other, 'a list that names anything but this dossier\'s behaviors stays');
+    // Every Harbor collection: no behavior of the dossier is left as a list item, and nothing else is lost.
+    const dossiers = join(pluginRoot, 'qualification', 'fixture', 'dossiers');
+    for (const kind of ['parts', 'compositions']) for (const id of readdirSync(join(dossiers, kind))) {
+      const readme = join(dossiers, kind, id, 'README.md');
+      if (!existsSync(readme)) continue;
+      const [, header, body] = readFileSync(readme, 'utf8').match(/^```json\n([\s\S]*?)\n```\n([\s\S]*)$/)!;
+      const order: string[] = JSON.parse(header).behaviors;
+      const shown = navigation.splitOrientation(body, `${kind}/${id}`, order);
+      assert.doesNotMatch(shown.text, /^\s*(?:[-*]|\d+\.)\s+\[[^\]]+\]\(behaviors\//m, `${kind}/${id} still lists its behaviors`);
+      const kept = shown.text.split('\n').filter((line: string) => line.trim());
+      const lines = body.split('\n').filter(line => line.trim());
+      assert.ok(kept.every((line: string) => lines.includes(line)), `${kind}/${id}: the orientation adds nothing`);
+      assert.ok(lines.length - kept.length <= order.length + 1, `${kind}/${id}: only the list and its lead-in go`);
+    }
   });
 });

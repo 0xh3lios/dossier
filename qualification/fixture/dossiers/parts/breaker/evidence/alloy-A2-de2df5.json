@@ -79,14 +79,14 @@
     }
   },
   "established": {
-    "trial": "2026-11-08-2337-alloy-285659",
-    "at": "2026-11-08T23:37:37.667Z",
+    "trial": "2026-11-09-2229-alloy-285659",
+    "at": "2026-11-09T22:29:32.251Z",
     "versions": {
-      "dossier": "0.1.1",
+      "dossier": "0.2.0",
       "node": "26.4.0",
       "alloy": "org.alloytools.alloy.dist-6.2.0.jar"
     },
-    "bundle": "5ab04ab92214d51a87a106f11f0fc9214a9aec84ed3a78c067e0c597809cd7d8"
+    "bundle": "12fbf41004a609fd62859c7d015cb03e17c63ba936df6cde8ebc994b6b331056"
   },
   "previous": null,
   "narrowed": null,

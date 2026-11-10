@@ -2,24 +2,29 @@
 
 The pages are in three groups. Read an explanation to understand how Dossier thinks, follow a how-to guide to get a task done, and look things up in the reference. [Harbor](reference/harbor.md) is a complete worked example you can open and follow.
 
+Start with [Behaviors and claims](explanation/behaviors.md). A dossier is read from its behaviors, and what is established is reported claim by claim. Then [Read a dossier](how-to/read-a-dossier.md) follows one claim down to its evidence, and [What Dossier keeps](explanation/what-dossier-keeps.md) says who writes each file. The [behavior contract](../spec/behaviors.md) defines the format. [Implementation status](../spec/implementation.md) names the tools that read it, the guards on publication and the limits of each.
+
 The agent runs the `dossier` command the pages show, and you can ask it to run any of them. To run one in your own terminal, put the command on your PATH as [Commands and skills](reference/commands.md#the-command) shows.
 
 ## Explanation
 
 - [Why model the system](explanation/why-model-the-system.md): what checking a model of the whole system tells you, why an agent can keep one current, and the four conditions under which that work can be trusted
-- [What Dossier keeps](explanation/what-dossier-keeps.md): the account, who writes what in it, how the work divides, and what you are asked to do
-- [Parts, compositions and scenarios](explanation/parts-compositions-scenarios.md): the pieces a dossier is built from
+- [Behaviors and claims](explanation/behaviors.md): the account a dossier is read from, what rests on a claim, how a claim earns its standing, and what a person and an agent each do with one
+- [What Dossier keeps](explanation/what-dossier-keeps.md): who writes what in a dossier, how the work divides, and what you are asked to do
+- [Parts, compositions and scenarios](explanation/parts-compositions-scenarios.md): the pieces of the formal specification that claims map to
 - [Three kinds of tool](explanation/three-kinds-of-tool.md): why the chart, the solvers and the grounding are kept apart
-- [How a claim earns its mark](explanation/evidence.md): calls, one answer per question, planted bugs, lapse and the guards
-- [The limits of a mark](explanation/limits.md): what a mark does not establish
+- [How a mark is earned](explanation/evidence.md): calls, one answer per question, planted bugs, lapse and the guards, and what a mark gives a claim
+- [The limits of a mark](explanation/limits.md): what a mark and a claim's standing do not establish
 
 ## How-to guides
 
 - [Set up a repository](how-to/set-up-a-repository.md)
 - [Install the solvers](how-to/install-the-solvers.md)
+- [Read a dossier](how-to/read-a-dossier.md)
 - [Choose what to model first](how-to/choose-what-to-model.md)
 - [Start a part](how-to/start-a-part.md)
 - [Start a composition](how-to/start-a-composition.md)
+- [Write a behavior](how-to/write-a-behavior.md)
 - [Check a claim](how-to/check-a-claim.md)
 - [Explore a what-if](how-to/explore-a-what-if.md)
 - [Record a decision](how-to/record-a-decision.md)

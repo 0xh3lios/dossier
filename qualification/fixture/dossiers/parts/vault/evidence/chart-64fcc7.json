@@ -331,15 +331,15 @@
     }
   },
   "established": {
-    "trial": "2026-11-08-2336-chart-a57cb9",
-    "at": "2026-11-08T23:36:47.155Z",
+    "trial": "2026-11-09-2228-chart-a57cb9",
+    "at": "2026-11-09T22:28:39.379Z",
     "versions": {
-      "dossier": "0.1.1",
+      "dossier": "0.2.0",
       "node": "26.4.0",
       "xstate": "5.33.3",
       "@xstate/graph": "3.0.4"
     },
-    "bundle": "eb0f60e7a5fbf95577e5a36c57e455b63ed3c73af21359a7215adedc2e154e03"
+    "bundle": "e355fad442bd3a71e4448210e631045335d7da07dc968215fef8507d548c9c78"
   },
   "previous": null,
   "narrowed": null,

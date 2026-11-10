@@ -1,2 +1,2 @@
-2026-11-08T23:40:28Z accept S1@932f7987 E1@277c6691 E2@f6402f38 E3@ef202696 E4@f5a96bcd E5@bc5fa558 M1@5cafd080 M2@d7217020 M3@4c33377c M4@005fc9ee A1@a7ce3014 A2@a6767eb7 "the ledger as deployed: debt, free and issued, and the ceiling as the only limit" 00000000
-2026-11-08T23:40:29Z reject K4@d9ce0e5b "the ceiling is also lowered by a governance plan; say so" 88c02ee3
+2026-11-09T22:32:09Z accept S1@932f7987 E1@277c6691 E2@f6402f38 E3@ef202696 E4@f5a96bcd E5@bc5fa558 M1@5cafd080 M2@d7217020 M3@4c33377c M4@005fc9ee A1@a7ce3014 A2@a6767eb7 "the ledger as deployed: debt, free and issued, and the ceiling as the only limit" 00000000
+2026-11-09T22:32:09Z reject K4@d9ce0e5b "the ceiling is also lowered by a governance plan; say so" 0810e32d

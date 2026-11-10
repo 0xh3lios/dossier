@@ -5,6 +5,7 @@
 // command that refuses writes no model/ and no chart/. A malformed actors or scenarios file
 // trips once, however many dossiers read it.
 //   node --test qualification/tests/robustness.test.ts
+import { emptyCollection } from './collection-fixture.ts';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -57,7 +58,7 @@ interface Root { root: string; write: (path: string, text: string) => void; run:
 function makeRoot({ parts = {}, compositions = {} }: { parts?: Record<string, string>; compositions?: Record<string, { prose: string; members?: string[] }> } = {}): Root {
   const repo = mkdtempSync(join(tmpdir(), 'dossier-robustness-'));
   const root = join(repo, 'dossiers');
-  const write = (path: string, text: string) => { mkdirSync(dirname(join(root, path)), { recursive: true }); writeFileSync(join(root, path), text); };
+  const write = (path: string, text: string) => { mkdirSync(dirname(join(root, path)), { recursive: true }); writeFileSync(join(root, path), text); if (/^(parts|compositions)\/[^/]+\/prose\.md$/.test(path)) emptyCollection(dirname(join(root, path))); };
   write('dossier.json', JSON.stringify({ plugin: version, storage: 'integrity-v1' }, null, 2) + '\n');
   write('actors/actors.md', ACTORS);
   write('actors/scenarios.md', SCENARIOS);

@@ -174,14 +174,14 @@
     }
   },
   "established": {
-    "trial": "2026-11-08-2338-tlc-8ec46b",
-    "at": "2026-11-08T23:38:56.753Z",
+    "trial": "2026-11-09-2230-tlc-8ec46b",
+    "at": "2026-11-09T22:30:44.486Z",
     "versions": {
-      "dossier": "0.1.1",
+      "dossier": "0.2.0",
       "node": "26.4.0",
       "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
     },
-    "bundle": "d6fbe63adad078a6629028f835724040d33ac8bd52f08b5a1eed29fe42a358a4"
+    "bundle": "bf3242d6e23b8c565618dcf26f5d40d55c0721af2d633b88c67e4b87e57c4cc6"
   },
   "previous": null,
   "narrowed": null,

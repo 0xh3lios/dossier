@@ -8,7 +8,7 @@
     {
       "name": "dossier",
       "source": "./",
-      "description": "A toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the specification and the models, then runs the checks. TLC, Apalache and Alloy, not the agent, decide whether each property holds. You review the specification and decide what a counterexample means."
+      "description": "A toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the specification and the models, then runs the checks. TLC, Apalache and Alloy, not the agent, decide whether each property holds. You read the result from the agent's account of what the system does, written as behaviors, where each claim is tied to the evidence for and against it. You review the specification and decide what a counterexample means."
     }
   ]
 }

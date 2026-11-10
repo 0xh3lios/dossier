@@ -8,8 +8,9 @@ import { requireCurrent } from './integrity.ts';
 import { durableWrite, flushDirectory, publishDecisionLocked, writeIntegrity } from './publication.ts';
 import type { PublicationOptions } from './publication.ts';
 import type { NewDecision } from './decisions.ts';
+import { COLLECTION_FORMAT } from '../behaviors/formats.ts';
 
-export interface InitialInputs { 'prose.md': string; 'wiring.md'?: string; 'margin.md'?: string }
+export interface InitialInputs { 'prose.md': string; 'wiring.md'?: string; 'margin.md'?: string; 'README.md'?: string }
 
 // Unlike existsSync, this also observes a dangling link that must not be replaced.
 export function dossierPathExists(path: string): boolean {
@@ -25,7 +26,7 @@ export function initializeDossierLocked(
   const problem = idProblem(id);
   if (problem) throw new UsageError(problem);
   if (!inputs['prose.md'] || (kind === 'compositions' && !inputs['wiring.md'])) throw new UsageError('a fresh dossier needs its authored inputs');
-  if (Object.keys(inputs).some(name => !['prose.md', 'wiring.md', 'margin.md'].includes(name))) throw new UsageError('unsupported initial dossier input');
+  if (Object.keys(inputs).some(name => !['prose.md', 'wiring.md', 'margin.md', 'README.md'].includes(name))) throw new UsageError('unsupported initial dossier input');
   if (decision && decision.verb !== 'begin') throw new UsageError('a fresh dossier can only begin');
   const parent = join(root, kind), dir = join(parent, id);
   if (dossierPathExists(dir)) throw new UsageError(`${kind}/${id} exists; initialization cannot replace its authority`);
@@ -36,9 +37,11 @@ export function initializeDossierLocked(
   // A hidden sibling preserves dossierRoot()'s root inference while readers
   // ignore it. Interrupted candidates remain hidden; retry never adopts them.
   const staging = join(parent, `.initializing-${id}-${randomUUID()}`);
-  mkdirSync(staging, { mode: 0o700 });
+  mkdirSync(staging);
   options.boundary?.('initialization:staged');
   for (const [name, text] of Object.entries(inputs)) durableWrite(join(staging, name), text, options, `input:${name}`);
+  if (!inputs['README.md']) durableWrite(join(staging, 'README.md'), '```json\n' + JSON.stringify({ format: COLLECTION_FORMAT, behaviors: [] }, null, 2) + '\n```\n\n# ' + id + '\n\nThe behavior collection is empty. Describe the purpose, actors, usual flow and modeled boundary before adding claims.\n', options, 'input:README.md');
+  mkdirSync(join(staging, 'behaviors'));
   writeIntegrity(staging, { schema: 1, evidence: {}, decisionHead: null }, options);
   const line = decision ? publishDecisionLocked(staging, decision, options) : null;
   flushDirectory(staging); options.boundary?.('initialization:sealed');

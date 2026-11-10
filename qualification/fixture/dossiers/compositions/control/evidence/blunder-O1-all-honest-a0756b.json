@@ -66,29 +66,29 @@
       },
       {
         "index": 2,
-        "action": "Governance",
+        "action": "User",
         "values": {
           "vault_state": "\"Open\"",
           "timelock_sent_change": "0",
           "vault_free": "0",
-          "timelock_remaining": "2",
+          "timelock_remaining": "0",
           "adapter_live": "TRUE",
-          "adapter_held": "0",
+          "adapter_held": "1",
           "breaker_sent_halt": "0",
           "adapter_state": "\"Open\"",
-          "w1_at": "1",
+          "w1_at": "0",
           "vault_ceiling": "2",
           "breaker_halted": "FALSE",
           "vault_issued": "0",
-          "timelock_state": "\"Scheduled\"",
+          "timelock_state": "\"Idle\"",
           "adapter_sent_release": "0",
-          "adapter_sent_move": "0",
+          "adapter_sent_move": "1",
           "breaker_state": "\"Armed\"",
           "vault_debt": "0",
           "adapter_sent_burn": "0",
           "n1_ticks": "0",
           "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
+          "adapter_sent_mint": "1"
         }
       },
       {
@@ -98,24 +98,24 @@
           "vault_state": "\"Open\"",
           "timelock_sent_change": "0",
           "vault_free": "0",
-          "timelock_remaining": "2",
+          "timelock_remaining": "0",
           "adapter_live": "TRUE",
-          "adapter_held": "0",
+          "adapter_held": "1",
           "breaker_sent_halt": "0",
           "adapter_state": "\"Open\"",
           "w1_at": "0",
           "vault_ceiling": "2",
           "breaker_halted": "FALSE",
           "vault_issued": "0",
-          "timelock_state": "\"Scheduled\"",
+          "timelock_state": "\"Idle\"",
           "adapter_sent_release": "1",
-          "adapter_sent_move": "0",
+          "adapter_sent_move": "1",
           "breaker_state": "\"Armed\"",
           "vault_debt": "0",
           "adapter_sent_burn": "1",
           "n1_ticks": "0",
           "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
+          "adapter_sent_mint": "1"
         }
       },
       {
@@ -124,25 +124,25 @@
         "values": {
           "vault_state": "\"Open\"",
           "timelock_sent_change": "0",
-          "vault_free": "2",
-          "timelock_remaining": "2",
+          "vault_free": "0",
+          "timelock_remaining": "0",
           "adapter_live": "TRUE",
-          "adapter_held": "0",
+          "adapter_held": "1",
           "breaker_sent_halt": "0",
           "adapter_state": "\"Open\"",
           "w1_at": "0",
           "vault_ceiling": "2",
           "breaker_halted": "FALSE",
           "vault_issued": "0",
-          "timelock_state": "\"Scheduled\"",
-          "adapter_sent_release": "1",
-          "adapter_sent_move": "0",
+          "timelock_state": "\"Idle\"",
+          "adapter_sent_release": "2",
+          "adapter_sent_move": "1",
           "breaker_state": "\"Armed\"",
-          "vault_debt": "2",
-          "adapter_sent_burn": "1",
+          "vault_debt": "0",
+          "adapter_sent_burn": "2",
           "n1_ticks": "0",
           "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
+          "adapter_sent_mint": "1"
         }
       },
       {
@@ -151,137 +151,29 @@
         "values": {
           "vault_state": "\"Open\"",
           "timelock_sent_change": "0",
-          "vault_free": "2",
-          "timelock_remaining": "2",
+          "vault_free": "0",
+          "timelock_remaining": "0",
           "adapter_live": "TRUE",
-          "adapter_held": "0",
+          "adapter_held": "1",
           "breaker_sent_halt": "0",
           "adapter_state": "\"Open\"",
           "w1_at": "0",
           "vault_ceiling": "2",
           "breaker_halted": "FALSE",
           "vault_issued": "0",
-          "timelock_state": "\"Scheduled\"",
-          "adapter_sent_release": "2",
-          "adapter_sent_move": "0",
+          "timelock_state": "\"Idle\"",
+          "adapter_sent_release": "3",
+          "adapter_sent_move": "1",
           "breaker_state": "\"Armed\"",
-          "vault_debt": "2",
-          "adapter_sent_burn": "2",
+          "vault_debt": "0",
+          "adapter_sent_burn": "3",
           "n1_ticks": "0",
           "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
+          "adapter_sent_mint": "1"
         }
       },
       {
         "index": 6,
-        "action": "TickStep",
-        "values": {
-          "vault_state": "\"Open\"",
-          "timelock_sent_change": "0",
-          "vault_free": "2",
-          "timelock_remaining": "1",
-          "adapter_live": "TRUE",
-          "adapter_held": "0",
-          "breaker_sent_halt": "0",
-          "adapter_state": "\"Open\"",
-          "w1_at": "0",
-          "vault_ceiling": "2",
-          "breaker_halted": "FALSE",
-          "vault_issued": "0",
-          "timelock_state": "\"Scheduled\"",
-          "adapter_sent_release": "2",
-          "adapter_sent_move": "0",
-          "breaker_state": "\"Armed\"",
-          "vault_debt": "2",
-          "adapter_sent_burn": "2",
-          "n1_ticks": "1",
-          "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
-        }
-      },
-      {
-        "index": 7,
-        "action": "TickStep",
-        "values": {
-          "vault_state": "\"Open\"",
-          "timelock_sent_change": "0",
-          "vault_free": "2",
-          "timelock_remaining": "0",
-          "adapter_live": "TRUE",
-          "adapter_held": "0",
-          "breaker_sent_halt": "0",
-          "adapter_state": "\"Open\"",
-          "w1_at": "0",
-          "vault_ceiling": "2",
-          "breaker_halted": "FALSE",
-          "vault_issued": "0",
-          "timelock_state": "\"Scheduled\"",
-          "adapter_sent_release": "2",
-          "adapter_sent_move": "0",
-          "breaker_state": "\"Armed\"",
-          "vault_debt": "2",
-          "adapter_sent_burn": "2",
-          "n1_ticks": "2",
-          "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
-        }
-      },
-      {
-        "index": 8,
-        "action": "vault_M3_Move",
-        "values": {
-          "vault_state": "\"Open\"",
-          "timelock_sent_change": "0",
-          "vault_free": "0",
-          "timelock_remaining": "0",
-          "adapter_live": "TRUE",
-          "adapter_held": "0",
-          "breaker_sent_halt": "0",
-          "adapter_state": "\"Open\"",
-          "w1_at": "0",
-          "vault_ceiling": "2",
-          "breaker_halted": "FALSE",
-          "vault_issued": "2",
-          "timelock_state": "\"Scheduled\"",
-          "adapter_sent_release": "2",
-          "adapter_sent_move": "0",
-          "breaker_state": "\"Armed\"",
-          "vault_debt": "2",
-          "adapter_sent_burn": "2",
-          "n1_ticks": "2",
-          "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
-        }
-      },
-      {
-        "index": 9,
-        "action": "User",
-        "values": {
-          "vault_state": "\"Open\"",
-          "timelock_sent_change": "0",
-          "vault_free": "0",
-          "timelock_remaining": "0",
-          "adapter_live": "TRUE",
-          "adapter_held": "0",
-          "breaker_sent_halt": "0",
-          "adapter_state": "\"Open\"",
-          "w1_at": "0",
-          "vault_ceiling": "2",
-          "breaker_halted": "FALSE",
-          "vault_issued": "2",
-          "timelock_state": "\"Scheduled\"",
-          "adapter_sent_release": "3",
-          "adapter_sent_move": "0",
-          "breaker_state": "\"Armed\"",
-          "vault_debt": "2",
-          "adapter_sent_burn": "3",
-          "n1_ticks": "2",
-          "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
-        }
-      },
-      {
-        "index": 10,
         "action": "Governance",
         "values": {
           "vault_state": "\"Open\"",
@@ -289,27 +181,108 @@
           "vault_free": "0",
           "timelock_remaining": "0",
           "adapter_live": "FALSE",
+          "adapter_held": "1",
+          "breaker_sent_halt": "1",
+          "adapter_state": "\"Halted\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "breaker_halted": "TRUE",
+          "vault_issued": "0",
+          "timelock_state": "\"Idle\"",
+          "adapter_sent_release": "3",
+          "adapter_sent_move": "1",
+          "breaker_state": "\"Spent\"",
+          "vault_debt": "0",
+          "adapter_sent_burn": "3",
+          "n1_ticks": "0",
+          "timelock_early": "FALSE",
+          "adapter_sent_mint": "1"
+        }
+      },
+      {
+        "index": 7,
+        "action": "Governance",
+        "values": {
+          "vault_state": "\"Open\"",
+          "timelock_sent_change": "0",
+          "vault_free": "0",
+          "timelock_remaining": "2",
+          "adapter_live": "FALSE",
+          "adapter_held": "1",
+          "breaker_sent_halt": "1",
+          "adapter_state": "\"Halted\"",
+          "w1_at": "1",
+          "vault_ceiling": "2",
+          "breaker_halted": "TRUE",
+          "vault_issued": "0",
+          "timelock_state": "\"Scheduled\"",
+          "adapter_sent_release": "3",
+          "adapter_sent_move": "1",
+          "breaker_state": "\"Spent\"",
+          "vault_debt": "0",
+          "adapter_sent_burn": "3",
+          "n1_ticks": "0",
+          "timelock_early": "FALSE",
+          "adapter_sent_mint": "1"
+        }
+      },
+      {
+        "index": 8,
+        "action": "User",
+        "values": {
+          "vault_state": "\"Open\"",
+          "timelock_sent_change": "0",
+          "vault_free": "0",
+          "timelock_remaining": "2",
+          "adapter_live": "FALSE",
           "adapter_held": "0",
           "breaker_sent_halt": "1",
           "adapter_state": "\"Halted\"",
           "w1_at": "0",
           "vault_ceiling": "2",
           "breaker_halted": "TRUE",
-          "vault_issued": "2",
+          "vault_issued": "0",
           "timelock_state": "\"Scheduled\"",
-          "adapter_sent_release": "3",
-          "adapter_sent_move": "0",
+          "adapter_sent_release": "4",
+          "adapter_sent_move": "1",
           "breaker_state": "\"Spent\"",
-          "vault_debt": "2",
-          "adapter_sent_burn": "3",
-          "n1_ticks": "2",
+          "vault_debt": "0",
+          "adapter_sent_burn": "4",
+          "n1_ticks": "0",
           "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
+          "adapter_sent_mint": "1"
         }
       },
       {
-        "index": 11,
-        "action": "User",
+        "index": 9,
+        "action": "TickStep",
+        "values": {
+          "vault_state": "\"Open\"",
+          "timelock_sent_change": "0",
+          "vault_free": "0",
+          "timelock_remaining": "1",
+          "adapter_live": "FALSE",
+          "adapter_held": "0",
+          "breaker_sent_halt": "1",
+          "adapter_state": "\"Halted\"",
+          "w1_at": "0",
+          "vault_ceiling": "2",
+          "breaker_halted": "TRUE",
+          "vault_issued": "0",
+          "timelock_state": "\"Scheduled\"",
+          "adapter_sent_release": "4",
+          "adapter_sent_move": "1",
+          "breaker_state": "\"Spent\"",
+          "vault_debt": "0",
+          "adapter_sent_burn": "4",
+          "n1_ticks": "1",
+          "timelock_early": "FALSE",
+          "adapter_sent_mint": "1"
+        }
+      },
+      {
+        "index": 10,
+        "action": "TickStep",
         "values": {
           "vault_state": "\"Open\"",
           "timelock_sent_change": "0",
@@ -322,80 +295,52 @@
           "w1_at": "0",
           "vault_ceiling": "2",
           "breaker_halted": "TRUE",
-          "vault_issued": "2",
-          "timelock_state": "\"Scheduled\"",
-          "adapter_sent_release": "4",
-          "adapter_sent_move": "0",
-          "breaker_state": "\"Spent\"",
-          "vault_debt": "2",
-          "adapter_sent_burn": "4",
-          "n1_ticks": "2",
-          "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
-        }
-      },
-      {
-        "index": 12,
-        "action": "vault_M4_Release",
-        "values": {
-          "vault_state": "\"Open\"",
-          "timelock_sent_change": "0",
-          "vault_free": "2",
-          "timelock_remaining": "0",
-          "adapter_live": "FALSE",
-          "adapter_held": "0",
-          "breaker_sent_halt": "1",
-          "adapter_state": "\"Halted\"",
-          "w1_at": "0",
-          "vault_ceiling": "2",
-          "breaker_halted": "TRUE",
           "vault_issued": "0",
           "timelock_state": "\"Scheduled\"",
           "adapter_sent_release": "4",
-          "adapter_sent_move": "0",
+          "adapter_sent_move": "1",
           "breaker_state": "\"Spent\"",
-          "vault_debt": "2",
+          "vault_debt": "0",
           "adapter_sent_burn": "4",
           "n1_ticks": "2",
           "timelock_early": "FALSE",
-          "adapter_sent_mint": "0"
+          "adapter_sent_mint": "1"
         }
       },
       {
-        "index": 13,
-        "backTo": 11,
-        "action": "vault_M3_Move"
+        "index": 11,
+        "stuttering": true
       }
     ],
     "states": {
-      "generated": 323296,
-      "distinct": 29387,
-      "queued": 5263
+      "generated": 328239,
+      "distinct": 29891,
+      "queued": 5438
     },
     "actions": {
       "vault_M3_Move": {
-        "distinct": 9291,
-        "generated": 48538
+        "distinct": 9518,
+        "generated": 49352
       },
       "vault_M4_Release": {
         "distinct": 0,
-        "generated": 44821
+        "generated": 45448
       },
       "Governance": {
-        "distinct": 4536,
-        "generated": 41769
+        "distinct": 4622,
+        "generated": 42369
       },
       "Public": {
-        "distinct": 1951,
-        "generated": 3971
+        "distinct": 1954,
+        "generated": 3969
       },
       "User": {
-        "distinct": 8386,
-        "generated": 199471
+        "distinct": 8527,
+        "generated": 202538
       },
       "TickStep": {
-        "distinct": 5222,
-        "generated": 23013
+        "distinct": 5269,
+        "generated": 23377
       }
     },
     "init": {
@@ -503,14 +448,14 @@
     }
   },
   "established": {
-    "trial": "2026-11-08-2340-blunder-dc9931",
-    "at": "2026-11-08T23:40:04.185Z",
+    "trial": "2026-11-09-2231-blunder-dc9931",
+    "at": "2026-11-09T22:31:43.360Z",
     "versions": {
-      "dossier": "0.1.1",
+      "dossier": "0.2.0",
       "node": "26.4.0",
       "tlc": "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"
     },
-    "bundle": "13bbc8e5f601e0490cddad3fb5b6c3e3cdacc79d755c6d32719d8218e2816c0b"
+    "bundle": "f7ac552ba8d355629b4ef1f1d04129a43430ea894b4b83c4fb03fe69d5048388"
   },
   "previous": null,
   "narrowed": null,

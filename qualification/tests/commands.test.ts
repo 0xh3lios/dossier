@@ -1,3 +1,4 @@
+import { emptyCollection } from './collection-fixture.ts';
 // Every command end to end, each test in its own temporary repository:
 // setup and doctor, decide, draw, scaffold, trial (chart trials need no Java),
 // recheck (on a copy of Harbor; the solver-backed cases skip without the toolchain),
@@ -118,6 +119,7 @@ function initializeEmptyDossier(root: string, dir: string) {
   // Fixture initialization only: never re-anchor an existing record or corruption.
   const existed = existsSync(dir);
   mkdirSync(dir, { recursive: true });
+  emptyCollection(dir);
   if (!existed && JSON.parse(read(join(root, 'dossier.json'))).storage === 'integrity-v1') {
     writeFileSync(join(dir, 'integrity.json'), JSON.stringify({ schema: 1, evidence: {}, decisionHead: null }) + '\n');
   }
@@ -240,14 +242,14 @@ describe('setup', () => {
     assert.ok([0, 1].includes(setup(['--knowledge', knowledge]).status!));
     writeFileSync(join(dossiers(), 'README.md'), '# Mine\n');
     writeFileSync(join(dossiers(), '.gitignore'), '/_scratch/\n');
-    writeFileSync(join(dossiers(), 'dossier.json'), JSON.stringify({ ...marker(), setup: '2020-01-01', plugin: '0.0.1' }, null, 2) + '\n');
+    writeFileSync(join(dossiers(), 'dossier.json'), JSON.stringify({ ...marker(), setup: '2020-01-01', updated: '2020-01-01' }, null, 2) + '\n');
     const r = setup([]);
     for (const line of ['kept dossiers/', 'rewrote dossiers/dossier.json', 'kept dossiers/README.md', 'kept dossiers/package.json', 'kept dossiers/.gitignore', 'kept dossiers/actors/actors.md', 'kept dossiers/actors/scenarios.md']) assert.ok(r.stdout.includes(`${line}\n`), line);
     assert.ok(!r.stdout.includes('created dossiers/'), 'nothing is created twice');
     assert.equal(read(join(dossiers(), 'README.md')), '# Mine\n');
     assert.equal(read(join(dossiers(), '.gitignore')), '/_scratch/\n', "a team's own ignore file is kept as it is, with no line put back");
     const m = marker();
-    assert.equal(m.plugin, version, 'the plugin version is refreshed');
+    assert.equal(m.plugin, version, 'the current plugin version is kept');
     assert.equal(m.setup, '2020-01-01', 'the setup date is kept');
     assert.equal(m.updated, today);
     assert.equal(resolve(dossiers(), m.knowledge!.root), knowledge, 'the knowledge root survives a run without --knowledge');
@@ -1745,11 +1747,16 @@ describe('verify', () => {
     assert.equal(r.run(['draw', 'bell', '--brief']).status, 0);
     writeCall(r.root, 'bell', 'chart.md', CHART_CALL);
     assert.equal(r.run(['trial', 'bell', 'chart.md'], { env: NO_TOOLCHAIN }).status, 0);
-    // With its passages checked, the Bell owes a second read until a review names its prose.
+    // The empty test collection still needs a scoped review of its formal account.
     assert.equal(partOf(verifyJson(r.run), 'bell').route.pass, 'Review');
-    const hash = r.run(['verify', 'bell']).stdout.match(/^Bell: .* · prose@([0-9a-f]{6})$/m)![1];
+    const basis = r.run(['review-basis', 'bell', '--json']);
+    assert.equal(basis.status, 0, basis.out);
+    const input = JSON.parse(basis.stdout);
+    assert.deepEqual(input.issues, []);
+    const review = { format: 'dossier-review@0.2.0', subject: input.subject, basis: input.basis,
+      coverage: { examined: input.coverageItems, unexamined: [] }, replaces: [], assessments: [] };
     mkdirSync(join(r.root, 'parts', 'bell', 'reviews'), { recursive: true });
-    writeFileSync(join(r.root, 'parts', 'bell', 'reviews', '2026-11-07-review.md'), `prose@${hash}\n\nNo findings.\n`);
+    writeFileSync(join(r.root, 'parts', 'bell', 'reviews', '2026-11-09-review.md'), `\`\`\`json\n${JSON.stringify(review)}\n\`\`\`\n\n# Test review\n\nSynthetic examination of this empty collection and its finite chart.\n`);
     assert.equal(partOf(verifyJson(r.run), 'bell').route.pass, 'Report');
     const brief = r.run(['verify', '--brief']);
     assert.equal(brief.status, 0, brief.out);
@@ -1761,7 +1768,7 @@ describe('verify', () => {
 
   it('trips malformed marker on a dossier.json that does not parse, at the root', () => {
     writePart(r.root, 'gate', gate());
-    writeFileSync(join(r.root, 'dossier.json'), '{ "plugin": "0.1.0", }\n');
+    writeFileSync(join(r.root, 'dossier.json'), '{ "plugin": "0.2.0", }\n');
     const v = r.run(['verify']);
     assert.equal(v.status, 1, v.out);
     const first = lines(v.stdout)[0];

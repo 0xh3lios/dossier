@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "dossier",
-  "version": "0.1.1",
-  "description": "A toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the specification and the models, then runs the checks. TLC, Apalache and Alloy, not the agent, decide whether each property holds. You review the specification and decide what a counterexample means.",
+  "version": "0.2.0",
+  "description": "A toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the specification and the models, then runs the checks. TLC, Apalache and Alloy, not the agent, decide whether each property holds. You read the result from the agent's account of what the system does, written as behaviors, where each claim is tied to the evidence for and against it. You review the specification and decide what a counterexample means.",
   "homepage": "https://github.com/0xh3lios/dossier",
   "repository": "https://github.com/0xh3lios/dossier",
   "license": "CC0-1.0",
@@ -22,7 +22,7 @@
       "interface": {
         "displayName": "Dossier",
         "shortDescription": "Model a system, check it with formal methods, keep it current",
-        "longDescription": "A toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the specification and the models, then runs the checks. TLC, Apalache and Alloy, not the agent, decide whether each property holds. You review the specification and decide what a counterexample means.",
+        "longDescription": "A toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the specification and the models, then runs the checks. TLC, Apalache and Alloy, not the agent, decide whether each property holds. You read the result from the agent's account of what the system does, written as behaviors, where each claim is tied to the evidence for and against it. You review the specification and decide what a counterexample means.",
         "category": "Developer Tools",
         "capabilities": [
           "Read",

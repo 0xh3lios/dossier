@@ -9,7 +9,7 @@ import { extname, join, resolve } from 'node:path';
 import { verifyAll } from '../commands/verify.ts';
 import { readMarker } from '../dossiers/root.ts';
 import { readMeanings } from './meanings.ts';
-import { addresses, partModel, partTrace, rootModel, compositionModel, compositionTrace } from './model.ts';
+import { addresses, partModel, partTrace, rootModel, compositionModel, compositionTrace, compositionWalk } from './model.ts';
 import { chartRun, explainAt, LIMIT } from './run.ts';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { FSWatcher } from 'node:fs';
@@ -100,6 +100,7 @@ export async function startExplorer({ root, pluginRoot, version, port = DEFAULT_
     if ((m = path.match(/^\/api\/part\/([\w-]+)\/trace\/([\w-]+)$/))) { const a = part(m[1]); return json(res, a && partTrace(a, m[2])); }
     if ((m = path.match(/^\/api\/composition\/([\w-]+)$/))) { const a = composition(m[1]); return json(res, a && compositionModel(verified(), a, meanings)); }
     if ((m = path.match(/^\/api\/composition\/([\w-]+)\/trace\/([\w-]+)\/([\w-]+)$/))) { const a = composition(m[1]); return json(res, a && compositionTrace(verified(), a, m[2], m[3])); }
+    if ((m = path.match(/^\/api\/composition\/([\w-]+)\/walk\/([\w-]+)\/([\w-]+)$/))) { const a = composition(m[1]); return json(res, a && compositionWalk(verified(), a, m[2], m[3])); }
     if (path.startsWith('/api/')) return text(res, 404, 'no such question');
     if (!dist) return text(res, 503, 'the explorer\'s page is not built: run dossier explore --install');
     // One file of the built page, by its own name: no folder, no path, nothing hidden.

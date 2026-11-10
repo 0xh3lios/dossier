@@ -2,10 +2,11 @@
 
 The specification defines the artifacts Dossier accepts, the transformations its tools perform, the evidence behind its claims, and the responsibilities of an agent using it. Skill entrypoints select the task and provide host integration. They do not own a second version of these rules.
 
-These pages describe the implemented contract unless a limitation is stated.
+[Implementation status](implementation.md) names the mechanisms that read these contracts and the limits of their checks.
 
 | What you need to know | Contract |
 | --- | --- |
+| What explains a dossier, and what supports each claim? | [Behavior collections](behaviors.md) |
 | What does each term mean? | [Semantics](semantics.md) |
 | What does an agent do next, and when must an owner decide? | [One process](process.md) |
 | Which files are authored, evidence, decisions or generated? | [Artifacts](artifacts.md) |

@@ -64,7 +64,7 @@ export async function gradeBudget(workspace: string) {
 
     // Integrity first: an entry edited by hand, unbound, removed or left with an unclassified
     // miscall is a tripwire, and a tripwire voids every answer the grade would rest on.
-    const verified = verifyAll({ root, version: '0.1.0', write: false });
+    const verified = verifyAll({ root, version: '0.2.0', write: false });
     assert.deepEqual(verified.tripwires, []);
     const part = verified.parts.find(c => c.id === 'budget');
     assert.ok(part);

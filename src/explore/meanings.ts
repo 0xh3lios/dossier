@@ -9,8 +9,12 @@ import { join } from 'node:path';
 // is limited to, if any, and what it means.
 interface MarkRow { mark: string; kinds: Set<string> | 'any'; tier: string | null; means: string; for: string }
 export interface Meanings {
-  // The page's rows as the help dialog lists them: each part mark with the kinds it is for, and each cell.
-  legend: { marks: { mark: string; for: string; means: string }[]; cells: { mark: string; means: string }[] };
+  // The page's rows as the help dialog lists them: each part mark with the kinds it is for, each cell,
+  // and a claim's standings, freshness words and kinds of evidence.
+  legend: {
+    marks: { mark: string; for: string; means: string }[]; cells: { mark: string; means: string }[];
+    standing: { name: string; means: string }[]; freshness: { name: string; means: string }[]; evidence: { name: string; means: string }[];
+  };
   mark(kind: string, mark: string, tier: string): string | null;
   cell(mark: string): string | null;
   walk(mark: string): string | null;
@@ -47,8 +51,12 @@ export function readMeanings(pluginRoot: string): Meanings {
   });
   const byName = (section: string) => new Map((page[section] || []).flatMap(([name, means]) => { const n = named(name || ''); return n && means ? [[n, plain(means)] as const] : []; }));
   const cells = byName('Cells'), walks = byName('Walks in a composition'), flags = byName('Flags');
+  const rows = (section: string) => [...byName(section)].map(([name, means]) => ({ name, means }));
   return {
-    legend: { marks: marks.map(r => ({ mark: r.mark, for: r.for, means: r.means })), cells: [...cells].map(([mark, means]) => ({ mark, means })) },
+    legend: {
+      marks: marks.map(r => ({ mark: r.mark, for: r.for, means: r.means })), cells: [...cells].map(([mark, means]) => ({ mark, means })),
+      standing: rows('Claim standing'), freshness: rows('Claim freshness'), evidence: rows('Kinds of evidence'),
+    },
     // A row for the tier first, then one for every tier.
     mark(kind, mark, tier) {
       const fits = marks.filter(r => r.mark === mark && (r.kinds === 'any' || r.kinds.has(kind)) && (!r.tier || r.tier === tier));

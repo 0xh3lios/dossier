@@ -81,3 +81,21 @@ test('the pages call an actor\'s mode malicious, never compromised', () => {
   const second = pagesAndDescriptions.flatMap(page => read(page).split('\n').flatMap((line, i) => /\bcompromis(?:e|ed|es|ing)\b/i.test(line) ? [`${page}:${i + 1}`] : []));
   assert.deepEqual(second, []);
 });
+
+test('the docs index lists every docs page', () => {
+  // A page the index leaves out is one no reader is sent to.
+  const index = read('docs/README.md');
+  const unlisted = markdownUnder('docs').filter(page => page !== 'docs/README.md' && !index.includes(`](${page.slice('docs/'.length)})`));
+  assert.deepEqual(unlisted, []);
+});
+
+test('the README and the docs index both lead to the pages a newcomer starts from', () => {
+  // A dossier is read from its behaviors, the argument explains why to model at all, and the command
+  // section says how to run the command yourself. Each start names all three.
+  const starts: Record<string, string[]> = {
+    'README.md': ['docs/explanation/behaviors.md', 'docs/how-to/read-a-dossier.md', 'docs/explanation/why-model-the-system.md', 'docs/reference/commands.md#the-command'],
+    'docs/README.md': ['explanation/behaviors.md', 'how-to/read-a-dossier.md', 'explanation/why-model-the-system.md', 'reference/commands.md#the-command'],
+  };
+  const missing = Object.entries(starts).flatMap(([page, links]) => links.filter(link => !read(page).includes(`](${link})`)).map(link => `${page} does not link ${link}`));
+  assert.deepEqual(missing, []);
+});

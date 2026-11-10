@@ -1,1 +1,1 @@
-blunder: the ceiling no longer guards borrow. Two borrows of 2 reach debt 4 against ceiling 2; A2 fails.
+blunder: the ceiling no longer guards borrow. The counterexample borrows beyond the unchanged ceiling; A2 fails.

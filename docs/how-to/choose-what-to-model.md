@@ -4,7 +4,7 @@ Decide which parts and compositions to start with, so that the first matrix addr
 
 ## Start from what people ask
 
-1. **List what people ask about the whole.** "What holds if the governance key turns malicious?" "What if a keeper lane is down?" "Can anything change the books before the delay runs out?" Each one names a concern, a property and a scenario.
+1. **List what people ask about the whole.** "What holds if the governance key turns malicious?" "What if a keeper lane is down?" "Can anything change the books before the delay runs out?" Each one names a concern, a property and a scenario. Each one becomes a claim once it is stated as what should hold. Written into a [behavior](../explanation/behaviors.md) as a hypothesis, the claim is in the dossier before any model exists.
 
 2. **Make one composition per concern.** A supply, a control plane, emergency response, keeper upkeep. Keep each composition to the members its properties need.
 
@@ -22,4 +22,4 @@ Decide which parts and compositions to start with, so that the first matrix addr
 
 ## Next
 
-[Start a part](start-a-part.md) for each member, then [start the composition](start-a-composition.md).
+[Start a part](start-a-part.md) for each member, then [start the composition](start-a-composition.md). [Write a behavior](write-a-behavior.md) records each question as a claim.

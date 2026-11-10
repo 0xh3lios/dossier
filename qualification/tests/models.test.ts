@@ -490,7 +490,7 @@ describe('the scaffold command', () => {
     writeFileSync(join(root, 'cli', dir, 'integrity.json'), JSON.stringify({ schema: 1, evidence: {}, decisionHead: prefixHead(log) }) + '\n');
   };
   before(() => {
-    write('cli/dossier.json', '{"plugin":"0.1.0","storage":"integrity-v1"}\n');
+    write('cli/dossier.json', '{"plugin":"0.2.0","storage":"integrity-v1"}\n');
     write('cli/actors/actors.md', '```yaml\nactors:\n  - id: chain\n    name: the chain\n    kind: chain\n  - id: lane-a\n    name: lane A\n    kind: keeper\n  - id: user\n    name: the user\n    kind: user\n```\n');
     write('cli/parts/lamp/prose.md', '# Lamp\n\nIt holds n, a count from 0 to 1.\n\n## States\n[S1] Off: dark.\n[S2] On: lit.\n\n## Events\n[E1] block, from the chain: a block passes.\n[E2] post-a, from lane A: a post.\n\n## Moves\n[M1] When Off receives post-a, it becomes On.\n[M2] When On receives block, it becomes Off.\n[R1] In Off, block is refused.\n[R2] In On, post-a is refused.\n\n## Given\n[G1] Given that lane A posts promptly. If this is false, nothing. Actor: lane A, on post-a, prompt.\n');
     write('cli/parts/old/prose.md', ADAPTER);
@@ -1403,7 +1403,7 @@ describe('composeMembers', () => {
 
 describe('loadPart, loadComposition and compositionModuleText', () => {
   before(() => {
-    write('load/dossier.json', JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1', external: { replay: { command: ['node', 'replay.mjs'] } } }) + '\n');
+    write('load/dossier.json', JSON.stringify({ plugin: '0.2.0', storage: 'integrity-v1', external: { replay: { command: ['node', 'replay.mjs'] } } }) + '\n');
     write('load/actors/actors.md', ACTORS);
     write('load/actors/scenarios.md', SCENARIOS);
     write('load/parts/adapter/prose.md', ADAPTER);

@@ -1,4 +1,4 @@
-# How a claim earns its mark
+# How a mark is earned
 
 An agent does most of the work in a [dossier](what-dossier-keeps.md), so the record has to stand without trusting the agent. The tool computes every [mark](../reference/marks.md) from files that the agent cannot change without leaving a trace. Each mechanism below guards against a way an agent's work can go wrong: an assumption nobody chose, a property weakened until it passes, a surprise rerun until it agrees, or a result that has gone stale. [Why model the system](why-model-the-system.md#where-the-risk-moves) sets out those risks.
 
@@ -29,9 +29,9 @@ A trial ends in publication, the step that writes its answer to the entry, keeps
 
 Each question keeps its own entry, so several current answers can speak for one passage or one [cell](parts-compositions-scenarios.md#cells-and-the-matrix). One of them decides the mark. A miscall on that passage or cell decides while it is the latest answer there and has not lapsed. Otherwise a counterexample that has not lapsed decides over any proof or check from another question, until the owner forgets it. Among the rest, a proof decides before a check, and the latest decides among equals. [Marks](../reference/marks.md) gives the rule in full.
 
-A question is gone when a passage it expects an outcome for, its scenario, its walk or a file it executes no longer exists. Verify flags its entry `question gone`, and the next publication in the dossier that is not refused removes it.
+A question is gone when a passage it expects an outcome for, its scenario, its walk or a file it executes no longer exists. Verify flags its entry `question gone`, and the next publication in the dossier that is not refused removes it, unless a behavior's mapping still depends on it.
 
-An answer is superseded when answers to other questions speak for everything it spoke for, and verify concludes the same without it. A check of a cell established after a proof of that cell is one, since the proof decides. Verify flags it `answer superseded`, and the next publication removes it in the same way. Removing it keeps the record to the questions the dossier asks now. A superseded answer that holds a counterexample stays until the owner forgets it. [Files](../reference/files.md#evidence) gives the entry's fields and these rules in full.
+An answer is superseded when answers to other questions speak for everything it spoke for, and verify concludes the same without it. A check of a cell established after a proof of that cell is one, since the proof decides. Verify flags it `answer superseded`, and the next publication removes it in the same way, unless a behavior's mapping still rests on it. Removing it keeps the record to the questions the dossier asks now. A superseded answer that holds a counterexample stays until the owner forgets it. [Files](../reference/files.md#evidence) gives the entry's fields and these rules in full.
 
 `dossier recheck` asks each entry's question again, at the reach the entry records, and reports any answer that comes back different. It writes nothing. It does not ask the question of a lapsed, aborted or superseded answer, or of a gone question, and lists each as not run. It needs the toolchain the answers came from. The agent can run it, and so can a CI job, as [Recheck in CI](../how-to/recheck-in-ci.md) shows. A clone of the repository confirms its answers this way, since the record keeps [the answers but not the checker's output](limits.md).
 
@@ -45,9 +45,9 @@ Two flags catch quieter edits. A property whose definition in a part's model cha
 
 A property that has never failed has not shown it can fail. For every Always, Once and Within, the agent writes a blunder: a copy of the model with one deliberate wrong, such as a guard loosened or a fairness clause dropped, together with a call that expects the property to fail. This is mutation testing, with the model as the program and the properties as the tests.
 
-- **Caught.** The property failed on the blunder, so it is testing something.
+- **Caught.** The property failed on the blunder, which shows that it catches that particular wrong.
 - **Owed.** No blunder has been tried yet. The mark stays `held` until one is caught.
-- **Hollow.** The latest blunder was tried and the property held anyway, so it was never testing anything. A later trial that is not a blunder does not clear it.
+- **Hollow.** The latest blunder was tried and the property held anyway. The property may miss the wrong the blunder plants, or the blunder may not break what the property says. A review must tell the two apart. A later trial that is not a blunder does not clear it.
 
 A blunder counts only for the property's current text. When the passage changes, the property owes a new one.
 
@@ -71,8 +71,14 @@ A `forget` names one entry, by its name and the start of the digest the manifest
 
 ## A second read
 
-The review skill reads a dossier with none of the conversation that built it, and the only file it writes is its review. It judges what the mechanisms above cannot: whether each blunder is a real wrong, whether each property says what its passage says, whether each backing supports its guarantee, whether each scenario means what its column says, and whether each composition is closed. Where the solvers are installed, it also runs [`dossier recheck`](#one-answer-per-question) on the dossier. Its findings change no mark, and the owner decides what to do about each one. [Get a second read](../how-to/get-a-second-read.md) shows how to ask for one.
+The review skill reads a dossier with none of the conversation that built it, and the only file it writes is its review. It judges what the mechanisms above cannot: whether the evidence each claim maps to supports it at its stated scope, whether each blunder is a real wrong, whether each property says what its passage says, whether each backing supports its guarantee, whether each scenario means what its column says, and whether each composition is closed. Where the solvers are installed, it also runs [`dossier recheck`](#one-answer-per-question) on the dossier. Its findings change no mark, and the owner decides what to do about each one. [Get a second read](../how-to/get-a-second-read.md) shows how to ask for one.
+
+## What a mark gives a claim
+
+Marks and cells belong to the formal specification. A [behavior's claim](behaviors.md) is supported through them. A mapping names the passage, the cell, the walk or the answer that tests the claim, and verify resolves it to the answers that decide that target now. An answer that has lapsed, aborted or been edited gives the claim no current support. Where a current answer conflicts with the one a mapping names, the report shows both, so choosing a question that passed cannot hide a counterexample.
+
+The mechanisms above guard the answers. They do not judge whether an answer supports the claim mapped to it. That judgment is a reviewer's assessment, and until one is current the claim reads `evidence available; mapping unreviewed`. [Behaviors and claims](behaviors.md#how-a-claim-earns-its-standing) gives the conditions for each standing.
 
 ## Summary
 
-A mark is a computation over authored inputs, current answers and decisions. A model element with no passage behind it is a tripwire. An answer that surprised the agent stays visible as a surprise. A violation is not rerun away while what it rested on is unchanged. A property that was never shown to fail is held, and one that tests nothing is hollow. A dependency change is a lapse. Local hashes cannot authenticate an owner or detect an actor rewriting every record and anchor consistently. The [storage contract](../../spec/storage.md) and [limits of a mark](limits.md) state those limits.
+A mark is a computation over authored inputs, current answers and decisions. A model element with no passage behind it is a tripwire. An answer that surprised the agent stays visible as a surprise. A violation is not rerun away while what it rested on is unchanged. A property that was never shown to fail is held, and one that survives its latest blunder is hollow. A dependency change is a lapse. Local hashes cannot authenticate an owner or detect an actor rewriting every record and anchor consistently. The [storage contract](../../spec/storage.md) and [limits of a mark](limits.md) state those limits.

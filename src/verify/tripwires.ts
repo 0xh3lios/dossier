@@ -17,9 +17,9 @@ type Report = (name: string, where: string, entry?: string) => unknown;
 
 const PART_FILES = new Set(['prose.md', 'ledger.md', 'decisions.log', 'doubts.md', 'margin.md', 'README.md', 'integrity.json']);
 // trials/ holds local bundles, which verify never reads; evidence/ holds the answers.
-const PART_DIRS = new Set(['chart', 'model', 'evidence', 'trials', 'calls', 'reviews', 'node_modules']);
+const PART_DIRS = new Set(['chart', 'model', 'evidence', 'trials', 'calls', 'reviews', 'behaviors', 'node_modules']);
 const COMPOSITION_FILES = new Set(['prose.md', 'wiring.md', 'ledger.md', 'decisions.log', 'doubts.md', 'margin.md', 'README.md', 'integrity.json']);
-const COMPOSITION_DIRS = new Set(['model', 'evidence', 'trials', 'calls', 'reviews']);
+const COMPOSITION_DIRS = new Set(['model', 'evidence', 'trials', 'calls', 'reviews', 'behaviors']);
 const MODEL_CHECKERS = ['tlc', 'apalache', 'alloy'];
 
 function shared(f: PartAnalysis | CompositionAnalysis, trip: Report, flag: Report): void {

@@ -17,11 +17,12 @@ import type { AnswerRead, Entry, Present } from '../trials/answers.ts';
 import { basisMoved, basisNow } from '../verify/lapse.ts';
 import type { Prose } from '../verify/lapse.ts';
 import { bundleDigest } from '../trials/receipt.ts';
+import { protectBehaviorAnswers } from '../behaviors/retention.ts';
 
 export const LOCK = '.publication-lock';
 const RECOVERY_LOCK = '.publication-lock-recovery';
 interface LockOwner { host: string; pid: number; token: string }
-export interface PublicationOptions { boundary?: (name: string) => void }
+export interface PublicationOptions { boundary?: (name: string) => void; beforeReplace?: () => void }
 const boundary = (options: PublicationOptions, name: string) => options.boundary?.(name);
 const refuse = (reason: string): never => { throw new UsageError(reason); };
 
@@ -103,6 +104,9 @@ export function withPublicationLock<T>(dir: string, body: () => T): T {
   try { return body(); } finally { release(); }
 }
 
+/** The mode records are created with, before the process umask: readable as any file in the repository. */
+export const RECORD_MODE = 0o666;
+
 export function flushDirectory(dir: string): void {
   const fd = openSync(dir, 'r');
   try { fsyncSync(fd); } finally { closeSync(fd); }
@@ -110,11 +114,14 @@ export function flushDirectory(dir: string): void {
 
 export function durableWrite(path: string, data: string, options: PublicationOptions = {}, label = 'record'): void {
   const temporary = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
-  const fd = openSync(temporary, 'wx', 0o600);
+  // A record is shared like any checked-in file: the process umask, not the writer, decides who may read it.
+  const fd = openSync(temporary, 'wx', RECORD_MODE);
   try {
     writeFileSync(fd, data); boundary(options, `${label}:temporary-written`);
     fsyncSync(fd); boundary(options, `${label}:temporary-flushed`);
   } finally { closeSync(fd); }
+  // A refusal here leaves nothing behind. An interruption may leave the temporary file, which carries no authority.
+  try { options.beforeReplace?.(); } catch (error) { unlinkSync(temporary); throw error; }
   renameSync(temporary, path); boundary(options, `${label}:replaced`);
   flushDirectory(dirname(path)); boundary(options, `${label}:directory-flushed`);
 }
@@ -185,7 +192,7 @@ export function validateBundle(dir: string, id: string): { bundle: Bundle; diges
 // What a publication did with a trial's answer: wrote it, kept the recorded one, or refused it; the
 // entry's name; why; whether it replaced a recorded answer; and the entries it dropped (ANSWER-DROP),
 // those of gone questions and those of superseded answers.
-export interface Publication { action: 'published' | 'kept' | 'refused'; name: string; reason?: string; replaced?: boolean; gone: string[]; superseded: string[] }
+export interface Publication { action: 'published' | 'kept' | 'refused'; name: string; reason?: string; replaced?: boolean; gone: string[]; superseded: string[]; retained?: { entry: string; reason: string }[] }
 // What the rules need from the dossier as it stands: what lapse reads of its prose, what exists now,
 // and, from verify, which of a list of answers are superseded (ANSWER-SUPERSEDED). Without the last, a
 // publication drops no superseded answer.
@@ -278,11 +285,16 @@ function publishAnswerLocked(dir: string, id: string, context: AnswerContext, op
   // bound or left unbound by an interrupted removal, and the superseded ones (ANSWER-SUPERSEDED), never
   // its own question's (ANSWER-DROP). A malformed entry is no one's to drop here: verify reports it.
   // What an earlier, interrupted attempt at this publication had already dropped from the manifest goes
-  // with this attempt whatever has changed since.
+  // with this attempt whatever has changed since. A name its list gives that the manifest still binds was
+  // never dropped: the attempt stopped before the manifest step, and the rules decide that name afresh.
   const answers = readEvidence(dir, manifest.evidence, forgotten, ref, context.present).answers;
-  const recorded = droppedBefore(dir, id);
-  const gone = [...new Set([...answers.filter(a => a.entry && questionGone(a.entry.question, context.present)).map(a => a.name), ...recorded.gone])].filter(n => n !== name);
-  const superseded = [...new Set([...supersededNow(answers, name, ruling.action === 'write' ? ruling.entry : null, gone, context), ...recorded.superseded])].filter(n => n !== name && !gone.includes(n));
+  const listed = droppedBefore(dir, id), unbound = (n: string) => !Object.hasOwn(manifest.evidence, n);
+  const recorded = { gone: listed.gone.filter(unbound), superseded: listed.superseded.filter(unbound) };
+  let gone = [...new Set([...answers.filter(a => a.entry && questionGone(a.entry.question, context.present)).map(a => a.name), ...recorded.gone])].filter(n => n !== name);
+  let superseded = [...new Set([...supersededNow(answers, name, ruling.action === 'write' ? ruling.entry : null, gone, context), ...recorded.superseded])].filter(n => n !== name && !gone.includes(n));
+  const retention = protectBehaviorAnswers(dossierRoot(dir), ref, answers, ruling.action === 'write' ? ruling.entry : null, name, gone, superseded);
+  if (retention.refusal) { shelve(dir,id,staging); return { action:'refused', name, reason:retention.refusal, gone:[], superseded:[], retained:retention.retained }; }
+  gone = retention.gone; superseded = retention.superseded;
   const dropped = [...gone, ...superseded];
   const bindings = { ...manifest.evidence };
   for (const g of dropped) delete bindings[g];
@@ -293,12 +305,12 @@ function publishAnswerLocked(dir: string, id: string, context: AnswerContext, op
   if (lstatSync(join(dir, 'trials'), { throwIfNoEntry: false })?.isSymbolicLink()) return refuse('trials/ must be a directory, not a symbolic link or special file');
   if (ruling.action === 'write') {
     const text = entryText(ruling.entry);
-    const fd = openSync(candidate, 'wx', 0o600);
+    const fd = openSync(candidate, 'wx', RECORD_MODE);
     try { writeFileSync(fd, text); fsyncSync(fd); } finally { closeSync(fd); }
     flushDirectory(staging); boundary(options, 'answer:candidate');
     bindings[name] = sha256(text);
   }
-  if (ruling.action === 'write' || dropped.length) writeIntegrity(dir, { ...manifest, evidence: bindings }, options);
+  if (ruling.action === 'write' || dropped.length) writeIntegrity(dir, { ...manifest, evidence: bindings }, { ...options, beforeReplace: () => { options.beforeReplace?.(); retention.assertStable(); } });
   if (ruling.action === 'write') {
     // A new answer has no reading yet: the replaced answer's goes, and so does any stray one there,
     // before the answer is placed, so that no interruption leaves a reading beside the wrong answer.
@@ -310,8 +322,8 @@ function publishAnswerLocked(dir: string, id: string, context: AnswerContext, op
   removeFile(droppedPath(dir, id));
   shelve(dir, id, staging); boundary(options, 'answer:shelved');
   return ruling.action === 'write'
-    ? { action: 'published', name, replaced: ruling.replaced, gone, superseded }
-    : { action: 'kept', name, reason: ruling.reason, gone, superseded };
+    ? { action: 'published', name, replaced: ruling.replaced, gone, superseded, retained: retention.retained }
+    : { action: 'kept', name, reason: ruling.reason, gone, superseded, retained: retention.retained };
 }
 
 // Finish an interrupted publication (STORE-RECOVER): a candidate the manifest already binds is renamed

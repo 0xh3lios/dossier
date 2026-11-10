@@ -4,8 +4,7 @@ import { api, AppContext, diffMarks, invalidate, loadSeen, marksByDossier, saveS
 import { Header_, Help, LiveRegion, Palette, Ribbon } from './Shell.jsx';
 import { Failed, Loading } from './bits.jsx';
 import { Board } from './Board.jsx';
-import { PartView } from './PartView.jsx';
-import { CompositionView } from './CompositionView.jsx';
+import { DossierView } from './BehaviorView.jsx';
 
 const THEME_KEY = 'dossier-explorer:theme';
 const readTheme = () => { try { return localStorage.getItem(THEME_KEY) || 'auto'; } catch { return 'auto'; } };
@@ -97,8 +96,8 @@ export function App() {
         <main id="main" className="main" tabIndex={-1}>
           {error ? <Failed error={error} />
             : !root ? <Loading what="the dossiers" />
-            : route.view === 'part' ? <PartView key={route.id} id={route.id} params={route.params} />
-            : route.view === 'composition' ? <CompositionView key={route.id} id={route.id} params={route.params} />
+            : route.view === 'part' ? <DossierView key={`part:${route.id}`} kind="part" id={route.id} params={route.params} />
+            : route.view === 'composition' ? <DossierView key={`composition:${route.id}`} kind="composition" id={route.id} params={route.params} />
             : <Board />}
         </main>
         <Palette isOpen={palette} onOpenChange={setPalette} />

@@ -1,0 +1,23 @@
+{
+  "format": "exercise-evaluator@1",
+  "claims": {
+    "parts/timelock#cancel-plan/C1": "Existing W2 supports the finite cancellation path; no current 0.2.0 semantic review. Governance only.",
+    "parts/timelock#cancel-plan/C2": "W2 illustrates remaining=1 only; universal mapping unverified. M6 reading may motivate new check.",
+    "parts/timelock#cancel-plan/C3": "Hypothesis without mapped evidence, even if plausible from prose.",
+    "compositions/control#resolve-plan/C1": "Requirement refuted by executor-offline N1; exact formal risk may be accepted, behavior is not.",
+    "compositions/control#resolve-plan/C2": "all-honest N1 finite/model result under G1/G2; not inductive or deployed; mapping unreviewed."
+  },
+  "mutations": {
+    "1": "Reject scope promotion: no deployed evidence.",
+    "2": "Supported challenge is adverse; does not support the requirement.",
+    "3": "Wrong scenario, cannot transfer the result.",
+    "4": "Review becomes stale; unchanged solver basis need not lapse.",
+    "5": "Re-resolved dependency set invalidates review despite surviving old file.",
+    "6": "Focused review never discharges dossier-wide obligation.",
+    "7": "Retain needed entry or establish equivalent admissible support; no manual pruning.",
+    "8": "Refuse unknown field and unsupported version, no fallback.",
+    "9": "Model association does not establish source coverage."
+  },
+  "operational020": false,
+  "cancellationActor": "Governance"
+}

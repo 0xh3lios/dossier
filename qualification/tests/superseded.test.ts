@@ -152,7 +152,7 @@ test('Harbor keeps no answer the next publication would remove; one planted on a
     assert.equal(r.status, 0, `dossier ${args.join(' ')}\n${r.stdout}${r.stderr}`);
     return r.stdout;
   };
-  const all = () => { const r = verifyAll({ root, version: '0.1.0' }); return [...r.parts, ...r.compositions]; };
+  const all = () => { const r = verifyAll({ root, version: '0.2.0' }); return [...r.parts, ...r.compositions]; };
   const token = () => all().find(a => a.ref === 'parts/token')!;
   const published = all();
   assert.deepEqual(published.flatMap(a => a.supersededRemovable.map(name => `${a.ref}/evidence/${name}.json`)), [], 'Harbor is published with the rule in force');
@@ -182,5 +182,13 @@ test('Harbor keeps no answer the next publication would remove; one planted on a
   for (const file of [`${earlier}.json`, `${earlier}.md`]) assert.equal(existsSync(join(dir, 'evidence', file)), false, file);
   const is = token();
   assert.deepEqual(Object.keys(is.superseded), []);
-  assert.equal(conclusionsOf(is), conclusionsOf(was), 'removing the superseded answer changes no conclusion');
+  const formal = (a: typeof was) => conclusionsOf({ ...a, flags: a.flags.filter(f => f.name !== 'review stale') });
+  assert.equal(formal(is), formal(was), 'removing the superseded answer changes no formal conclusion');
+  assert.deepEqual(is.reviews.map(r => [r.file, r.status]), was.reviews.map(r => [r.file, r.status]), 'already stale reviews remain stale');
+  const prior = was.reviews.filter(r => r.record?.basis.some(b => b.path === `parts/token/evidence/${earlier}.json`));
+  assert.ok(prior.length > 0, 'a retained review binds the removed historical answer');
+  for (const review of prior) {
+    assert.equal(review.status, 'stale', 'publication and the owner decision already changed its basis');
+    assert.ok(is.reviews.find(r => r.file === review.file)?.reasons.some(reason => reason.includes(`cannot read dossiers:parts/token/evidence/${earlier}.json`)), 'its stale explanation now also identifies the missing bound answer');
+  }
 });

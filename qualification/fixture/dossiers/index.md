@@ -1,6 +1,6 @@
-# Dossiers   rebuilt 2026-11-08T23:40:32Z   dossier 0.1.1
+# Dossiers   rebuilt 2026-11-09T22:32:13Z   dossier 0.2.0
 Written by dossier render: parts by compositions, and every composition at a glance.
-verify: ok · 6 parts, 3 compositions · dossier 0.1.1 · 0 tripwires
+verify: ok · 6 parts, 3 compositions · dossier 0.2.0 · 0 tripwires
 
 | part | module | tier | control | supply | upkeep |
 | --- | --- | --- | --- | --- | --- |
@@ -25,8 +25,8 @@ Next: Encode on parts/oracle — Oracle: not tried on the model side: M2 M3; Tim
 
 ```json
 {
-  "rebuilt": "2026-11-08T23:40:32Z",
-  "plugin": "0.1.1",
+  "rebuilt": "2026-11-09T22:32:13Z",
+  "plugin": "0.2.0",
   "parts": [
     {
       "id": "adapter",
@@ -57,7 +57,7 @@ Next: Encode on parts/oracle — Oracle: not tried on the model side: M2 M3; Tim
       "route": {
         "pass": "Review",
         "why": [
-          "no review at prose@3ae029"
+          "no current dossier review with complete scoped basis and coverage"
         ],
         "read": "spec/review.md"
       },
@@ -95,7 +95,7 @@ Next: Encode on parts/oracle — Oracle: not tried on the model side: M2 M3; Tim
       "route": {
         "pass": "Review",
         "why": [
-          "no review at prose@02aa1d"
+          "no current dossier review with complete scoped basis and coverage"
         ],
         "read": "spec/review.md"
       },
@@ -282,7 +282,7 @@ Next: Encode on parts/oracle — Oracle: not tried on the model side: M2 M3; Tim
       "route": {
         "pass": "Review",
         "why": [
-          "no review at prose@6c8765"
+          "no current dossier review with complete scoped basis and coverage"
         ],
         "read": "spec/review.md"
       }
@@ -314,7 +314,7 @@ Next: Encode on parts/oracle — Oracle: not tried on the model side: M2 M3; Tim
       "route": {
         "pass": "Review",
         "why": [
-          "no review at prose@720a6e"
+          "no current dossier review with complete scoped basis and coverage"
         ],
         "read": "spec/review.md"
       }
@@ -344,7 +344,7 @@ Next: Encode on parts/oracle — Oracle: not tried on the model side: M2 M3; Tim
       "route": {
         "pass": "Review",
         "why": [
-          "no review at prose@7c3f26"
+          "no current dossier review with complete scoped basis and coverage"
         ],
         "read": "spec/review.md"
       }

@@ -1,1 +1,1 @@
-retelling: schedule, tick, tick, tick, tick: the plan is ready after two ticks and nobody executes it; N1 fails as called. This cell is violated by design of the scenario: the executor is the public, and an offline public is what N1 is conditioned on.
+retelling: schedule, tick, tick, tick, tick: the plan is ready after two ticks and nobody executes it; N1 fails as called. This cell is violated by design of the scenario: the executor is the public, and the offline scenario removes the prompt-execution assumption on which N1 relies.

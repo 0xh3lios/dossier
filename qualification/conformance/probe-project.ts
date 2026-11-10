@@ -10,7 +10,7 @@ const root = process.argv[2] && resolve(process.argv[2]);
 if (!root) { console.error('usage: node qualification/conformance/probe-project.ts <dossiers-root>'); process.exitCode = 2; }
 else {
   const before = fingerprint(root);
-  const verified = verifyAll({ root, version: '0.1.0', write: false });
+  const verified = verifyAll({ root, version: '0.2.0', write: false });
   const charts = [];
   for (const c of verified.parts) {
     const run = c.ir.ok ? await checkIR({ root, ir: c.ir }) : null;

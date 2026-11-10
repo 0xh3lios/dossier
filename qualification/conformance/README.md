@@ -42,3 +42,7 @@ The grader independently replays the raw budget task and checks its published an
 For an existing project, run `node qualification/conformance/probe-project.ts <dossiers-root>`. It verifies without writes and checks each current part chart in memory. Exit 1 means findings or a chart that did not pass; it is not a reason to regenerate evidence automatically. Its stdout may contain project-specific identities, so retain it in local development records rather than this folder.
 
 When a real repository exposes a defect, preserve the mechanism in a minimal synthetic fixture here and retain source provenance in the development records. Do not copy private knowledge records, addresses, machine paths or claims about deployed behavior into this directory.
+
+## Behavior contracts
+
+The [behavior contract exercise](behavior-contract/README.md) tests a fresh reader's interpretation of the records against an independent key. Existing prose-header review tests cover the current engine. They do not establish that scoped review is implemented. See [implementation status](../../spec/implementation.md) for the remaining checks.

@@ -2,6 +2,8 @@
 
 Conformance means that the accepted artifacts, tool transformations and agent claims satisfy the named contracts. Link checks establish discovery. Parser tests establish forms. Execution tests establish particular behavior. Independent agent exercises establish particular uses of the instructions. None substitutes for the others.
 
+[Implementation status](implementation.md) names the readers, the publication guards and their limits. A test of a scoped review must exercise the required basis as it stands, the coverage and the way assessments combine. A matching prose hash alone establishes no conformance of a review.
+
 ## Contract obligations
 
 | Contract | Observable obligation |
@@ -18,7 +20,7 @@ Conformance means that the accepted artifacts, tool transformations and agent cl
 | `ART-HISTORY` | Integrity history persists across repeated verification |
 | `ART-VIEWS` | Generated diagnostics do not become solver evidence |
 | `ART-SCOPE` | Evidence for one mode/property/scenario cannot silently support another |
-| `STORE-FORMAT` | A marker without `storage: integrity-v1`, or a missing or malformed manifest, grants no authority and never falls back to a view |
+| `STORE-FORMAT` | A marker without `storage: integrity-v1`, one that names a plugin version before 0.2.0, after the running plugin or none, or a missing or malformed manifest, grants no authority and never falls back to another format or a view |
 | `STORE-BUNDLE` | Verification reads no bundle, and deleting one changes no conclusion |
 | `STORE-ANSWER`, `STORE-DECISION` | Partial publications grant neither evidence nor owner authority |
 | `STORE-INITIALIZE`, `STORE-WRITERS` | A new visible dossier is complete. Begin adopts a folder without `integrity.json` only when it holds no decisions or entries. Competing writers do not mix candidates or lose publications |
@@ -32,11 +34,24 @@ Conformance means that the accepted artifacts, tool transformations and agent cl
 | `ANSWER-ABORTED` | An aborted trial's answer is written only for a question with no entry |
 | `ANSWER-GONE` | The answer to a question whose passages, scenario, walk or authored files are gone covers nothing |
 | `ANSWER-SUPERSEDED` | The answers that decide are never superseded, and of answers that stand in for each other the earlier is, so removing every superseded answer changes no conclusion |
-| `ANSWER-DROP` | Every publication that is not refused removes gone questions and superseded answers, never its own question's entry, and keeps a superseded counterexample until the owner's `forget` |
+| `ANSWER-DROP` | Unless `BEH-RETENTION` keeps an entry, every publication that is not refused removes gone questions and superseded answers, never its own question's entry, and keeps a superseded counterexample until the owner's `forget` |
 | `ANSWER-RECHECK` | Recheck writes nothing, agrees with every current answer it reruns, reports a planted difference, and runs nothing it lists as not run |
 | `MARK-DECIDING` | Each side of a passage and each cell takes its mark from one answer, the strongest that has not lapsed and the latest among equals. A miscall that is the latest answer decides, and a counterexample that has not lapsed and is not forgotten decides before any later proof or check, on a cell and on a passage alike. A forgotten violation and an answer that looked at nothing rank below every proof and check |
-| `REVIEW-OWED` | A dossier with marks a reviewer judges and no review naming its current prose hash on its first line is flagged `review owed` and, once nothing earlier is owed, routed to Review. A review whose first line names the hash clears both, and the flag names a review of an earlier wording |
+| `REVIEW-OWED` | A review's scope and the digests of what it depends on, as they stand now, decide which review is still owed. A review of one behavior never clears the review the dossier owes |
 | `REVIEW-STATUS` | Each finding states its claim and carries `verified`, `not verified` or `retracted` for the support behind that claim, never for whether the composition passes; a retraction keeps the claim and gives the correction |
+
+## Behavior contract obligations
+
+These obligations need tests of the readers and the writers themselves. The contract's examples and the independent exercises assess how the records are understood. They do not establish that the tools implement them.
+
+| Contract | What its tests accept and what they refuse |
+| --- | --- |
+| `BEH-FORMAT`, `BEH-IDENTITY` | A complete collection and behavior are accepted. An unknown version or field, a duplicate id, a path that escapes and an unlisted file are refused. The reuse of a retired id is reviewed against the authored history |
+| `BEH-TARGET` | Current passage, cell, walk, answer and knowledge targets resolve. A wrong scenario, an unknown check and an undeclared member are refused. An answer chosen because it passed does not hide the answers that conflict with it |
+| `BEH-STANDING` | The kind of evidence, the scope, the freshness, the assessment and the decisions stay separate. A witness is never promoted to every path, a bounded check to an inductive one, the model to the source, or the source to a deployment |
+| `BEH-FRESHNESS` | A change to a claim, an explanation, a source pin, a scenario or a deciding answer takes the right assessments out of effect: a changed claim only its own, a changed explanation none. A solver's answer whose basis is unchanged stays current |
+| `BEH-RETENTION` | A composition that depends on an answer keeps the evidence it needs. Equivalent support lets an answer go. A dependency that changes during publication, and an interrupted publication, leave authority intact |
+| `BEH-COVERAGE` | Walks with no behavior and what is left unexplained are reported. Neither an empty collection nor a full list of the model establishes that the source is explained in full |
 
 ## Examples and fixtures
 

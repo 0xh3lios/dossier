@@ -25,6 +25,10 @@ In Claude Code that is `/dossier:decide` followed by those arguments. In ChatGPT
 
 Accept, reject, risk, forget and retire need your words after `--`. A risk is accepted on a composition cell that is violated now, after a trial has shown the violation. A forget names an entry, the file under the dossier's `evidence/` that holds the answer to one question. `<name>` is the file's name without `.json`, and `<digest>` is the first eight hex digits of the digest `integrity.json` binds for it. You don't need to look it up. Three outputs print the exact argument: the `answer removed` tripwire, a trial's refusal to overturn a violation, and the `answer superseded` flag on an answer that holds a counterexample.
 
+## What a decision does not settle
+
+No verb accepts or rejects a behavior or one of its [claims](../explanation/behaviors.md). A decision applies to the passages or the cell it names, and a claim mapped to them keeps its own standing. In Harbor's Control, the owner accepted the risk on the cell N1 × executor-offline. The claim that every scheduled plan must resolve within three ticks with the executor offline still reads contradicted. To change what a claim says, ask the agent to reword it. That is an edit, not a decision, and it takes the claim's earlier assessments out of effect.
+
 ## What happens
 
 Each decision becomes one line of the dossier's `decisions.log`, with the time, the verb, its targets at their current hashes, your words, and the hash of the line before. The command then commits that exact prefix in `integrity.json`. Verify reads it without writing, and `dossier render` updates the ledger's owner column.

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -12,7 +12,8 @@ import { scaffoldTla, parseTla } from '../../src/models/tla.ts';
 import { fingerprint } from '../conformance/files.ts';
 import { verifyAll } from '../../src/commands/verify.ts';
 import type { VerifyJson } from '../../src/commands/verify.ts';
-import { proseHash } from '../../src/hash.ts';
+import { loadBehaviorCollection } from '../../src/behaviors/records.ts';
+import type { ReviewBasisEntry, ReviewRecord, ReviewSubject } from '../../src/behaviors/types.ts';
 import { readActors } from '../../src/dossiers/actors.ts';
 import { lapsedParts } from '../../src/verify/lapse.ts';
 import type { PresentState } from '../../src/verify/lapse.ts';
@@ -177,7 +178,7 @@ test('the agent grader checks the published answer and rejects proof promotion, 
   mkdirSync(join(root, 'actors'), { recursive: true });
   mkdirSync(join(root, 'parts'));
   mkdirSync(join(root, 'compositions'));
-  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }));
+  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.2.0', storage: 'integrity-v1' }));
   writeFileSync(join(root, 'actors/actors.md'), '# Actors\n```yaml\nactors:\n  - id: operator\n    kind: user\n```\n');
   const run = (...args: string[]) => {
     const r = spawnSync(join(plugin, 'bin/dossier'), [...args, '--root', root], { encoding: 'utf8', env: { ...process.env, DOSSIER_ROOT: '' } });
@@ -235,7 +236,9 @@ test('the review grader rejects promoted cells and writes to existing evidence',
   const fixture = () => {
     const work = mkdtempSync(join(tmpdir(), 'dossier-review-grader-'));
     t.after(() => rmSync(work, { recursive: true, force: true }));
-    cpSync(join(plugin, 'qualification/fixture'), work, { recursive: true });
+    // This negative grader fixture supplies its own synthetic assessments; it
+    // must not contradict the independent judgments retained by real Harbor.
+    cpSync(join(plugin, 'qualification/fixture'), work, { recursive: true, filter: path => basename(path) !== 'reviews' });
     return { work, before: fingerprint(work) };
   };
   const report = 'dossiers/compositions/control/reviews/exercise.md';
@@ -245,12 +248,31 @@ test('the review grader rejects promoted cells and writes to existing evidence',
     ['N1', 'all-honest', 'checked'], ['N1', 'governance-captured', 'checked'], ['N1', 'executor-offline', 'violated'],
   ].map(([property, scenario, mark]) => ({ property, scenario, mark, accepted: mark === 'violated', proof: mark === 'proved' }));
   const answer = { summarySupported: false, cells, limitations: ['Synthetic grader input, not an agent review.'] };
-  // The review names the prose it read on its first line (REVIEW-OWED), the hash Harbor's Control has now.
-  const hash = proseHash(verifyAll({ root: join(plugin, 'qualification/fixture/dossiers'), version: '0.1.0' }).compositions.find(s => s.id === 'control')!.hashes);
-  const writeReport = (work: string, first = `prose@${hash}`) => { mkdirSync(dirname(join(work, report)), { recursive: true }); writeFileSync(join(work, report), `${first}\n\n# Review\n\n\`\`\`json\n${JSON.stringify(answer)}\n\`\`\`\n`); };
+  // The synthetic review exercises the persisted scope and observation format;
+  // its synthetic assessments make no claim of a live independent review.
+  const writeReport = (work: string, scoped = true) => {
+    const root = join(work, 'dossiers');
+    const result = spawnSync(join(plugin, 'bin/dossier'), ['review-basis', 'compositions/control', '--json', '--root', root], { encoding: 'utf8', env: { ...process.env, DOSSIER_ROOT: '' } });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const input = JSON.parse(result.stdout) as { subject: ReviewSubject; basis: ReviewBasisEntry[]; coverageItems: string[]; issues: string[] };
+    assert.deepEqual(input.issues, []);
+    const collection = loadBehaviorCollection(join(root, 'compositions/control'));
+    const record: ReviewRecord = {
+      format: 'dossier-review@0.2.0', subject: input.subject, basis: input.basis,
+      coverage: { examined: input.coverageItems, unexamined: [] }, replaces: [],
+      assessments: collection.behaviors.flatMap(b => b.record.claims.flatMap(c => c.mappings.map(m => ({
+        mapping: `${b.record.id}/${c.id}/${m.id}`, result: 'too-broad' as const,
+        rationale: 'Synthetic scope objection for the grader fixture; this assessment exercises the format and contributes no positive support.',
+        limitations: ['Synthetic grader input, not an agent review.'],
+      })))),
+    };
+    mkdirSync(dirname(join(work, report)), { recursive: true });
+    const header = scoped ? `\`\`\`json\n${JSON.stringify(record)}\n\`\`\`\n\n` : '';
+    writeFileSync(join(work, report), `${header}# Review\n\n\`\`\`json\n${JSON.stringify(answer)}\n\`\`\`\n`);
+  };
   const { work, before } = fixture();
-  writeReport(work, '# Review');
-  assert.throws(() => gradeReview(work, before, report), /first line names the prose hash/);
+  writeReport(work, false);
+  assert.throws(() => gradeReview(work, before, report), /scoped review header/);
   writeReport(work);
   assert.equal(gradeReview(work, before, report).outcome, 'pass');
   const checked = cells.find(c => c.mark === 'checked')!;

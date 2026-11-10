@@ -12,7 +12,7 @@ import { main as verify, verifyAll } from './verify.ts';
 import { briefLines, verifyLine } from '../verify/render.ts';
 import { POINTER, readMarker, UsageError } from '../dossiers/root.ts';
 import { findModule } from '../chart/draw.ts';
-import { STORAGE } from '../dossiers/integrity.ts';
+import { compareVersions, isVersion, STORAGE, versionProblem } from '../dossiers/integrity.ts';
 import { dossierPathExists } from '../dossiers/initialize.ts';
 import { durableWrite, withPublicationLock } from '../dossiers/publication.ts';
 import type { PublicationOptions } from '../dossiers/publication.ts';
@@ -52,6 +52,11 @@ export function rewriteSetupMarker(dossiers: string, version: string, today: str
     if (previous && previous.storage === undefined && holdsDossiers) {
       throw new UsageError(`dossier.json names no storage while dossiers exist under it; this plugin keeps ${STORAGE} roots only, and setup does not convert another format`);
     }
+    // A root set up before EARLIEST_ROOT holds records this plugin does not read, and one set up by a
+    // later plugin may hold formats it does not know. Setup converts neither. With no dossier yet
+    // there is nothing to protect, so an earlier version is simply replaced.
+    const problem = previous ? versionProblem(previous.plugin, version) : null;
+    if (problem && (holdsDossiers || isVersion(previous!.plugin) && compareVersions(previous!.plugin as string, version) > 0)) throw new UsageError(`${problem}; setup converts no root`);
     const marker: Record<string, unknown> = { ...previous, storage: STORAGE, plugin: version, setup: (previous && typeof previous.setup === 'string' && previous.setup) || today, updated: today };
     if (knowledgeRoot !== undefined) {
       const kept = previous?.knowledge as Record<string, unknown> | undefined;

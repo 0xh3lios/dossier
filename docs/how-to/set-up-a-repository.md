@@ -34,7 +34,7 @@ Prepare a repository for dossiers: the `dossiers/` folder, its marker, the actor
 
    `dossier render` rebuilds `index.md`, an overview of every dossier, so a committed copy would change, and conflict, whenever any dossier did. `_scratch/` is a local workspace, and `node_modules/` holds the chart's libraries. A trial runs a checker on a call through `dossier trial`. It works in its dossier's `.running/<id>/`, then leaves its bundle in `trials/<id>/`: the call as captured, the checker's output, `result.json` and a receipt of their hashes. If the root already has a `.gitignore`, setup leaves it as it is, so add any of these lines it lacks.
 
-   Commit the authored inputs and the record, which is each dossier's `evidence/`, its `decisions.log` and its `integrity.json`. `evidence/` holds an entry with the answer to each question the dossier's calls ask, and the agent's reading beside each entry. [How a claim earns its mark](../explanation/evidence.md#one-answer-per-question) explains why the record holds the answers and not the bundles. Ledgers and generated views can be regenerated. Publication locks, candidate entries and temporary files are transient. Do not move one into place or take one over by hand. [Storage](../../spec/storage.md) explains interrupted work.
+   Commit the authored inputs, which include each dossier's `README.md`, its `behaviors/` and its `reviews/`. Commit the record too, which is each dossier's `evidence/`, its `decisions.log` and its `integrity.json`. `evidence/` holds an entry with the answer to each question the dossier's calls ask, and the agent's reading beside each entry. [How a mark is earned](../explanation/evidence.md#one-answer-per-question) explains why the record holds the answers and not the bundles. Ledgers and generated views can be regenerated. Publication locks, candidate entries and temporary files are transient. Do not move one into place or take one over by hand. [Storage](../../spec/storage.md) explains interrupted work.
 
 3. **Install the chart's libraries.** Run `dossier setup --install`. It runs `npm install` in `dossiers/`, which installs `xstate` and `@xstate/graph`, the libraries the chart runs on. Until then the chart uses the plugin's own copies, when the plugin's folder has them installed.
 
@@ -60,9 +60,9 @@ dossier doctor
 dossier verify
 ```
 
-The doctor says what is present and missing, with a fix for each, and exits 1 when something is missing. Verify prints `verify: ok · no dossiers · dossier 0.1.1 · 0 tripwires` on a fresh setup.
+The doctor says what is present and missing, with a fix for each, and exits 1 when something is missing. Verify prints `verify: ok · no dossiers · dossier 0.2.0 · 0 tripwires` on a fresh setup.
 
-Running setup again keeps existing files and updates `dossier.json` under the root publication lock, preserving configured runners. It refuses a malformed marker instead of replacing it, and a marker that names another storage is malformed. A marker with no `storage` field gets `storage: integrity-v1` while no dossier exists under the root. Once dossiers exist, setup refuses it. A missing marker beside existing dossier directories must be restored from version control, and setup refuses until it is.
+Setup accepts only `plugin: 0.2.0`. It refuses another plugin version, or a marker that names none, and does not convert the root. Running setup again keeps existing files and updates `dossier.json` under the root publication lock, preserving configured runners. It refuses a malformed marker instead of replacing it, and a marker that names another storage is malformed. A marker with no `storage` field gets `storage: integrity-v1` while no dossier exists under the root. Once dossiers exist, setup refuses it. A missing marker beside existing dossier directories must be restored from version control, and setup refuses until it is.
 
 Run `dossier render` when you want ledger and index files written from the current analysis.
 

@@ -104,7 +104,9 @@ const KEYS = [
 // The marks as the plugin's reference page defines them, served with the root.
 export function Help({ isOpen, onOpenChange }) {
   const { root } = useApp();
-  const legend = root?.legend || { marks: [], cells: [] };
+  const legend = { marks: [], cells: [], standing: [], freshness: [], evidence: [], ...root?.legend };
+  // A standing's badge takes its family from the word the report uses for it.
+  const standingWord = name => (name.startsWith('evidence') ? 'evidence-available' : name.split(' ')[0]);
   return (
     <ModalOverlay className="overlay" isOpen={isOpen} onOpenChange={onOpenChange} isDismissable>
       <Modal className="modal is-help">
@@ -115,10 +117,13 @@ export function Help({ isOpen, onOpenChange }) {
               <h3>Levels</h3>
               <p><b>Board.</b> Every dossier, grouped by its next step as verify routes it.</p>
               <p><b>Composition.</b> The largest graph: the members, the wiring between them, the actors that send into them, and stubs for anything outside. Properties under scenarios, with each cell's trace.</p>
-              <p><b>Part.</b> The prose beside its statechart, the grid of states by events, and the walks as lanes. Moves that stay in their state are lines inside the state's box.</p>
+              <p><b>Behaviors.</b> A dossier opens on its behaviors, each one once with its claims beneath it. Select a behavior for its explanation, or a claim for its scope, assumptions, mappings and evidence, the review's assessment and the owner's decision. With nothing selected, the side shows the dossier's orientation. A claim's row names its kind, its scope and the passages, cells or walks it maps to.</p>
+              <p><b>No behavior</b> lists what in the model no behavior maps to. It is not for that reason unfinished, and the list does not establish that the source is explained in full.</p>
+              <p><b>Reviews.</b> A review of one behavior assesses that behavior's mappings and does not clear the review the dossier owes. A review turns stale when a file it bound changes, and its assessments then count for nothing. The exception is its subject's behavior file, which it binds claim by claim: a changed claim takes only its own assessments out of effect, a changed explanation takes none, and either is listed under Changed since. A dossier review with anything changed since no longer clears what the dossier owes.</p>
+              <p><b>Model and evidence.</b> A part shows prose beside its statechart, the grid of states by events, and walks as lanes. A composition shows its members and properties under scenarios.</p>
               <p>A graph over 25 boxes is refused rather than drawn. Nothing draws parts together that no composition composes.</p>
               <h3>Players</h3>
-              <p><b>Walk</b> and <b>doubt</b> replay over the graph the chart explored. <b>Trace</b> plays a trial's counterexample or witness, step by step, with the actor who moved. <b>Simulate</b> fires any event from any explored state and shows each condition evaluated. <b>Find a path</b> searches the explored graph for a state.</p>
+              <p><b>Walk</b> and <b>doubt</b> replay over the graph the chart explored. <b>Trace</b> plays a trial's counterexample or witness, step by step, with the actor who moved. <b>Play</b> on a claim's walk steps through its recorded trace, or replays the walk on the chart where no trace is recorded. A chart replay adds no solver answer, and a refused step leaves the state as it was. <b>Simulate</b> fires any event from any explored state and shows each condition evaluated. <b>Find a path</b> searches the explored graph for a state.</p>
               <h3>Decisions</h3>
               <p>The explorer reads and never writes. Where the owner is asked for a decision, it prepares the <code>dossier decide</code> line with the words left blank, for the owner to fill in and run.</p>
               <h3>Live</h3>
@@ -131,6 +136,13 @@ export function Help({ isOpen, onOpenChange }) {
               <table className="dt"><tbody>{legend.marks.map((r, i) => <tr key={i}><td><Badge word={r.mark} small /></td><td className="mono">{r.for}</td><td>{r.means}</td></tr>)}</tbody></table>
               <h3>Cells</h3>
               <table className="dt"><tbody>{legend.cells.map(r => <tr key={r.mark}><td><Badge word={r.mark} small /></td><td>{r.means}</td></tr>)}</tbody></table>
+              <h3>Claims</h3>
+              <table className="dt"><tbody>
+                {legend.standing.map(r => <tr key={r.name}><td><Badge word={standingWord(r.name)} label={r.name} small /></td><td>{r.means}</td></tr>)}
+                {legend.freshness.map(r => <tr key={r.name}><td><Badge word={r.name} small /></td><td>{r.means}</td></tr>)}
+              </tbody></table>
+              <h3>Evidence</h3>
+              <table className="dt"><tbody>{legend.evidence.map(r => <tr key={r.name}><td className="mono">{r.name.replaceAll('-', ' ')}</td><td>{r.means}</td></tr>)}</tbody></table>
               <h3>Families</h3>
               <p className="legend">{['good', 'warning', 'serious', 'critical', 'neutral'].map(f => <span key={f} className="badge is-small" data-family={f}><span className="badge-icon" aria-hidden="true">{ICON[f]}</span>{f}</span>)}</p>
               <h3>Owner</h3>

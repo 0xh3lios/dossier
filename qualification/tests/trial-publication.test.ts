@@ -1,3 +1,4 @@
+import { emptyCollection } from './collection-fixture.ts';
 // Exercise the public CLI at the boundaries between a call, execution and
 // publication. Fake checker processes make races and failures deterministic;
 // they do not stand in for the separate real-toolchain qualification suite.
@@ -34,16 +35,17 @@ function fixture(t: TestContext) {
   t.after(() => rmSync(repo, { recursive: true, force: true }));
   const root = join(repo, 'dossiers'), dir = join(root, 'parts/gate');
   const write = (path: string, text: string) => { const full = join(repo, path); mkdirSync(dirname(full), { recursive: true }); writeFileSync(full, text); return full; };
-  write('dossiers/dossier.json', JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }));
+  write('dossiers/dossier.json', JSON.stringify({ plugin: '0.2.0', storage: 'integrity-v1' }));
   write('dossiers/parts/gate/integrity.json', JSON.stringify(empty));
   write('dossiers/parts/gate/prose.md', prose);
   write('dossiers/actors/actors.md', '# Actors\n\n```yaml\nactors:\n  - id: public\n    kind: public\n    modes: [honest, malicious]\n```\n');
   write('dossiers/actors/scenarios.md', '# Scenarios\n\n```yaml\nscenarios:\n  - id: all-honest\n    modes: {}\n```\n');
   const run = (args: string[], env: NodeJS.ProcessEnv = {}) => spawnSync(process.execPath, [cli, args[0], '--root', root, ...args.slice(1)], { cwd: repo, env: { ...process.env, DOSSIER_ROOT: '', ...env }, encoding: 'utf8' });
   const executable = (name: string, body: string) => { const path = write(name, `#!${process.execPath}\n${body}\n`); chmodSync(path, 0o755); return path; };
+  emptyCollection(dir);
   const external = (body = 'console.log(JSON.stringify({outcomes:{check:"pass"}}));') => {
     const path = executable('checker.mjs', body);
-    write('dossiers/dossier.json', JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1', external: { check: { command: [path] } } }));
+    write('dossiers/dossier.json', JSON.stringify({ plugin: '0.2.0', storage: 'integrity-v1', external: { check: { command: [path] } } }));
     return path;
   };
   const model = () => {
@@ -64,6 +66,7 @@ function fixture(t: TestContext) {
     write(`${s}/integrity.json`, JSON.stringify(empty));
     write(`${s}/prose.md`, '# Net\n\nConcern: net\n\n## Always\n[A1] Always, {gate.Ready}.\n');
     write(`${s}/wiring.md`, '# Wiring\n\n```yaml\nmembers:\n  - part: gate\n    role: member\nwiring: []\nclosure: []\nscenarios: [all-honest]\n```\n');
+    emptyCollection(join(repo,s));
     return join(repo, s);
   };
   // The answers the runner published, by entry name, and one of them read.

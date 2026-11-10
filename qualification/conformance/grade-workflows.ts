@@ -144,7 +144,7 @@ export function gradeWorkflow(exercise: string, workspace: string, before: Recor
     assert.ok(read(workspace, 'answer.md').trim(), 'provide a human explanation');
     assert.equal(answer.proof, false, 'these TLC trials provide bounded evidence');
     assert.ok(Array.isArray(answer.limitations) && answer.limitations.length && answer.limitations.every((x: unknown) => typeof x === 'string' && x.trim()));
-    const verified = verifyAll({ root: join(workspace, 'dossiers'), version: '0.1.0', write: false });
+    const verified = verifyAll({ root: join(workspace, 'dossiers'), version: '0.2.0', write: false });
     assert.deepEqual(verified.tripwires, []);
     for (const item of [...verified.parts, ...verified.compositions]) assert.deepEqual(item.tripwires, [], item.ref);
     const id = exercise === 'compose-probe' ? 'transfer' : 'control';

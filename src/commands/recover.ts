@@ -48,6 +48,7 @@ export async function main(_command: string, args: string[], _context: CommandCo
     console.log(`${publication.action}: evidence/${publication.name}.json${publication.reason ? ` · ${publication.reason}` : ''}`);
     for (const gone of publication.gone) console.log(`removed evidence/${gone}.json: its question no longer exists`);
     for (const superseded of publication.superseded) console.log(`removed evidence/${superseded}.json: ${STANDS_IN}`);
+  for (const kept of publication.retained || []) console.log(`kept evidence/${kept.entry}.json: ${kept.reason}`);
     console.log('Pending call files are preserved; compare their contents before removing a consumed draft.');
     return publication.action === 'refused' ? 2 : 0;
   }

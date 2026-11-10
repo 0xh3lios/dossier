@@ -342,6 +342,7 @@ export async function execute({ root, where, name, callArg = '', callText: given
   else console.log(`answer: ${entry} · ${publication.action === 'kept' ? 'kept' : 'refused'}: ${publication.reason}`);
   for (const gone of publication.gone) console.log(`  removed evidence/${gone}.json: its question no longer exists`);
   for (const superseded of publication.superseded) console.log(`  removed evidence/${superseded}.json: ${STANDS_IN}`);
+  for (const kept of publication.retained || []) console.log(`kept evidence/${kept.entry}.json: ${kept.reason}`);
   if (publication.action === 'refused') { console.log(`  the bundle stays in trials/${id}/, and the call stays pending`); return 2; }
   if (publication.action === 'published') console.log(`  next: write evidence/${publication.name}.md${result.result === 'miscalled' ? ' with the retelling and a classification' : ''}, then dossier verify`);
   return result.result === 'as-called' ? 0 : result.result === 'miscalled' ? 1 : 3;

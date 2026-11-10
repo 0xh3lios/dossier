@@ -2,6 +2,8 @@
 
 The layout of a dossiers root and the format of each file. "Tool-written" files change only through the `dossier` command, never by hand. The [storage contract](../../spec/storage.md) defines which records are authoritative and how they are published.
 
+Collections, behaviors and reviews use the strict [record formats](../../spec/artifacts.md#record-formats). What their authors write stays separate from the derived [reader report](../../spec/artifacts.md#reader-reports).
+
 ## Layout
 
 ```
@@ -15,7 +17,9 @@ dossiers/
     actors.md             the actors and their modes
     scenarios.md          the scenarios
   parts/<id>/
-    prose.md              the abstraction
+    README.md             orientation and ordered behavior collection
+    behaviors/<id>.md     readable mechanism, scoped claims and evidence mappings
+    prose.md              the formal abstraction
     margin.md             working notes: intake lines, the import's draft list
     doubts.md             passages read two ways, as two walks
     decisions.log         decide: owner words; only the committed prefix applies
@@ -29,8 +33,10 @@ dossiers/
     evidence/<name>.json  trial: one question's entry, which holds its current answer
     evidence/<name>.md    the agent's reading of that answer
     trials/<id>/          trial: a trial's bundle, local and kept out of git
-    reviews/              second reads
+    reviews/              independent, scoped assessments at exact input identities
   compositions/<id>/
+    README.md             orientation and ordered behavior collection
+    behaviors/<id>.md     behavior of the composition, claims and evidence mappings
     wiring.md             members, wiring, free sends, closure, default scenarios
     prose.md              the properties
     model/generated/      scaffold: <Concern>.tla, one .cfg per cell and one per walk
@@ -54,7 +60,7 @@ Transient paths may also appear. A trial runs in `.running/<id>/` within its dos
 ```json
 {
   "storage": "integrity-v1",
-  "plugin": "0.1.1",
+  "plugin": "0.2.0",
   "setup": "2026-11-03",
   "updated": "2026-11-03",
   "knowledge": { "root": "../records" },
@@ -66,7 +72,28 @@ Transient paths may also appear. A trial runs in `.running/<id>/` within its dos
 
 `knowledge.root` and each runner's `cwd` are relative to the dossiers root, except a knowledge base outside the repository, which [setup](commands.md#the-command) stores as an absolute path. Setup updates the marker under the root publication lock, keeping its knowledge settings, runners and other metadata. It refuses a malformed marker.
 
-`storage` is independent of `plugin`, and its one value is `integrity-v1`. A marker that names no storage or another one grants no authority, and [Publication and integrity](../../spec/storage.md#format-and-authority) says how verify and each command treat it. Setup adds `storage: integrity-v1` to a marker that names none while no dossier exists under the root, and refuses it once dossiers exist.
+`plugin` must be `0.2.0`. Another version, or none, is refused and not converted. `storage` is independent of `plugin`, and its one value is `integrity-v1`. A marker that names no storage or another one grants no authority, and [Publication and integrity](../../spec/storage.md#format-and-authority) says how verify and each command treat it. Setup adds `storage: integrity-v1` to a marker that names none while no dossier exists under the root, and refuses it once dossiers exist.
+
+## Behavior collections and reviews
+
+A dossier's `README.md` introduces its purpose, actors, vocabulary, normal flow and boundaries. It gives the order in which to read the behavior files. Each behavior explains one mechanism through claims that can be checked separately. A claim names its scope, its assumptions and its mappings to formal statements or supporting records. The [behavior contract](../../spec/behaviors.md) defines the fields and what is refused. The [record formats](../../spec/artifacts.md#record-formats) name the versions accepted.
+
+The README and each behavior file begin with a fenced `json` block, and the explanation follows it in Markdown. The README's block has `format` and `behaviors`, the behavior ids in reading order. A behavior's block has `format`, `id`, `title` and `claims`. Every behavior file is listed in the README's `behaviors`, and every id listed there has its file.
+
+| In a claim | Holds |
+| --- | --- |
+| `id` | `C` and a number, unique in its behavior and never reused |
+| `kind` | `descriptive` for what happens, or `requirement` for what is wanted |
+| `statement` | The claim, as one statement |
+| `scope` | Its `level`, which is `model`, `source` or `deployment`, a `description` in words, and `pins`, the knowledge records that identify the source or the instance |
+| `assumptions` | What the claim takes for granted, possibly nothing |
+| `mappings` | Each with an `id`, a `target`, a `relation` of `supports`, `challenges` or `illustrates`, a `rationale` and its `limitations` |
+
+A target is a `passage`, a `cell`, a `walk`, an `answer` or a `knowledge` record. [Write a behavior](../how-to/write-a-behavior.md) shows a claim from Harbor. In commands and reports, `parts/<id>#<behavior>` names a behavior, `/C<n>` after it a claim, and `/M<n>` after that a mapping.
+
+`prose.md` defines the shared formal abstraction in states, moves, properties and walks. A behavior explains that abstraction and its evidence to a reader. A disagreement between a behavior and the prose needs investigation. A walk that no behavior maps to stays available. It is not unfinished work for that reason alone.
+
+`reviews/*.md` holds the independent assessments. Each review names its scope and records its exact inputs by their full SHA-256 hashes. It assesses the mappings and says what the reviewer examined. It binds each claim of the behaviors it reviews by the claim's own digest, so a later edit to one claim takes only that claim's assessments out of effect. The [review contract](../../spec/review.md) defines its fields. A review of one behavior does not cover the whole dossier. The abbreviated prose hash alone cannot identify all the inputs a review depends on.
 
 ## integrity.json
 
@@ -213,8 +240,10 @@ When a trial ends, its publication compares its answer with the question's entry
 - **A violation needs the owner's `forget`.** While the recorded answer has not lapsed, an answer that turns an outcome showing a counterexample or a failed check, `violated`, `counterexample` or `fail`, into any other outcome is refused, unless the owner's `forget` names the entry. A smaller reach, a changed toolchain and an answer made by hand all meet this rule. Once the recorded answer has lapsed, no decision is needed, since the change that lapsed it says why.
 - **A miscall needs a classification.** A miscalled answer is replaced only once its reading carries a `classification:` line.
 - **An abort never replaces an answer.** An aborted trial's answer is written only for a question with no entry, and an aborted answer never becomes `previous`. It covers nothing and is flagged `unrun` until a completed answer replaces it.
-- **A gone question is removed.** A question is gone when its property, a passage it expects an outcome for, its walk, its scenario or an authored file it executes no longer exists. A generated view under `chart/` or `model/generated/` does not count. The next publication in its dossier that is not refused removes its entry, its reading and its manifest line. Until then verify flags it `question gone`, and it covers nothing.
-- **A superseded answer is removed.** An answer is superseded when the answers that decide stand in its place: each passage it touched, each target of a blunder, and the cell or walk it answered, has a completed answer to another question, and verify concludes the same without it, the same marks, cells, walks, backing, tripwires, flags and next step. The answer that does not decide goes, and among equals the earlier one, so a check that a proof stands in for goes, whether it ran before the proof or after. The publication that supersedes it removes its entry, its reading and its manifest line, and so does the next publication after a change that supersedes one. Until then verify flags it `answer superseded`. An answer that holds a counterexample, in its outcomes or in `previous`, waits for the owner's `forget` instead.
+- **A gone question is removed.** A question is gone when its property, a passage it expects an outcome for, its walk, its scenario or an authored file it executes no longer exists. A generated view under `chart/` or `model/generated/` does not count. When the behavior retention guard permits it, the next publication in its dossier that is not refused removes its entry, its reading and its manifest line. Until then verify flags it `question gone`, and it covers nothing.
+- **A superseded answer is removed.** An answer is superseded when the answers that decide stand in its place: each passage it touched, each target of a blunder, and the cell or walk it answered, has a completed answer to another question, and verify concludes the same without it, the same marks, cells, walks, backing, tripwires, flags and next step. The answer that does not decide goes, and among equals the earlier one, so a check that a proof stands in for goes, whether it ran before the proof or after. When the behavior retention guard permits it, the publication that supersedes it removes its entry, its reading and its manifest line, and so does the next publication after a change that supersedes one. Until then verify flags it `answer superseded`. An answer that holds a counterexample, in its outcomes or in `previous`, waits for the owner's `forget` instead.
+
+Before it replaces or removes an answer, publication looks through the root for the behavior mappings that depend on it. When it cannot establish equivalent support, it keeps the entry. It refuses a replacement that would erase current support. The [retention contract](../../spec/behaviors.md#change-and-deletion) also preserves new counterexamples and the existing rules for the owner's `forget`.
 
 Publication runs under the dossier's publication lock. To write an entry, it writes a candidate first, `.running/<id>/entry.json`, binds the candidate's digest in `integrity.json`, removes the reading of the answer it replaces, and renames the candidate onto `evidence/<name>.json`. A candidate grants no evidence until it is in place under its binding. A publication that is not refused also drops the entries of gone questions and superseded answers. Before the binding, it lists their names beside the bundle in `.running/<id>.dropped.json`, so that a recovery deletes exactly those files whatever has changed since. Their manifest lines go with the binding, their entries and readings after the rename, and the list after that. Last, the publication moves the trial's bundle to `trials/<id>/`. One that keeps the entry takes the same steps without a candidate, so it writes nothing when it drops nothing. One the rules refuse only moves the bundle. Either says why.
 
@@ -246,6 +275,8 @@ External runners must use the supplied file map for declared inputs. The descrip
 
 ## Ledgers and the index
 
+A ledger opens with the dossier's behaviors in reading order, each claim with its standing. The formal tables follow.
+
 A ledger's first line names its dossier and gives the time the view last changed, the prose hash, `answers <n>`, counting each entry verify can read, and `decisions <n>`. A part's `ledger.md` then holds a table of passages with each passage's words, the owner's column, the mark, the answers behind it and the reach, then the guarantees with their backing, the compositions that use it, the summary, the flags, the next step, and what moved when the file last changed.
 
 A composition's `ledger.md` holds the table of its members, then a line for each of these that has content:
@@ -259,7 +290,7 @@ Then come the matrix, with each property's sentence beside its id and without th
 
 A ledger links each trial id it names to the entry under `evidence/` that holds the answer that trial established. Its summary line, like verify's, prints only the counts above zero.
 
-Each ends with a machine form in a fenced JSON block. `rebuilt` is the time the view last changed. Its `answers` lists one row for each entry verify can read. A row gives the entry's name, the trial that established its answer and when, the question's kind, checker, property and scenario, the verdict, whether the answer completed or the entry is void, the tripwires the entry trips, the reading's classification and the prose hash the trial found, and is marked `gone` or `superseded` when the entry is. `dossier verify --json` lists the same rows. `dossier render` writes a view only when its content moved, and verify writes nothing. The ledgers and the index are views. Nothing reads them as a record, and deleting or editing one changes no conclusion. The earlier ledger feeds only its `Since last rebuild:` line, which says what moved since that ledger was written. The index changes whenever any dossier does, so the `.gitignore` that setup writes keeps it out of git, and `dossier render` rebuilds it where it is needed.
+A ledger's machine form holds `behaviors`, the same derived report that `verify --json` gives, which names the authored files instead of copying them. [Reader reports](../../spec/artifacts.md#reader-reports) defines that view. Each ends with a machine form in a fenced JSON block. `rebuilt` is the time the view last changed. Its `answers` lists one row for each entry verify can read. A row gives the entry's name, the trial that established its answer and when, the question's kind, checker, property and scenario, the verdict, whether the answer completed or the entry is void, the tripwires the entry trips, the reading's classification and the prose hash the trial found, and is marked `gone` or `superseded` when the entry is. `dossier verify --json` lists the same rows. `dossier render` writes a view only when its content moved, and verify writes nothing. The ledgers and the index are views. Nothing reads them as a record, and deleting or editing one changes no conclusion. The earlier ledger feeds only its `Since last rebuild:` line, which says what moved since that ledger was written. The index changes whenever any dossier does, so the `.gitignore` that setup writes keeps it out of git, and `dossier render` rebuilds it where it is needed.
 
 ## decisions.log
 

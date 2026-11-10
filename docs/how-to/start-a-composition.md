@@ -1,6 +1,6 @@
 # Start a composition
 
-Put parts together for one concern, declare the scenarios that matter, and state the properties of the whole.
+Explain how parts behave together for one concern, declare the scenarios that matter, and state the properties of the whole. Start with the [behavior collection](../../spec/behaviors.md). The steps below build its formal model.
 
 ## You need
 
@@ -14,7 +14,7 @@ The member parts, each with prose that compiles. See [Start a part](start-a-part
    dossier decide control begin composition
    ```
 
-   That writes `compositions/control/wiring.md` and `prose.md`.
+   That writes `compositions/control/wiring.md`, `prose.md`, a collection README and `behaviors/`. Fill in the README's orientation and its reading order, then write the scoped behavior claims as the concern takes shape. [Write a behavior](write-a-behavior.md) gives the steps.
 
 2. **Name the members and the wiring** in `wiring.md`. Harbor's Control:
 
@@ -104,4 +104,4 @@ The member parts, each with prose that compiles. See [Start a part](start-a-part
 
 ## Next
 
-[Check a claim](check-a-claim.md) to try each cell.
+[Check a claim](check-a-claim.md) to try each cell. Then map the results back to the behavior claims, and get a [scoped review](get-a-second-read.md). A cell that passes does not by itself complete the collection, or establish that its result applies to the source.

@@ -1,10 +1,12 @@
 # Parts, compositions and scenarios
 
-A part is a contract or a procedure, described in sentences that a compiler reads. A composition wires parts together around one concern, such as governance control. A property is a claim about the composition as a whole. An actor is a source of events in the surroundings, such as a keeper or a governance key. A scenario says whether each actor is honest, malicious or offline, and a property is checked under the scenarios it names.
+A part is a contract or a procedure, described in sentences that a compiler reads. A composition wires parts together around one concern, such as governance control. A property is a sentence that must hold, of a part or of a composition as a whole. An actor is a source of events in the surroundings, such as a keeper or a governance key. A scenario says whether each actor is honest, malicious or offline, and a property is checked under the scenarios it names.
+
+These pieces make up the formal specification. A dossier's [behaviors](behaviors.md) explain it in words, and each of their claims maps to a passage, a cell or a walk described on this page.
 
 ## Prose and passages
 
-A part's prose is a series of numbered passages, each one paragraph with one claim. The passages come in kinds:
+A part's prose is a series of numbered passages, each one paragraph that says one thing. The passages come in kinds:
 
 | Kind | Says |
 | --- | --- |
@@ -29,7 +31,7 @@ Above the passages sits the boundary: what the part is, the data it holds with e
 
 ## The chart
 
-The prose compiles to an XState statechart. Each time the agent edits the prose, it redraws the chart with `dossier draw` and checks it against the prose itself: whether every state is reachable, whether every move does what its passage says, whether every pair of state and event is said exactly once, and whether every walk ends where it claims. What it finds comes back to the author, such as a pair nobody said or two guards that overlap, while the passage is still fresh.
+The prose compiles to an XState statechart. Each time the agent edits the prose, it redraws the chart with `dossier draw` and checks it against the prose itself: whether every state is reachable, whether every move does what its passage says, whether every pair of state and event is said exactly once, and whether every walk ends where it says. What it finds comes back to the author, such as a pair nobody said or two guards that overlap, while the passage is still fresh.
 
 The chart has no actors and no assumptions, so it judges only whether the prose is coherent. Whether the prose is true of the world is left to the solvers and the grounding. [Three kinds of tool](three-kinds-of-tool.md) explains the split.
 
@@ -73,7 +75,7 @@ A mode can hold for a window instead of the whole run. The window starts at one 
 
 A scenario can also give a start: the state and the data a cell under it begins from. Everything the start leaves out begins from the boundary's starting values. A start tries a property from a situation the boundary's starting values do not give, such as a price feed already three blocks stale.
 
-A scenario can be declared stronger than another, so that a proof under the stronger one also holds for the weaker. The modes decide whether the declaration is sound. A malicious actor has more behaviors than an honest or an offline one, and honest and offline are incomparable. So one scenario is stronger than another only when every actor's mode in it is the same or malicious. An actor with a window in either scenario must have the same mode in the same window in both, unless the stronger scenario has it malicious for the whole run, which allows every behavior. The two scenarios must also have the same start, since a run from one start says nothing about a run from another. Verify fails on a declaration that the modes or the starts do not support.
+A scenario can be declared stronger than another, so that a proof under the stronger one also holds for the weaker. The modes decide whether the declaration is sound. A malicious actor can do everything an honest or an offline one can, and more. Honest and offline are incomparable. So one scenario is stronger than another only when every actor's mode in it is the same or malicious. An actor with a window in either scenario must have the same mode in the same window in both, unless the stronger scenario has it malicious for the whole run, which allows everything. The two scenarios must also have the same start, since a run from one start says nothing about a run from another. Verify fails on a declaration that the modes or the starts do not support.
 
 ## Cells and the matrix
 

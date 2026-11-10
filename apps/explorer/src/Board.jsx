@@ -1,11 +1,9 @@
 // The board: every dossier, grouped by the next step verify routes it to.
 import { useMemo, useState } from 'react';
 import { Cell, Column, Input, Link, Row, SearchField, Switch, Table, TableBody, TableHeader, ToggleButton, ToggleButtonGroup } from 'react-aria-components';
-import { PASSES, titleBeyondId, useApp } from './lib.js';
+import { PASSES, plural, titleBeyondId, useApp } from './lib.js';
 import { Badge } from './bits.jsx';
 
-const ORDER = ['proved', 'checked', 'implied', 'drawn', 'pending', 'untried', 'held', 'hollow', 'lapsed', 'miscalled', 'violated', 'violated, acceptance lapsed', 'violated, accepted', 'open', 'owed', 'unresolved', 'assumed'];
-const countMarks = marks => { const c = {}; for (const m of Object.values(marks || {})) c[m] = (c[m] || 0) + 1; return c; };
 // Open, as verify routes it: a next step before Report, or a tripwire.
 const isOpen = d => d.route?.pass !== 'Report' || (d.tripwires?.length || 0) > 0;
 
@@ -17,7 +15,7 @@ export function Board() {
   const changed = useMemo(() => new Set(changes.map(c => c.dossier)), [changes]);
   const rows = useMemo(() => (root?.dossiers || []).filter(d =>
     (kind === 'all' || d.kind === kind) && (!openOnly || isOpen(d)) &&
-    (!q || `${d.id} ${d.title} ${(d.route?.why || []).join(' ')}`.toLowerCase().includes(q.toLowerCase()))), [root, q, kind, openOnly]);
+    (!q || `${d.id} ${d.title} ${(d.behaviorTitles || []).join(' ')} ${(d.route?.why || []).join(' ')}`.toLowerCase().includes(q.toLowerCase()))), [root, q, kind, openOnly]);
   // Every step shows, in work order, even when no dossier is waiting on it.
   const groups = PASSES.map(p => [p, rows.filter(d => d.route?.pass === p)]);
   const other = rows.filter(d => !PASSES.includes(d.route?.pass));
@@ -48,12 +46,11 @@ export function Board() {
                 <Column isRowHeader className="col-name">Dossier</Column>
                 <Column className="col-kind">Kind</Column>
                 <Column className="col-why">Why</Column>
-                <Column className="col-stand">Standing</Column>
+                <Column className="col-stand">Behaviors · claims</Column>
                 <Column className="col-flags">Flags</Column>
               </TableHeader>
               <TableBody items={list}>
                 {d => {
-                  const counts = countMarks(d.marks);
                   const href = d.kind === 'composition' ? `#/composition/${d.id}` : `#/part/${d.id}`;
                   return (
                     <Row id={href.slice(1)}>
@@ -61,11 +58,16 @@ export function Board() {
                         {changed.has(d.id) && <span className="dot-changed" title="changed"><span className="sr-only">changed</span></span>}
                         <Link href={href} className="t-strong">{d.id}</Link>{titleBeyondId(d.title, d.id) ? <> <span className="muted">{d.title}</span></> : null}
                       </Cell>
-                      <Cell>{d.kind === 'composition' ? `composition · ${d.members?.length} members` : d.tier}</Cell>
+                      <Cell>{d.kind === 'composition' ? `composition · ${plural(d.members?.length, 'member')}` : d.tier}</Cell>
                       <Cell><span className="why">{d.route?.why?.[0] || ''}</span>{d.route?.why?.length > 1 && <span className="muted"> +{d.route.why.length - 1}</span>}</Cell>
                       <Cell>
-                        {d.kind === 'part' && d.summary && <span className="muted">{d.summary.settled}/{d.summary.passages} settled </span>}
-                        {ORDER.filter(m => counts[m]).map(m => <Badge key={m} word={m} label={`${counts[m]} ${m}`} small />)}
+                        <span className="muted">{d.behaviorSummary.behaviors} · {d.behaviorSummary.claims} </span>
+                        {d.behaviorSummary.contradicted > 0 && <Badge word="contradicted" label={`${d.behaviorSummary.contradicted} contradicted`} small />}
+                        {d.behaviorSummary.contested > 0 && <Badge word="contested" label={`${d.behaviorSummary.contested} contested`} small />}
+                        {d.behaviorSummary.hypotheses > 0 && <Badge word="hypothesis" label={`${d.behaviorSummary.hypotheses} ${d.behaviorSummary.hypotheses === 1 ? 'hypothesis' : 'hypotheses'}`} small />}
+                        {d.behaviorSummary.evidenceAvailable > 0 && <Badge word="evidence-available" label={`${d.behaviorSummary.evidenceAvailable} unreviewed`} small />}
+                        {d.behaviorSummary.supported > 0 && <Badge word="supported" label={`${d.behaviorSummary.supported} supported`} small />}
+                        {d.behaviorSummary.stale > 0 && <Badge word="stale" label={`${d.behaviorSummary.stale} stale`} small />}
                       </Cell>
                       <Cell>
                         {(d.tripwires || []).map((t, i) => <Badge key={`t${i}`} word="violated" label={t.name} small />)}

@@ -353,3 +353,36 @@ code, .mono { font-family: var(--mono); font-size: var(--fs-s); }
 
 .grp.is-empty { margin-top: 4px; }
 .grp.is-empty .grp-h { color: var(--muted); font-weight: 400; margin: 2px 0; }
+
+/* A dossier: its behaviors beside the detail of the one selected, and its model one tab away. */
+.dossier-reader { height: 100%; min-height: 0; }
+.dossier-reader-head { display: flex; align-items: center; flex-wrap: wrap; column-gap: 20px; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.dossier-reader-head .tablist { border: 0; padding: 0; }
+.bv { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 44%); height: 100%; min-height: 0; }
+.bv.is-narrow { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(160px, 45%) minmax(0, 1fr); }
+.bv.is-narrow .side-r { border-left: 0; border-top: 1px solid var(--line); }
+.bv-scroll { overflow: auto; flex: 1; min-height: 0; padding-bottom: 20px; }
+.bv-scroll .plist { overflow: visible; flex: none; padding-bottom: 0; }
+.pbody { min-width: 0; }
+.psub { display: block; color: var(--muted); font-size: var(--fs-s); overflow-wrap: anywhere; }
+.pitem.is-behavior { background: var(--surface-2); }
+.pitem.is-behavior[data-hovered] { background: var(--hover); }
+.pitem.is-behavior[data-selected] { background: var(--accent-wash); }
+.pitem.is-behavior .psub { display: inline; margin-left: 6px; }
+.bv-rest { padding: 4px 10px; line-height: 1.7; }
+.doc-pad { padding: 6px 10px; }
+.doc { max-width: 84ch; line-height: 1.5; }
+.doc p { margin: 0 0 6px; }
+.doc ul, .doc ol { margin: 0 0 6px; padding-left: 18px; }
+.doc h4 { font-size: var(--fs); font-weight: 600; margin: 8px 0 3px; }
+.doc pre { background: var(--surface-2); padding: 6px 8px; overflow: auto; margin: 0 0 6px; }
+.doc .dt { margin: 0 0 6px; }
+.map-why { margin: 0 0 3px; }
+.ev { margin-bottom: 3px; }
+.limits { margin-top: 3px; font-size: var(--fs-s); color: var(--ink-2); }
+.limits > summary { cursor: pointer; }
+.walk-player { margin-top: 4px; border: 1px solid var(--line); border-radius: var(--r); }
+.walk-player .player-bar { padding: 3px 6px; }
+.walk-player .kv, .walk-members { padding: 4px 8px; }
+.walk-members { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 6px; }
+.wrap { overflow-wrap: anywhere; }

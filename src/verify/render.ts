@@ -4,6 +4,7 @@
 import { proseHash } from '../hash.ts';
 import { KINDS } from '../prose/prose.ts';
 import { forgets } from '../dossiers/decisions.ts';
+import { compareVersions, EARLIEST_ROOT, isVersion } from '../dossiers/integrity.ts';
 import type { Backing } from '../prose/prose.ts';
 import type { Snapshot } from '../trials/answers.ts';
 import type { OwnerState } from '../dossiers/decisions.ts';
@@ -14,6 +15,7 @@ import type { CellMark, WalkMarkName } from './cells.ts';
 import type { BackingState, Mark } from './marks.ts';
 import type { Route } from './route.ts';
 import type { Note } from './tripwires.ts';
+import type { BehaviorReport } from '../behaviors/report.ts';
 
 // The machine form a part's ledger ends with, as written.
 export interface PartLedgerForm {
@@ -24,6 +26,7 @@ export interface PartLedgerForm {
   module: string | null;
   rebuilt: string;
   plugin: string;
+  behaviors?: BehaviorReport;
   summary: Record<string, number>;
   marks: Record<string, Mark>;
   owner: Record<string, OwnerState>;
@@ -51,6 +54,7 @@ export interface CompositionLedgerForm {
   concern: string | null;
   rebuilt: string;
   plugin: string;
+  behaviors?: BehaviorReport;
   summary: Record<string, number>;
   members: Member[];
   wiring: Wire[];
@@ -68,8 +72,7 @@ export interface CompositionLedgerForm {
   route: Route;
 }
 // The earlier view's machine form, as far as the "Since last rebuild" line reads it. Only that
-// line reads it: it says what moved between two views and decides nothing. A ledger rendered before
-// its rows were called answers lists them under trials, each by its trial's id.
+// line reads it: it says what moved between two views and decides nothing.
 interface LedgerForm {
   marks?: Record<string, { mark: string; owner: string | null }>;
   cells?: { property: string; scenario: string; mark: string }[];
@@ -79,7 +82,6 @@ interface LedgerForm {
   usedBy?: string[];
   flags?: Note[];
   answers?: { trial: string }[];
-  trials?: { id: string }[];
   removed?: string[];
   closureMissing?: string[];
 }
@@ -106,12 +108,11 @@ const FORM: Record<string, (v: unknown) => boolean> = {
   usedBy: listOf(isText),
   flags: listOf(shaped({ name: isText, where: isText })),
   answers: listOf(shaped({ trial: isText })),
-  trials: listOf(shaped({ id: isText })),
   removed: listOf(isText),
   closureMissing: listOf(isText),
 };
 function formShaped(form: unknown): form is LedgerForm {
-  return isObject(form) && Object.entries(FORM).every(([k, ok]) => form[k] === undefined || ok(form[k]));
+  return isObject(form) && isVersion(form.plugin) && compareVersions(form.plugin, EARLIEST_ROOT) >= 0 && !Object.hasOwn(form, 'trials') && Object.entries(FORM).every(([k, ok]) => form[k] === undefined || ok(form[k]));
 }
 interface RenderOptions { version: string; now: string; previous: string | null | undefined }
 
@@ -147,8 +148,17 @@ export function verifyLine(analyses: Analysis[], version: string, rootTrips: Not
   return `verify: FAIL · ${scope} · dossier ${version} · ${trips.length} tripwire${trips.length === 1 ? '' : 's'}: ${trips.join('; ')}`;
 }
 
+// A dossier's claims by standing, under its summary line, once it has behaviors.
+export function claimsLine(a: Analysis): string | null {
+  const s = a.behaviors?.summary;
+  if (!s || !s.behaviors) return null;
+  return [`  claims: ${counted(s.behaviors, 'behavior', 'behaviors')}, ${counted(s.claims, 'claim', 'claims')}`, ...above([['supported', s.supported], ['contradicted', s.contradicted], ['contested', s.contested], ['evidence unreviewed', s.evidenceAvailable], ['hypothesis', s.hypotheses], ['stale', s.stale]])].join(' · ');
+}
+
 export function briefLines(a: Analysis): string[] {
   const lines = [summaryLine(a)];
+  const claims = claimsLine(a);
+  if (claims) lines.push(claims);
   if (a.route.pass === 'Fix') lines.push(`  fix: ${a.route.why.join('; ')}`);
   else lines.push(`  next: ${a.route.pass} — ${a.route.why.join('; ')}`);
   if (a.flags.length) lines.push(`  flags: ${a.flags.map(x => `${x.name} (${x.where})`).join(' · ')}`);
@@ -213,11 +223,22 @@ export function backingText(b: Backing | null | undefined): string {
   return (b as { kind: string }).kind;
 }
 
+export function behaviorLines(a: Analysis): string[] {
+  const report=a.behaviors;
+  if (!report) return [];
+  if (!report.behaviors.length) return ['', 'Behavior collection: empty; the account is incomplete.', ''];
+  return ['', '## Behaviors', '', ...report.behaviors.flatMap(b => [
+    `### [${b.title}](behaviors/${b.id}.md)`, '',
+    ...b.claims.map(c => `- ${c.id}: ${c.statement} — ${c.label}; ${c.scope.level}; ${c.freshness}.`), '',
+  ]), '## Formal evidence', ''];
+}
+
 export function renderPartLedger(a: PartAnalysis, { version, now, previous }: RenderOptions): string {
   const out: string[] = [];
   out.push(`# Ledger: ${a.title}   rebuilt ${now}   prose@${proseHash(a.hashes)}   answers ${a.answerRows.length}   decisions ${a.decisions.length}`);
   out.push('Written by dossier render from the records. The JSON block at the end says the same for tools.');
   out.push(verifyLine([a], version));
+  out.push(...behaviorLines(a));
   out.push('');
   out.push('| id | kind | passage | owner | machine | answers | reach |');
   out.push('| --- | --- | --- | --- | --- | --- | --- |');
@@ -245,7 +266,7 @@ export function renderPartLedger(a: PartAnalysis, { version, now, previous }: Re
   out.push(`Summary: ${summaryLine(a).replace(/^[^:]+:\s*/, '')}`);
   out.push(`Flags: ${a.flags.length ? a.flags.map(x => `${x.name} (${x.where})`).join(' · ') : 'none'}`);
   if (a.route.pass === 'Fix') out.push(`Fix: ${a.route.why.join('; ')}`); else out.push(`Next: ${a.route.pass} — ${a.route.why.join('; ')}`);
-  const form = { kind: 'part', id: a.id, title: a.title, tier: a.tier, module: a.ir.module, rebuilt: now, plugin: version, summary: a.summary, marks: a.marks, owner: a.owner, backing: a.backing, pins: a.pins, usedBy: a.usedBy, answers: a.answerRows, removed: a.removed, tripwires: a.tripwires, flags: a.flags, route: a.route } satisfies PartLedgerForm;
+  const form = { kind: 'part', id: a.id, title: a.title, tier: a.tier, module: a.ir.module, rebuilt: now, plugin: version, summary: a.summary, marks: a.marks, owner: a.owner, backing: a.backing, pins: a.pins, usedBy: a.usedBy, answers: a.answerRows, removed: a.removed, tripwires: a.tripwires, flags: a.flags, route: a.route, behaviors: a.behaviors } satisfies PartLedgerForm;
   return finish(out, form, diffMarks(a, parseMachineForm(previous)), previous);
 }
 
@@ -254,6 +275,7 @@ export function renderCompositionLedger(a: CompositionAnalysis, { version, now, 
   out.push(`# Ledger: ${a.title}   rebuilt ${now}   prose@${proseHash(a.hashes)}   answers ${a.answerRows.length}   decisions ${a.decisions.length}`);
   out.push('Written by dossier render from the records. The JSON block at the end says the same for tools.');
   out.push(verifyLine([a], version));
+  out.push(...behaviorLines(a));
   out.push('');
   out.push('| member | role | module | pins |');
   out.push('| --- | --- | --- | --- |');
@@ -309,7 +331,7 @@ export function renderCompositionLedger(a: CompositionAnalysis, { version, now, 
   out.push(`Summary: ${summaryLine(a).replace(/^[^:]+:\s*/, '')}`);
   out.push(`Flags: ${a.flags.length ? a.flags.map(x => `${x.name} (${x.where})`).join(' · ') : 'none'}`);
   if (a.route.pass === 'Fix') out.push(`Fix: ${a.route.why.join('; ')}`); else out.push(`Next: ${a.route.pass} — ${a.route.why.join('; ')}`);
-  const form = { kind: 'composition', id: a.id, title: a.title, concern: a.prose.concern, rebuilt: now, plugin: version, summary: a.summary, members: a.wiring.members, wiring: a.wiring.wiring, free: a.composed.free || [], outside: a.composed.outside || [], closureMissing: a.closureMissing, cells: a.cells.map(c => ({ property: c.property, scenario: c.scenario, mark: c.mark, trial: c.trial, entry: c.entry, reach: c.reach ? c.reach.text : null, lapsed: c.lapsed, accepted: Boolean(c.accepted), acceptanceLapsed: c.acceptanceLapsed || [], open: Boolean(c.open), impliedBy: c.impliedBy || null, held: c.held })), walks: walks.map(w => ({ id: w.id, scenario: w.scenario, mark: w.mark, trial: w.trial, entry: w.entry })), owner: a.owner, propertyHeld: a.propertyHeld, answers: a.answerRows, removed: a.removed, tripwires: a.tripwires, flags: a.flags, route: a.route } satisfies CompositionLedgerForm;
+  const form = { kind: 'composition', id: a.id, title: a.title, concern: a.prose.concern, rebuilt: now, plugin: version, summary: a.summary, members: a.wiring.members, wiring: a.wiring.wiring, free: a.composed.free || [], outside: a.composed.outside || [], closureMissing: a.closureMissing, cells: a.cells.map(c => ({ property: c.property, scenario: c.scenario, mark: c.mark, trial: c.trial, entry: c.entry, reach: c.reach ? c.reach.text : null, lapsed: c.lapsed, accepted: Boolean(c.accepted), acceptanceLapsed: c.acceptanceLapsed || [], open: Boolean(c.open), impliedBy: c.impliedBy || null, held: c.held })), walks: walks.map(w => ({ id: w.id, scenario: w.scenario, mark: w.mark, trial: w.trial, entry: w.entry })), owner: a.owner, propertyHeld: a.propertyHeld, answers: a.answerRows, removed: a.removed, tripwires: a.tripwires, flags: a.flags, route: a.route, behaviors: a.behaviors } satisfies CompositionLedgerForm;
   return finish(out, form, diffCells(a, parseMachineForm(previous)), previous);
 }
 
@@ -354,7 +376,7 @@ const diffList = (label: string, before: string[] = [], after: string[] = []) =>
 const flagText = (f: Note) => `${f.name} (${f.where})`;
 // The answers that arrived, by the trial that established each, and the entries that went missing.
 const diffAnswers = (previous: LedgerForm, after: AnswerRow[], removed: string[]) => {
-  const b = new Set(previous.answers ? previous.answers.map(t => t.trial) : (previous.trials || []).map(t => t.id));
+  const b = new Set((previous.answers || []).map(t => t.trial));
   const added = after.filter(t => !b.has(t.trial)).map(t => t.trial);
   const wasRemoved = new Set(previous.removed || []);
   const gone = removed.filter(name => !wasRemoved.has(name));

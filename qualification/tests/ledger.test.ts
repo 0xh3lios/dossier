@@ -1,3 +1,4 @@
+import { emptyCollection } from './collection-fixture.ts';
 // The ledger: decisions, doubts, covers and marks, cells, tripwires and
 // flags, the router, the rendered ledgers and verify. A trial here is
 // synthetic: its bundle is sealed as the runner seals one, and publishAnswer
@@ -282,7 +283,7 @@ const apalacheCall = (inv: string, mode = 'inductive') => `kind: apalache\nmode:
 const externalCall = (ids: string[]) => `kind: external\nrunner: replay\nexecutes:\n  - prose.md\nreach: the stand-in\nexpect:\n${ids.map(i => `  ${i}: pass`).join('\n')}\nbecause: |\n  b\n`;
 
 const stamp = (hhmm: string) => `2026-11-03T${hhmm.slice(0, 2)}:${hhmm.slice(2)}:00.000Z`;
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 // The hash a synthetic result records for a file that is not on disk, as a trial that read another copy would.
 const NOT_ON_DISK = '0'.repeat(64);
 
@@ -372,6 +373,7 @@ function rootAt(root: string) {
     const dossier = rel.match(/^((?:parts|compositions)\/[^/]+)\//);
     if (dossier && !rel.endsWith('/integrity.json')) {
       const dir = join(root, dossier[1]);
+      emptyCollection(dir);
       if (!existsSync(join(dir, 'integrity.json'))) keepManifest(dir, manifestOf(dir));
       if (rel.endsWith('/decisions.log')) commitDecisions(dir);
     }
@@ -1846,7 +1848,7 @@ describe('tripwires and flags of a part', () => {
     assert.ok(!flagNames(found).includes('pin unresolved'));
   });
 
-  it('flags a reworded definition, a narrowed reach, an unrun aborted answer and an updated plugin, and nothing from an edited chart view', async t => {
+  it('flags a reworded definition, a narrowed reach and an unrun aborted answer, and nothing from an edited chart view', async t => {
     const { root, write, trial, dir, results, analyze } = fresh(t);
     write('parts/timelock/model/Timelock.tla', TIMELOCK_TLA);
     write('parts/timelock/model/Timelock.cfg', 'SPECIFICATION Spec\nINVARIANTS TypeOK A1\n');
@@ -1868,7 +1870,6 @@ describe('tripwires and flags of a part', () => {
     assert.equal(flags.reworded, reworded, 'named by the entry that holds the answer the definition gave');
     assert.deepEqual(a.flags.filter(f => f.name === 'narrowed'), [{ name: 'narrowed', entry: tlc.name, where: `evidence/${tlc.name}.json reaches less than an answer it replaced (MaxSent 4→2)` }]);
     assert.deepEqual(a.flags.filter(f => f.name === 'unrun'), [{ name: 'unrun', entry: aborted.name, where: `evidence/${aborted.name}.json: timed out after 1 seconds` }]);
-    assert.equal(flags['plugin updated'], 'set up with dossier 0.0.1, this is 0.1.0: run dossier setup');
     assert.ok(a.route.why.includes(reworded));
     assert.deepEqual(a.changedModelFiles, [], 'the files are as the trials ran them');
     write('parts/timelock/chart/machine.json', '{}\n');
@@ -1913,8 +1914,12 @@ describe('tripwires and flags of a part', () => {
     assert.deepEqual(analyze({ parts: ['timelock'], retired: ['adapter'] }).tripwires.map(trip => trip.where), ['G1 names "the Adapter", which is a retired part', 'E4: "the Adapter" is a retired part'], 'as verify passes them');
   });
 
-  it('flags a dossier.json that names no plugin version without saying undefined', t => {
-    assert.equal(fresh(t).analyze({ marker: {} }).flags.find(f => f.name === 'plugin updated')!.where, 'dossier.json names no plugin version, this is 0.1.0: run dossier setup');
+  it('refuses a root that names no supported plugin version', t => {
+    const { root, write } = fresh(t);
+    write('dossier.json', JSON.stringify({ storage: STORAGE }));
+    const result=verifyAll({root,version:VERSION});
+    assert.ok(result.tripwires.some(t=>t.where.includes('dossier.json names plugin null; this plugin reads roots set up by dossier 0.2.0 or later')));
+    assert.ok(!JSON.stringify(result.tripwires).includes('undefined'));
   });
 
   it('skips the dot files a file browser leaves in evidence/', t => {
@@ -2304,7 +2309,7 @@ describe('render and verify', () => {
     assert.ok(ledger.endsWith('\n```\n') && !ledger.includes('ledger-hash'), 'a view ends with its JSON block and carries no hash of its own');
     assert.ok(ledger.startsWith('# Ledger: Timelock   rebuilt '));
     assert.equal(ledger.split('\n')[1], 'Written by dossier render from the records. The JSON block at the end says the same for tools.');
-    assert.ok(ledger.includes('\nverify: ok · Timelock · dossier 0.1.0 · 0 tripwires\n'));
+    assert.ok(ledger.includes('\nverify: ok · Timelock · dossier 0.2.0 · 0 tripwires\n'));
     assert.ok(ledger.includes('\n| id | kind | passage | owner | machine | answers | reach |\n'), 'each passage\'s words sit beside its id, with the answers behind its mark');
     assert.ok(ledger.includes(`\n| S1 | State | Idle: nothing is planned. | unsettled | drawn | [chart-a1a1a1](evidence/${chart}.json) | the chart over remaining 0..2 |\n`), 'an answer is named by the trial that established it, linked to its entry in evidence/');
     assert.ok(ledger.includes(`\n| R5 | Refusal | In Idle, schedule is refused when delay is above 2. | unsettled | checked | [chart-a1a1a1](evidence/${chart}.json) | the chart over remaining 0..2 |\n`));
@@ -2367,7 +2372,7 @@ describe('render and verify', () => {
     const r = verify();
     const index = readFileSync(join(root, 'index.md'), 'utf8');
     assert.ok(index.startsWith('# Dossiers   rebuilt '));
-    assert.ok(index.includes('\nverify: ok · 3 parts, 1 composition · dossier 0.1.0 · 0 tripwires\n'));
+    assert.ok(index.includes('\nverify: ok · 3 parts, 1 composition · dossier 0.2.0 · 0 tripwires\n'));
     assert.ok(index.includes('\n| part | module | tier | supply |\n| --- | --- | --- | --- |\n| adapter | adapter | modeled | member |\n| timelock | gov-timelock | modeled |  |\n| token | token | modeled | member |\n'));
     assert.ok(index.includes(`\n- ${summaryLine(r.parts.find(c => c.id === 'timelock')!)}\n`));
     assert.match(index, /\n- Supply: 2 properties × 3 scenarios · 4 cells · pending 4 · held 2 · prose@[0-9a-f]{6}\n/, 'a summary prints only the counts above zero, then the prose hash');
@@ -2392,14 +2397,14 @@ describe('render and verify', () => {
     const { root, verify } = fresh(t);
     // The first rebuild writes the ledger edited below.
     verify();
-    assert.equal(verifyLine([{ kind: 'part', title: 'Timelock', tripwires: [] }] as unknown as Analysis[], VERSION), 'verify: ok · Timelock · dossier 0.1.0 · 0 tripwires');
-    assert.equal(verifyLine([{ kind: 'part', title: 'Timelock', tripwires: [] }, { kind: 'composition', title: 'Supply', tripwires: [] }] as unknown as Analysis[], VERSION), 'verify: ok · 1 part, 1 composition · dossier 0.1.0 · 0 tripwires');
-    assert.equal(verifyLine([{ kind: 'part', title: 'Timelock', tripwires: [{ name: 'stray files', where: 'x.txt' }] }, { kind: 'composition', title: 'Supply', tripwires: [{ name: 'misnamed', where: 'O1 cites G9' }] }] as Analysis[], VERSION), 'verify: FAIL · 1 part, 1 composition · dossier 0.1.0 · 2 tripwires: stray files (Timelock: x.txt); misnamed (Supply: O1 cites G9)');
+    assert.equal(verifyLine([{ kind: 'part', title: 'Timelock', tripwires: [] }] as unknown as Analysis[], VERSION), 'verify: ok · Timelock · dossier 0.2.0 · 0 tripwires');
+    assert.equal(verifyLine([{ kind: 'part', title: 'Timelock', tripwires: [] }, { kind: 'composition', title: 'Supply', tripwires: [] }] as unknown as Analysis[], VERSION), 'verify: ok · 1 part, 1 composition · dossier 0.2.0 · 0 tripwires');
+    assert.equal(verifyLine([{ kind: 'part', title: 'Timelock', tripwires: [{ name: 'stray files', where: 'x.txt' }] }, { kind: 'composition', title: 'Supply', tripwires: [{ name: 'misnamed', where: 'O1 cites G9' }] }] as Analysis[], VERSION), 'verify: FAIL · 1 part, 1 composition · dossier 0.2.0 · 2 tripwires: stray files (Timelock: x.txt); misnamed (Supply: O1 cites G9)');
     const path = join(root, 'parts', 'adapter', 'ledger.md');
     const original = readFileSync(path, 'utf8');
     writeFileSync(path, original + 'an edit\n');
     const r = verify();
-    assert.equal(verifyLine([...r.parts, ...r.compositions], VERSION), 'verify: ok · 3 parts, 1 composition · dossier 0.1.0 · 0 tripwires', 'a ledger is a view: editing it fails nothing');
+    assert.equal(verifyLine([...r.parts, ...r.compositions], VERSION), 'verify: ok · 3 parts, 1 composition · dossier 0.2.0 · 0 tripwires', 'a ledger is a view: editing it fails nothing');
     assert.equal(core(readFileSync(path, 'utf8')), core(original), 'render writes the view back from the records');
   });
 
@@ -2414,7 +2419,7 @@ describe('render and verify', () => {
     const ledger = renderPartLedger(r.parts.find(c => c.id === 'timelock')!, { version: VERSION, now: 'now', previous: null });
     assert.ok(ledger.startsWith('# Ledger: Timelock   rebuilt now   prose@'));
     const index = renderIndex({ parts: r.parts, compositions: r.compositions, version: VERSION, now: 'now', route: r.route });
-    assert.ok(index.startsWith('# Dossiers   rebuilt now   dossier 0.1.0\n'));
+    assert.ok(index.startsWith('# Dossiers   rebuilt now   dossier 0.2.0\n'));
   });
 
   it('keeps the text on disk when only the stamp would move, and says when the words moved but no mark did', t => {
@@ -2439,25 +2444,16 @@ describe('render and verify', () => {
     assert.notEqual(renderIndex({ parts: r.parts, compositions: r.compositions, version: '0.2.1', now: 't2', route: r.route, previous: index }), index);
   });
 
-  // A ledger rendered before its rows were called answers lists them under trials, each by its trial's
-  // id, below a header that counts trials. It reads once, for the "Since last rebuild" line.
-  it('reads a ledger rendered before its rows were called answers once, for what moved since it', t => {
-    const r = verifyAll({ root: fresh(t).root, version: VERSION, write: false });
-    const timelock = r.parts.find(c => c.id === 'timelock')!;
-    assert.ok(timelock.answerRows.length > 0, 'the part holds answers');
-    const current = renderPartLedger(timelock, { version: VERSION, now: 't1', previous: null });
-    const { answers, ...rest } = parseMachineForm(current) as PartLedgerForm;
-    const rows = answers.map(({ entry, trial, ...row }) => ({ id: trial, entry, ...row }));
-    // The ledger with another machine form, the header counting trials as the plugin wrote it before.
-    const ledgerWith = (form: object) => current.replace(/   answers (\d+)   /, '   trials $1   ').replace(/\n```json\n[\s\S]*\n```\n$/, () => `\n\`\`\`json\n${JSON.stringify(form, null, 2)}\n\`\`\`\n`);
-    const before = ledgerWith({ ...rest, trials: rows });
-    const read = parseMachineForm(before) as { trials?: unknown[]; answers?: unknown };
-    assert.ok(read.trials?.length === rows.length && read.answers === undefined && /   trials \d+   /.test(before.split('\n')[0]), 'the ledger as the plugin wrote it before');
-    const again = renderPartLedger(timelock, { version: VERSION, now: 't2', previous: before });
-    assert.ok(again.includes('\nSince last rebuild: no mark moved\n'), 'no answer reads as new: the old rows are read by their trial ids');
-    assert.ok(/   answers \d+   /.test(again.split('\n')[0]) && again.includes('\n  "answers": [\n'), 'and the ledger is written in the new form');
-    const unread = ledgerWith({ ...rest, unread: rows });
-    assert.match(renderPartLedger(timelock, { version: VERSION, now: 't3', previous: unread }), /\nSince last rebuild: answers new /, 'unread, every answer would read as new');
+  it('refuses previous-version and retired ledger shapes instead of adapting them', t => {
+    const r=verifyAll({root:fresh(t).root,version:VERSION});
+    const a=r.parts.find(p=>p.id==='timelock')!;
+    const current=renderPartLedger(a,{version:VERSION,now:'t1',previous:null});
+    const form=parseMachineForm(current) as PartLedgerForm;
+    assert.ok(form);
+    const changed=(value:object)=>current.replace(/\n```json\n[\s\S]*\n```\n$/,()=>`\n\`\`\`json\n${JSON.stringify(value)}\n\`\`\`\n`);
+    assert.equal(parseMachineForm(changed({...form,plugin:'0.1.1'})),null);
+    assert.equal(parseMachineForm(changed({...form,trials:[]})),null);
+    assert.ok(renderPartLedger(a,{version:VERSION,now:'t2',previous:changed({...form,plugin:'0.1.0'})}).includes('Since last rebuild: first rebuild'));
   });
 
   it('removes a generated configuration the composer no longer writes, and leaves the rest', t => {
@@ -2518,7 +2514,7 @@ describe('a removed answer', () => {
       let r = verify();
       assert.deepEqual(trips(r), removed);
       assert.equal(r.route.pass, 'Fix');
-      assert.ok(ledger('parts/timelock').includes(`\nverify: FAIL · Timelock · dossier 0.1.0 · 1 tripwire: answer removed (Timelock: ${lost})\n`), 'the ledger records it');
+      assert.ok(ledger('parts/timelock').includes(`\nverify: FAIL · Timelock · dossier 0.2.0 · 1 tripwire: answer removed (Timelock: ${lost})\n`), 'the ledger records it');
       assert.deepEqual((parseMachineForm(ledger('parts/timelock')) as PartLedgerForm).removed, [part.name], 'and shows it in its machine form');
       assert.ok(ledger('parts/timelock').includes('\nSince last rebuild: S1 drawn→pending'), ledger('parts/timelock'));
       assert.ok(ledger('parts/timelock').includes(`; answers removed ${part.name}\n`), ledger('parts/timelock'));
@@ -2613,7 +2609,7 @@ describe('the root\'s own tripwires', () => {
     const { root, write } = makeRoot('dossier-marker-');
     try {
       write('parts/timelock/prose.md', TIMELOCK);
-      write('dossier.json', '{ "plugin": "0.1.0", }\n');
+      write('dossier.json', '{ "plugin": "0.2.0", }\n');
       const r = verifyAll({ root, version: VERSION, write: true });
       assert.equal(r.tripwires.length, 1);
       assert.equal(r.tripwires[0].name, 'malformed marker');
@@ -2622,9 +2618,9 @@ describe('the root\'s own tripwires', () => {
       assert.ok(!flagNames(r.parts[0]).includes('plugin updated'), 'no version read is no version that moved');
       assert.deepEqual([r.route.pass, r.route.target, r.route.why], ['Fix', null, [`malformed marker (${r.tripwires[0].where})`, 'Timelock: integrity unavailable (dossier.json does not read)']]);
       const line = verifyLine([...r.parts, ...r.compositions], VERSION, r.tripwires);
-      assert.equal(line, `verify: FAIL · Timelock · dossier 0.1.0 · 2 tripwires: malformed marker (${r.tripwires[0].where}); integrity unavailable (Timelock: dossier.json does not read)`);
+      assert.equal(line, `verify: FAIL · Timelock · dossier 0.2.0 · 2 tripwires: malformed marker (${r.tripwires[0].where}); integrity unavailable (Timelock: dossier.json does not read)`);
       assert.ok(readFileSync(join(root, 'index.md'), 'utf8').includes(`\n${line}\n`), 'the index says so');
-      assert.equal(verifyLine([], VERSION), 'verify: ok · no dossiers · dossier 0.1.0 · 0 tripwires');
+      assert.equal(verifyLine([], VERSION), 'verify: ok · no dossiers · dossier 0.2.0 · 0 tripwires');
       write('dossier.json', JSON.stringify({ plugin: VERSION }) + '\n');
       const unnamed = 'dossier.json names no storage; this plugin reads integrity-v1 only';
       assert.deepEqual(verifyAll({ root, version: VERSION }).tripwires, [{ name: 'integrity unavailable', where: unnamed }], 'a root that names no storage is read as no format at all');

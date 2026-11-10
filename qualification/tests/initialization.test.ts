@@ -21,7 +21,7 @@ const today = '2026-11-05';
 // Acquiring and removing transient locks changes directory mtimes; all record
 // bytes, file modes and file mtimes must still be unchanged by a refused retry.
 const recordsFingerprint = (dir: string) => Object.fromEntries(Object.entries(fingerprint(dir)).filter(([, value]) => !value.endsWith(':directory')));
-function rootFor(t: TestContext, marker: unknown = { storage: STORAGE, plugin: '0.1.0' }): string {
+function rootFor(t: TestContext, marker: unknown = { storage: STORAGE, plugin: '0.2.0' }): string {
   const root = mkdtempSync(join(tmpdir(), 'dossier-initialization-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   if (marker !== undefined) writeFileSync(join(root, 'dossier.json'), JSON.stringify(marker) + '\n');
@@ -96,7 +96,7 @@ test('a killed initializer leaves a recoverable root lock and a retry begins exa
 });
 
 test('begin and import publish complete part and composition records without replacing existing inputs', t => {
-  const root = rootFor(t, { storage: STORAGE, plugin: '0.1.0', knowledge: { root: join(plugin, 'qualification/fixture/knowledge') } });
+  const root = rootFor(t, { storage: STORAGE, plugin: '0.2.0', knowledge: { root: join(plugin, 'qualification/fixture/knowledge') } });
   for (const args of [['decide', 'gate', 'begin', 'charted'], ['decide', 'compositions/control', 'begin'], ['import', 'vault']]) {
     const result = command(root, ...args);
     assert.equal(result.status, 0, result.stderr);
@@ -159,16 +159,16 @@ test('begin adopts hand-drafted inputs, but refuses records without integrity.js
 });
 
 test('setup serializes its marker read under the root lock and keeps every field it does not update', t => {
-  const root = rootFor(t, { plugin: 'old', setup: '2020-01-01', custom: { retained: true }, knowledge: { root: 'records', note: 'keep' }, storage: STORAGE });
+  const root = rootFor(t, { plugin: '0.2.0', setup: '2020-01-01', custom: { retained: true }, knowledge: { root: 'records', note: 'keep' }, storage: STORAGE });
   const releaseOther = acquirePublicationLock(root);
   try {
     const committed = { ...JSON.parse(readFileSync(join(root, 'dossier.json'), 'utf8')), otherNote: 'committed by another writer before setup' };
     durableWrite(join(root, 'dossier.json'), JSON.stringify(committed));
-    assert.throws(() => rewriteSetupMarker(root, 'new', today), /locked/);
+    assert.throws(() => rewriteSetupMarker(root, '0.2.0', today), /locked/);
     assert.deepEqual(JSON.parse(readFileSync(join(root, 'dossier.json'), 'utf8')), committed);
   } finally { releaseOther(); }
   let checkedLock = false;
-  const { marker, created } = rewriteSetupMarker(root, 'new', today, 'new-records', { boundary(name) {
+  const { marker, created } = rewriteSetupMarker(root, '0.2.0', today, 'new-records', { boundary(name) {
     if (name !== 'root-marker:locked') return;
     checkedLock = true;
     assert.equal(inspectPublicationLock(root).state, 'live-local');
@@ -176,28 +176,29 @@ test('setup serializes its marker read under the root lock and keeps every field
   } });
   assert.ok(checkedLock);
   assert.equal(created, false);
-  assert.deepEqual(marker, { plugin: 'new', setup: '2020-01-01', custom: { retained: true }, knowledge: { root: 'new-records', note: 'keep' }, storage: STORAGE, otherNote: 'committed by another writer before setup', updated: today });
-  const unnamed = rootFor(t, { plugin: 'old' });
-  assert.equal(rewriteSetupMarker(unnamed, 'new', today).marker.storage, STORAGE, 'with no dossier under it there is nothing to protect, and setup names the format');
-  const holding = rootFor(t, { plugin: 'old' });
+  assert.deepEqual(marker, { plugin: '0.2.0', setup: '2020-01-01', custom: { retained: true }, knowledge: { root: 'new-records', note: 'keep' }, storage: STORAGE, otherNote: 'committed by another writer before setup', updated: today });
+  const unnamed = rootFor(t, { plugin: '0.2.0' });
+  assert.equal(rewriteSetupMarker(unnamed, '0.2.0', today).marker.storage, STORAGE, 'with no dossier under it there is nothing to protect, and setup names the format');
+  const holding = rootFor(t, { plugin: '0.2.0' });
   mkdirSync(join(holding, 'parts', 'gate'), { recursive: true });
   const before = readFileSync(join(holding, 'dossier.json'), 'utf8');
-  assert.throws(() => rewriteSetupMarker(holding, 'new', today), /names no storage while dossiers exist under it/);
+  assert.throws(() => rewriteSetupMarker(holding, '0.2.0', today), /names no storage while dossiers exist under it/);
   assert.equal(readFileSync(join(holding, 'dossier.json'), 'utf8'), before, 'setup does not claim records in a format it does not read');
 });
 
 test('setup interruption leaves a whole old or new root marker and safely retries', t => {
   const stops = ['root-marker:locked', 'root-marker:temporary-written', 'root-marker:temporary-flushed', 'root-marker:replaced', 'root-marker:directory-flushed'];
   for (const stop of stops) {
-    const old = { storage: STORAGE, plugin: 'old', note: 'preserve' };
+    const old = { storage: STORAGE, plugin: '0.2.0', setup: '2020-01-01', updated: '2020-01-01', note: 'preserve', knowledge: { root: 'records', note: 'keep' } };
     const root = rootFor(t, old);
-    assert.throws(() => rewriteSetupMarker(root, 'new', today, undefined, { boundary(name) { if (name === stop) throw new Error('interrupted'); } }), /interrupted/);
+    assert.throws(() => rewriteSetupMarker(root, '0.2.0', today, 'new-records', { boundary(name) { if (name === stop) throw new Error('interrupted'); } }), /interrupted/);
     const after = JSON.parse(readFileSync(join(root, 'dossier.json'), 'utf8'));
     assert.equal(after.storage, STORAGE);
     assert.equal(after.note, 'preserve');
-    assert.equal(after.plugin, ['root-marker:replaced', 'root-marker:directory-flushed'].includes(stop) ? 'new' : 'old');
-    rewriteSetupMarker(root, 'new', today);
-    assert.equal(JSON.parse(readFileSync(join(root, 'dossier.json'), 'utf8')).plugin, 'new');
+    const replaced = ['root-marker:replaced', 'root-marker:directory-flushed'].includes(stop);
+    assert.deepEqual(after, replaced ? { ...old, updated: today, knowledge: { root: 'new-records', note: 'keep' } } : old);
+    const retried = rewriteSetupMarker(root, '0.2.0', today, 'new-records').marker;
+    assert.deepEqual(retried, { ...old, updated: today, knowledge: { root: 'new-records', note: 'keep' } });
     assert.equal(inspectPublicationLock(root).state, 'absent');
   }
 });
@@ -207,12 +208,27 @@ test('setup refuses malformed, unsupported and absent storage identities without
     const root = rootFor(t);
     writeFileSync(join(root, 'dossier.json'), marker);
     const before = recordsFingerprint(root);
-    assert.throws(() => rewriteSetupMarker(root, 'new', today));
+    assert.throws(() => rewriteSetupMarker(root, '0.2.0', today));
     assert.deepEqual(recordsFingerprint(root), before);
   }
   const root = rootFor(t);
   rmSync(join(root, 'dossier.json'));
   mkdirSync(join(root, 'parts'));
-  assert.throws(() => rewriteSetupMarker(root, 'new', today), /restore dossier.json from version control/);
+  assert.throws(() => rewriteSetupMarker(root, '0.2.0', today), /restore dossier.json from version control/);
   assert.equal(existsSync(join(root, 'dossier.json')), false);
+});
+
+
+test('setup rejects every unsupported root version without converting its records', t => {
+  for (const version of ['0.1.0', '0.1.1', '0.0.1', '0.2.1', null]) {
+    const root = rootFor(t, { plugin: version, storage: STORAGE, note: 'keep', updated: '2020-01-01' });
+    mkdirSync(join(root, 'parts', 'gate'), { recursive: true });
+    writeFileSync(join(root, 'parts', 'gate', 'prose.md'), '# Gate\n');
+    const before = recordsFingerprint(root);
+    assert.throws(() => rewriteSetupMarker(root, '0.2.0', today), /; setup converts no root$/);
+    assert.deepEqual(recordsFingerprint(root), before, String(version));
+  }
+  const current = rootFor(t), before = recordsFingerprint(current);
+  assert.throws(() => rewriteSetupMarker(current, '0.1.1', today), /later than this dossier 0\.1\.1; setup converts no root$/);
+  assert.deepEqual(recordsFingerprint(current), before, 'the writer also requires the current version');
 });

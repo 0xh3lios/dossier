@@ -4,7 +4,8 @@ An artifact's writer and authority determine whether it may be edited, regenerat
 
 | Artifact | Writer | Authority and consumer |
 | --- | --- | --- |
-| `prose.md` | Owner or authorized agent; import/begin may draft | Authored meaning, stable ids, ranges and tier; compiler and reviewer input |
+| `README.md`, `behaviors/*.md` | Owner or authorized agent | Authored orientation, explanations, scoped claims and mappings under [the behavior contract](behaviors.md), never evidence or an owner's acceptance |
+| `prose.md` | Owner or authorized agent; import/begin may draft | Authored formal meaning, stable ids, ranges and tier; compiler and reviewer input |
 | `wiring.md`, `actors/*.md` | Owner or authorized agent | Authored membership, wiring, closure and environment assumptions |
 | Refined part model, Alloy module, `extras.tla` | Agent following prose | Authored encoding. The exact executed identities belong to each answer's basis |
 | Blunders under `model/blunders/` and `chart/blunders/` | Agent following prose, by hand or, for a model blunder, through `dossier blunder`, which may write the copy, its configuration and its call | Authored deliberate fault, which the property it targets must catch |
@@ -14,7 +15,7 @@ An artifact's writer and authority determine whether it may be edited, regenerat
 | `trials/<id>/` | Runner | The trial's bundle: the call as captured, the checker's output, `result.json`, the receipt, traces and diffs. Local to the machine that ran it and kept out of version control, never in the record |
 | `decisions.log` | Decision command with owner words | Durable owner decisions at identified hashes |
 | `doubts.md` | Agent | Authored alternatives and the one assumed. Only a doubt's answer, the owner's decision bound to the alternatives' hash, closes a doubt |
-| `reviews/*.md` | Independent reviewer | Findings about the evidence, never marks or decisions. Verify reads only the first line, `prose@<hash>`, to tell whether a second read is owed |
+| `reviews/*.md` | Independent reviewer | Scoped findings and mapping assessments, bound by digest to the files the reviewer read, under [the review contract](review.md), never marks or decisions |
 | `margin.md` | Agent or import | Optional continuation notes; no machine authority |
 | `chart/*` except blunders | Draw/trial | Generated diagnostics and IR cache, never a substitute for an answer |
 | `model/generated/*`, `*.scaffold.tla` | Scaffold; trial prepares private generated inputs | Disposable model/configuration views; refined part models remain authored |
@@ -30,3 +31,21 @@ An artifact's writer and authority determine whether it may be edited, regenerat
 **ART-VIEWS.** A regenerated picture or report establishes no additional evidence. Report materialization and evidence execution are different transformations. A refined part model is authored even though a scaffold produced its first version.
 
 **ART-SCOPE.** Keep the checker kind and mode, property, scenario, reach, basis and observed outcome together when interpreting an answer. A digest checks that an entry is the one published, and a receipt that a local bundle's files are the ones executed. Neither proves the checker is sound or the abstraction faithful.
+
+## Record formats
+
+A collection, a behavior and a review each name their serialization in a `format` field. Use the exact identifier below. Any other identifier is invalid, and so is an omitted field.
+
+| Record | Format identifier | Fields and interpretation |
+| --- | --- | --- |
+| Collection | `dossier-collection@0.2.0` | [Behavior collections](behaviors.md#collection) |
+| Behavior | `dossier-behavior@0.2.0` | [Behaviors](behaviors.md#behavior) |
+| Review | `dossier-review@0.2.0` | [Review scope and binding](review.md#scope-and-binding) |
+
+## Reader reports
+
+Verify derives one report per dossier, with `format: "dossier-behavior-report@0.2.0"`. It is the dossier's `behaviors` field in `dossier verify --json` and in the machine form of its ledger. An explorer reads the same report, and must refuse a format it does not support rather than compute a standing of its own.
+
+The report carries the dossier's path, the order of the collection and each behavior's scoped claims, with the path of the file that holds its explanation. It copies no authored text: a reader takes the orientation, the explanations and a review's findings from their files. It names each fact once, so it grows with the dossier's claims and not with its reviews. Each claim comes with its standing, its freshness, the reasons, the limitations, its pins and its resolved mappings. Each mapping keeps its relation and its rationale as authored, beside the evidence, the formal standing of its target, the owner's exact decision and the independent assessments. Each review keeps whether it is valid and current, the claims and the explanations of its subject that changed since it was written, its subject, its coverage, what it replaces, the result of each assessment and the number of files its basis binds. The report also lists the passages, cells, walks and scenarios that no behavior is associated with, and says that the list does not establish that the source is explained in full.
+
+A report is a view and can be discarded. Rendering writes no evidence, no assessment and no decision. A reader of the report may select and arrange what it carries. It cannot derive stronger support, hide a current contradiction or turn an illustration into a general guarantee.

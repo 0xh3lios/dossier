@@ -6,11 +6,13 @@ export function prepareWorkflow(exercise: string, plugin: string, workspace: str
   if (exercise === 'compose-probe') {
     const root = join(workspace, 'dossiers');
     for (const name of ['actors', 'parts/source', 'parts/sink', 'compositions']) mkdirSync(join(root, name), { recursive: true });
-    writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }, null, 2) + '\n');
+    writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.2.0', storage: 'integrity-v1' }, null, 2) + '\n');
     writeFileSync(join(root, 'actors/actors.md'), '# Actors\n\n```yaml\nactors:\n  - id: operator\n    kind: user\n```\n');
     writeFileSync(join(root, 'actors/scenarios.md'), '# Scenarios\n\n```yaml\nscenarios:\n  - id: all-honest\n    modes: {}\n```\n');
     for (const id of ['source', 'sink']) {
       cpSync(join(plugin, `qualification/conformance/fixtures/transfer-${id}.md`), join(root, `parts/${id}/prose.md`));
+      mkdirSync(join(root, `parts/${id}/behaviors`));
+      writeFileSync(join(root, `parts/${id}/README.md`), '```json\n{"format":"dossier-collection@0.2.0","behaviors":[]}\n```\n\n# ' + id + '\n\nThis initial collection awaits an explanation of the transfer mechanism.\n');
       // A new exercise root with no published answers or decisions: each dossier
       // starts with an empty integrity.json, as dossier decide begin would leave it.
       writeFileSync(join(root, `parts/${id}/integrity.json`), JSON.stringify({ schema: 1, evidence: {}, decisionHead: null }, null, 2) + '\n');

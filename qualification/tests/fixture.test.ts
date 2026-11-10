@@ -6,7 +6,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 const join_ = join;
 import { fileURLToPath } from 'node:url';
@@ -15,6 +16,7 @@ import { completed, readEvidence, readingClassification } from '../../src/trials
 import { forgottenAnswers, parseDecisions } from '../../src/dossiers/decisions.ts';
 import { readIntegrity } from '../../src/dossiers/integrity.ts';
 import { fingerprints } from '../../src/commands/trial.ts';
+import { loadBehaviorCollection } from '../../src/behaviors/records.ts';
 import type { Entry } from '../../src/trials/answers.ts';
 import type { VerifyJson } from '../../src/commands/verify.ts';
 import type { CellMark } from '../../src/verify/cells.ts';
@@ -74,20 +76,70 @@ test('Harbor is stored in integrity-v1, every dossier has its integrity.json, an
   }
 });
 
-// A reader follows a trial id in a ledger to the answer it established, which Harbor keeps in git.
-test('every trial id a ledger links leads to the entry in evidence/ that holds its answer', () => {
-  let links = 0;
+// Harbor's views say what its files say now. Reviews are written after the rebuild renders the views, and
+// a review changes a claim's standing, so the views are rendered again once the reviews are in. Found
+// 2026-11-09 by a first read: every ledger still showed the standings from before the reviews.
+test('Harbor\'s ledgers and index are what dossier render writes from its files now', () => {
+  const work = mkdtempSync(join(tmpdir(), 'dossier-fixture-views-'));
+  try {
+    const fixture = dirname(root);
+    for (const name of readdirSync(fixture)) if (statSync(join(fixture, name)).isDirectory()) cpSync(join(fixture, name), join(work, name), { recursive: true });
+    const copy = join(work, 'dossiers');
+    const r = spawnSync(bin, ['render', '--root', copy], { cwd: pluginRoot, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    // The time of the render, and what moved since the one before, differ with every render.
+    const settled = (text: string) => text.replace(/^(# Ledger: .*?)\s+rebuilt \S+/m, '$1').replace(/^Since last rebuild: .*$/m, '').replace(/^ {2}"rebuilt": "[^"]*",$/m, '');
+    const views = ['index.md', ...dossierDirs().map(d => join(d.kind, d.id, 'ledger.md'))];
+    for (const view of views) assert.equal(settled(readFileSync(join(root, view), 'utf8')), settled(readFileSync(join(copy, view), 'utf8')), `${view} is out of date: render the fixture's views again`);
+  } finally { rmSync(work, { recursive: true, force: true }); }
+});
+
+// A clone has no empty folder, since git keeps none. One here lets a test write into it locally and
+// fail in CI, as a test did on 2026-11-10 with an emptied calls/. The install removes them.
+test('the fixture holds no empty folder, which a clone of the plugin would not have', () => {
+  const empty: string[] = [];
+  const walk = (dir: string): void => {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    if (!entries.length) empty.push(dir.slice(dirname(root).length + 1));
+    for (const entry of entries) if (entry.isDirectory()) walk(join(dir, entry.name));
+  };
+  walk(dirname(root));
+  assert.deepEqual(empty, [], 'remove them, or put a file in them that git keeps');
+});
+
+// The visible ledger links behaviors to authored accounts and trial ids to the
+// recorded answer. The fenced JSON is a second representation, not visible links.
+test('ledger links preserve the behavior order and every trial id reaches its recorded answer', () => {
+  let trials = 0, behaviors = 0;
   for (const d of dossierDirs()) {
     const ledger = readFileSync(join(d.dir, 'ledger.md'), 'utf8');
-    for (const [, text, target] of ledger.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)) {
-      links += 1;
-      const name = (target.match(/^evidence\/([A-Za-z0-9][A-Za-z0-9-]*)\.json$/) || [])[1];
-      assert.ok(name && existsSync(join(d.dir, 'evidence', `${name}.json`)), `${d.kind}/${d.id}/ledger.md links ${target}, which is no entry there`);
+    const reportAt = ledger.lastIndexOf('\n```json\n');
+    assert.ok(reportAt >= 0, `${d.kind}/${d.id}: the ledger includes its fenced report`);
+    const markdown = ledger.slice(0, reportAt);
+    const collection = loadBehaviorCollection(d.dir);
+    assert.deepEqual(collection.issues, []);
+    const linkedBehaviors: string[] = [];
+    for (const [, text, target] of markdown.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)) {
+      const behavior = /^behaviors\/([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.md$/.exec(target)?.[1];
+      if (behavior) {
+        const authored = collection.behaviors.find(b => b.record.id === behavior);
+        assert.ok(authored, `${d.kind}/${d.id}/ledger.md links ${target}, which is not in its authored collection`);
+        assert.equal(text, authored.record.title, `${target} keeps its authored title`);
+        linkedBehaviors.push(behavior); behaviors++;
+        continue;
+      }
+      // Do not silently skip an unrecognized target: a malformed evidence link
+      // must still fail this check rather than disappear from its trial count.
+      const name = /^evidence\/([A-Za-z0-9][A-Za-z0-9-]*)\.json$/.exec(target)?.[1];
+      assert.ok(name && existsSync(join(d.dir, 'evidence', `${name}.json`)), `${d.kind}/${d.id}/ledger.md links ${target}, which is neither a behavior nor an evidence entry there`);
       const trial = (JSON.parse(readFileSync(join(d.dir, 'evidence', `${name}.json`), 'utf8')) as Entry).established.trial;
       assert.ok(trial === text || trial.endsWith(`-${text}`), `${d.kind}/${d.id}/ledger.md links ${text} to ${target}, whose answer ${trial} established`);
+      trials++;
     }
+    assert.deepEqual(linkedBehaviors, collection.collection!.record.behaviors, `${d.kind}/${d.id}: all authored behaviors, in reading order`);
   }
-  assert.ok(links > 0, 'the ledgers link their trials');
+  assert.ok(trials > 0, 'the ledgers link their trials');
+  assert.ok(behaviors > 0, 'the ledgers link their behavior accounts');
 });
 
 // Harbor commits its answers and leaves its trials' bundles with the rebuild, as a team's repository does.

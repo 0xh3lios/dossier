@@ -20,7 +20,7 @@ const BUNDLE = 'b'.repeat(64);
 function result(over: Partial<TrialResult> = {}): TrialResult {
   const r = {
     kind: 'tlc', checker: 'tlc', dossier: 'parts/timelock', id: '2026-11-07-1000-tlc-aaaaaa', at: '2026-11-07T10:00:00.000Z',
-    versions: { dossier: '0.1.0' }, command: ['tlc'], cwd: '.', exit: 0, seconds: 1,
+    versions: { dossier: '0.2.0' }, command: ['tlc'], cwd: '.', exit: 0, seconds: 1,
     property: null, scenario: null, walk: null,
     executed: { 'model/Timelock.tla': '1'.repeat(64), 'model/Timelock_O1.cfg': '2'.repeat(64), 'prose.md': '3'.repeat(64) },
     enabled: ['O1'], expect: { O1: { expect: 'holds' } }, outcomes: { O1: 'holds' },
@@ -75,7 +75,7 @@ test('ANSWER-REPLACE: a changed basis replaces the entry; the last different ans
 
 test('ANSWER-VIOLATION: on an unchanged basis a violation is not replaced by a pass without the owner, whatever changed the run', () => {
   const violated = entry({ outcomes: { O1: 'violated' }, expect: { O1: { expect: 'violated' } } });
-  for (const [why, over] of [['a smaller reach', { reach: { text: 'delay 1', values: { delay: 1 } } }], ['a changed toolchain', { versions: { dossier: '0.1.0', tlc: 'new' } }], ['a hand-made result', {}]] as const) {
+  for (const [why, over] of [['a smaller reach', { reach: { text: 'delay 1', values: { delay: 1 } } }], ['a changed toolchain', { versions: { dossier: '0.2.0', tlc: 'new' } }], ['a hand-made result', {}]] as const) {
     const next = entry({ ...over, id: '2026-11-07-1100-tlc-bbbbbb', outcomes: { O1: 'holds' }, expect: { O1: { expect: 'violated' } }, result: 'miscalled' });
     const refused = ruling(violated, next);
     assert.equal(refused.action, 'refuse', why);

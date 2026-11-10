@@ -11,6 +11,7 @@ import { forgottenAnswers, isRetired, parseDecisions } from '../dossiers/decisio
 import { readIntegrity, storageProblem } from '../dossiers/integrity.ts';
 import { evidenceNotes, readEvidence } from '../trials/answers.ts';
 import { routeRoot } from '../verify/route.ts';
+import { canonical } from '../hash.ts';
 import { briefLines, renderPartLedger, renderIndex, renderCompositionLedger, rootLines, verifyLine } from '../verify/render.ts';
 import type { CommandContext } from '../cli.ts';
 import type { ActorsModel } from '../dossiers/actors.ts';
@@ -28,8 +29,8 @@ export interface VerifyJson {
   verify: string;
   route: Route;
   tripwires: Note[];
-  parts: (Pick<PartAnalysis, 'id' | 'title' | 'tier' | 'summary' | 'marks' | 'backing' | 'tripwires' | 'flags' | 'route'> & { answers: AnswerRow[] })[];
-  compositions: (Pick<CompositionAnalysis, 'id' | 'title' | 'summary' | 'cells' | 'walks' | 'propertyHeld' | 'closureMissing' | 'tripwires' | 'flags' | 'route'> & { answers: AnswerRow[] })[];
+  parts: (Pick<PartAnalysis, 'id' | 'title' | 'tier' | 'summary' | 'marks' | 'backing' | 'tripwires' | 'flags' | 'route' | 'behaviors'> & { answers: AnswerRow[] })[];
+  compositions: (Pick<CompositionAnalysis, 'id' | 'title' | 'summary' | 'cells' | 'walks' | 'propertyHeld' | 'closureMissing' | 'tripwires' | 'flags' | 'route' | 'behaviors'> & { answers: AnswerRow[] })[];
 }
 
 // The earlier view, read only from a regular file of its own: a link or anything else reads as none.
@@ -92,7 +93,9 @@ export function verifyAll({ root, version, wanted = [], write = false }: { root:
   // With no composition to report actors.md and scenarios.md, the first open part reports them.
   const reportActors = compositionIds.length === 0;
   const parts = partIds.map(id => analyzePart({ root, id, loaded: loaded[id], knowledge, pluginVersion: version, marker: setUp, actors, others: others.filter(o => o.id !== id), usedBy: usedBy[id], parts: partIds, retired: retiredIds, reportActors }));
-  const compositions = compositionIds.map(id => analyzeComposition({ root, id, parts: loaded, knowledge, pluginVersion: version, marker: setUp }));
+  const memberAnalyses = Object.fromEntries(parts.map(a => [a.ref, a]));
+  const compositions = compositionIds.map(id => analyzeComposition({ root, id, parts: loaded, knowledge, pluginVersion: version, marker: setUp, memberAnalyses }));
+  heldByBehaviors([...parts, ...compositions]);
   const route = routeRoot(parts, compositions, tripwires);
   // render writes the views and nothing else: no evidence, no decision, no generated model.
   if (write) {
@@ -106,6 +109,23 @@ export function verifyAll({ root, version, wanted = [], write = false }: { root:
   return { parts, compositions, route, selected, knowledge, actors, tripwires };
 }
 
+// An answer a behavior's exact-answer mapping names is evidence that behavior stands on. Publication
+// keeps it (BEH-RETENTION), so it is not reported as superseded, whatever its dossier concludes without
+// it, and recheck asks its question again.
+function heldByBehaviors(all: (PartAnalysis | CompositionAnalysis)[]): void {
+  const byRef = new Map(all.map(a => [a.ref, a]));
+  for (const a of all) for (const b of a.behaviors?.behaviors || []) for (const c of b.claims) for (const m of c.mappings) {
+    if (m.target.kind !== 'answer') continue;
+    const owner = byRef.get(m.target.dossier), question = canonical(m.target.question);
+    const read = owner?.answers.find(x => x.entry && canonical(x.entry.question) === question);
+    if (!owner || !read || !owner.superseded[read.name]) continue;
+    delete owner.superseded[read.name];
+    owner.flags = owner.flags.filter(f => !(f.name === 'answer superseded' && f.entry === read.name));
+    const row = owner.answerRows.find(r => r.entry === read.name);
+    if (row) delete row.superseded;
+  }
+}
+
 export async function main(command: string, args: string[], { root: pluginRoot, version }: CommandContext): Promise<number> {
   const brief = args.includes('--brief');
   const json = args.includes('--json');
@@ -115,7 +135,7 @@ export async function main(command: string, args: string[], { root: pluginRoot, 
   const r = verifyAll({ root, version, wanted, write: command === 'render' });
   const all = [...r.parts, ...r.compositions];
   const failed = r.tripwires.length > 0 || all.some(a => a.tripwires.length);
-  if (json) { console.log(JSON.stringify({ verify: verifyLine(all, version, r.tripwires), route: r.route, tripwires: r.tripwires, parts: r.parts.map(a => ({ id: a.id, title: a.title, tier: a.tier, summary: a.summary, marks: a.marks, backing: a.backing, tripwires: a.tripwires, flags: a.flags, route: a.route, answers: a.answerRows })), compositions: r.compositions.map(a => ({ id: a.id, title: a.title, summary: a.summary, cells: a.cells, walks: a.walks, propertyHeld: a.propertyHeld, closureMissing: a.closureMissing, tripwires: a.tripwires, flags: a.flags, route: a.route, answers: a.answerRows })) } satisfies VerifyJson, null, 2)); return failed ? 1 : 0; }
+  if (json) { console.log(JSON.stringify({ verify: verifyLine(all, version, r.tripwires), route: r.route, tripwires: r.tripwires, parts: r.parts.map(a => ({ id: a.id, title: a.title, tier: a.tier, summary: a.summary, marks: a.marks, backing: a.backing, tripwires: a.tripwires, flags: a.flags, route: a.route, behaviors: a.behaviors, answers: a.answerRows })), compositions: r.compositions.map(a => ({ id: a.id, title: a.title, summary: a.summary, cells: a.cells, walks: a.walks, propertyHeld: a.propertyHeld, closureMissing: a.closureMissing, tripwires: a.tripwires, flags: a.flags, route: a.route, behaviors: a.behaviors, answers: a.answerRows })) } satisfies VerifyJson, null, 2)); return failed ? 1 : 0; }
   console.log(verifyLine(all, version, r.tripwires));
   if (all.length === 0 && !failed) return 0;
   // In a prompt, --brief names only the dossiers that owe something; a dossier asked for by name is always shown.

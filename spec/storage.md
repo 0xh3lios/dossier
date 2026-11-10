@@ -4,7 +4,7 @@ Storage separates authored inputs, the entries that hold the answers, owner deci
 
 ## Format and authority
 
-**STORE-FORMAT.** The root's `dossier.json` must say `"storage": "integrity-v1"`. It is the only storage format. Every visible part or composition directory must have `integrity.json`. A missing, malformed or unsupported manifest grants no fallback to any other record.
+**STORE-FORMAT.** The root's `dossier.json` must say `"storage": "integrity-v1"` and name, under `plugin`, the version that set the root up: 0.2.0 or later, and no later than the plugin reading it. A marker that names an earlier version, a later one or none is refused, with no conversion and no fallback. A root set up by an earlier version of the same formats is read, and flagged `plugin updated` until setup runs again. `integrity-v1` is the only storage format. Every visible part or composition directory must have `integrity.json`. A missing, malformed or unsupported manifest grants no fallback to any other record.
 
 A marker that names no storage grants no authority. Verify trips `integrity unavailable` at the root and in every dossier, with `dossier.json names no storage; this plugin reads integrity-v1 only`. A marker that names another storage, such as `integrity-v2`, is a `malformed marker` at the root, and every dossier trips `integrity unavailable` with `dossier.json names storage "integrity-v2"; this plugin reads integrity-v1 only`. `trial`, `decide`, `import` and `recover` refuse either root with exit 2, except that `recover` still clears a dead lock. A refusal names what the marker says, such as `dossier.json names no storage; this plugin reads integrity-v1 only; no evidence or decision is published to a root in another format`.
 
@@ -24,7 +24,7 @@ In a decision binding, `bytes` is a positive integer and `digest` is the full SH
 
 An entry's digest covers its bytes exactly. A reading, `evidence/<name>.md`, is authored interpretation and is not bound. Finder's `.DS_Store` is ignored. A symbolic link or a special file in `evidence/` is refused.
 
-The manifest holds no marks, routes, copies of doubts' answers, acceptance statuses or last-read timestamps. An answer the owner forgot after its file was removed keeps its manifest line until a new answer to its question replaces it.
+The manifest holds no marks, routes, copies of doubts' answers, acceptance statuses or last-read timestamps. It binds no collection, behavior or review. Those are authored, not the runner's entries, and whether an assessment is current follows from their hashes and from what they depend on, as they stand. No separate history of behaviors is kept. An answer the owner forgot after its file was removed keeps its manifest line until a new answer to its question replaces it.
 
 ## Trials and answers
 
@@ -38,6 +38,8 @@ The manifest holds no marks, routes, copies of doubts' answers, acceptance statu
 4. Move the bundle to `trials/<id>/`.
 
 A publication that keeps the entry runs the same steps without the candidate. A refused one runs step 4 alone and says why.
+
+Before it replaces or removes an entry, publication applies [BEH-RETENTION](behaviors.md#change-and-deletion) to the mappings, anywhere under the root, that depend on that entry, and so does a recovery that publishes an answer again. The supersession check within one dossier does not consider these mappings. It reads the collections as they stand, never an earlier list of the mappings that name an entry. It hashes the dossiers' authored inputs and the knowledge base's record files, with the bytes of the records it resolved, and refuses when any of them changed before it commits. It keeps an entry when admissible support cannot be preserved.
 
 A publication that is not refused also drops the entries of gone questions and superseded answers ([ANSWER-DROP](evidence.md#questions-and-answers)). Before step 2 it lists their names beside the bundle, in `.running/<id>.dropped.json`. Their manifest lines go with step 2, their entries and readings are deleted after step 3, and the list is deleted before step 4. A publication that keeps the entry and drops nothing therefore runs step 4 alone, and writes no byte of the record. An interruption between those steps leaves unbound entries, which cover nothing. The next publication removes one whose question is gone, and `dossier recover` removes a superseded one when it finishes the interrupted publication. A candidate grants no evidence until it is in place under its binding. Metadata that conflicts with the call is refused. Successful inductive evidence requires matching mode and successful base and step observations.
 
@@ -65,7 +67,7 @@ File and directory flushes define the implementation's ordering. Tests separatel
 
 ## Read-only verification and trust limits
 
-**STORE-READ.** Verify writes nothing. It reads the authored inputs, the entries, the `classification:` line of each reading, the first line of each review under `reviews/`, the manifests and the decisions, and derives conclusions without repairing or acknowledging anything. It reads `.running/` only for candidate entries, to report a publication interrupted before or after its binding and to tell it from an edited entry, and it never reads `trials/`. It reconstructs expected generated identities in memory. `dossier render` writes `ledger.md` and `index.md`, which are views. Nothing reads a view as a record, so ledgers, the index and generated views may be deleted or edited without changing a conclusion. The earlier view feeds only a ledger's `Since last rebuild:` line, which says what moved since that view was written.
+**STORE-READ.** Verify writes nothing. It reads the authored inputs, the behavior collections with their mappings, the entries, the `classification:` line of each reading, the block of each review under `reviews/` with the files its basis names, the manifests and the decisions, and derives conclusions without repairing or acknowledging anything. It reads `.running/` only for candidate entries, to report a publication interrupted before or after its binding and to tell it from an edited entry, and it never reads `trials/`. It reconstructs expected generated identities in memory. `dossier render` writes `ledger.md` and `index.md`, which are views. Nothing reads a view as a record, so ledgers, the index and generated views may be deleted or edited without changing a conclusion. The earlier view feeds only a ledger's `Since last rebuild:` line, which says what moved since that view was written.
 
 Retired dossiers remain subject to integrity checks. A missing authored input cannot hide a visible dossier's removed entries or decision damage. Entire dossier deletion cannot be detected from a per-dossier manifest after that directory is gone; version control or an external inventory must detect it. An actor able to rewrite every local record and anchor can construct a self-consistent history. Local hashes neither authenticate owner identity nor independently prove honest checker execution.
 

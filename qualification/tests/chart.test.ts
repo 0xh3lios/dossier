@@ -130,7 +130,7 @@ const failed = (result: ChartRun) => result.checks!.filter(c => c.status === 'fa
 let root: string, rt: Runtime;
 before(async () => {
   root = mkdtempSync(join(tmpdir(), 'dossier-chart-'));
-  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }) + '\n');
+  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.2.0', storage: 'integrity-v1' }) + '\n');
   rt = await loadRuntime(root);
   assert.equal(rt.error, undefined, rt.error);
 });

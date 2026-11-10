@@ -10,7 +10,9 @@ import { gradeBudget } from '../conformance/grade-agent.ts';
 import { parseProse } from '../../src/prose/prose.ts';
 import { compileIR } from '../../src/prose/ir.ts';
 import { answerOf, listBundles } from '../conformance/evidence.ts';
-import { proseHash } from '../../src/hash.ts';
+import { requiredReviewBasis } from '../../src/behaviors/dependencies.ts';
+import { reviewCoverageItems } from '../../src/behaviors/records.ts';
+import type { ReviewSubject, ReviewRecord } from '../../src/behaviors/types.ts';
 import { verifyAll } from '../../src/commands/verify.ts';
 
 const plugin = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -35,9 +37,18 @@ test('frozen grading keeps its evaluator and production semantics when the worki
     ['A2', 'all-honest', 'checked'], ['A2', 'governance-captured', 'checked'], ['O1', 'all-honest', 'checked'],
     ['N1', 'all-honest', 'checked'], ['N1', 'governance-captured', 'checked'], ['N1', 'executor-offline', 'violated'],
   ].map(([property, scenario, mark]) => ({ property, scenario, mark, accepted: mark === 'violated', proof: mark === 'proved' }));
-  // The review names the prose it read on its first line (REVIEW-OWED): Control's hash in this workspace.
-  const hash = proseHash(verifyAll({ root: join(manifest.workspace, 'dossiers'), version: '0.1.0' }).compositions.find(s => s.id === 'control')!.hashes);
-  writeFileSync(report, `prose@${hash}\n\n# Synthetic report\n\n\`\`\`json\n` + JSON.stringify({ summarySupported: false, cells, limitations: ['This tests the evaluator, not an agent.'] }) + '\n```\n');
+  const verified=verifyAll({root:join(manifest.workspace,'dossiers'),version:'0.2.0'});
+  const composition=verified.compositions.find(s=>s.id==='control')!, collection=composition.behaviorCollection!;
+  const subject:ReviewSubject={kind:'dossier',dossier:composition.ref,behaviors:collection.collection!.record.behaviors};
+  const basis=requiredReviewBasis(subject,{root:join(manifest.workspace,'dossiers'),analysis:composition,analyses:Object.fromEntries([...verified.parts,...verified.compositions].map(a=>[a.ref,a])),knowledge:verified.knowledge,collection});
+  assert.deepEqual(basis.issues,[]);
+  // Retained focused reviews remain protected inputs. This synthetic dossier
+  // assessment explicitly replaces them instead of relying on file/date priority.
+  const prior = composition.reviews.filter(r => r.status === 'current' && r.record);
+  assert.ok(prior.length > 0, 'Harbor supplies existing focused reviews to preserve');
+  const replacements = prior.map(r => ({ review:r.file, sha256:r.sha256, mappings:r.record!.assessments.map(a=>a.mapping), reason:'Synthetic replacement solely for the frozen-evaluator boundary test.' }));
+  const review:ReviewRecord={format:'dossier-review@0.2.0',subject,basis:basis.files,coverage:{examined:reviewCoverageItems(subject),unexamined:[]},replaces:replacements,assessments:collection.behaviors.flatMap(b=>b.record.claims.flatMap(c=>c.mappings.map(m=>({mapping:`${b.record.id}/${c.id}/${m.id}`,result:'too-broad' as const,rationale:'Synthetic conclusive judgment for a binding test only.',limitations:[]}))))};
+  writeFileSync(report, '```json\n'+JSON.stringify(review,null,2)+'\n```\n\n# Synthetic report\n\n```json\n'+JSON.stringify({summarySupported:false,cells,limitations:['This tests the evaluator, not an agent.']})+'\n```\n');
   const grade = async () => {
     const result = spawnSync(process.execPath, [join(checkout, 'qualification/conformance/grade-exercise.ts'), evaluation], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stdout + result.stderr);
@@ -52,6 +63,9 @@ test('frozen grading keeps its evaluator and production semantics when the worki
   writeFileSync(join(checkout, 'src/commands/verify.ts'), 'throw new Error("later verifier must not run");\n');
   writeFileSync(join(checkout, 'qualification/conformance/grade-review.ts'), 'throw new Error("later evaluator must not run");\n');
   assert.deepEqual(await grade(), before);
+  const protectedReview = join(manifest.workspace, 'dossiers/compositions/control', prior[0].file);
+  writeFileSync(protectedReview, readFileSync(protectedReview, 'utf8') + '\nEdited protected review.\n');
+  await assert.rejects(gradeExercise(evaluation), /existing artifact changed: dossiers\/compositions\/control\/reviews\//, 'an edited prior review never becomes the new exercise report');
   writeFileSync(join(manifest.evaluator, 'qualification/conformance/grade-review.ts'), 'throw new Error("tampered frozen evaluator");\n');
   await assert.rejects(gradeExercise(evaluation), /frozen evaluator changed/);
 });
@@ -68,7 +82,7 @@ test('a real successful blunder cannot replace the positive chart trial in an ag
   t.after(() => rmSync(work, { recursive: true, force: true }));
   const root = join(work, 'dossiers');
   for (const name of ['actors', 'parts', 'compositions']) mkdirSync(join(root, name), { recursive: true });
-  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }));
+  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.2.0', storage: 'integrity-v1' }));
   writeFileSync(join(root, 'actors/actors.md'), '# Actors\n```yaml\nactors:\n  - id: operator\n    kind: user\n```\n');
   const run = (...args: string[]) => {
     const result = spawnSync(join(plugin, 'bin/dossier'), [...args, '--root', root], { encoding: 'utf8', env: { ...process.env, DOSSIER_ROOT: '' } });

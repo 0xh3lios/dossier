@@ -2,6 +2,8 @@
 
 Every word the analysis and rendered ledger use, what it means, and when it applies. Verify writes nothing, and `dossier render` writes the ledgers and the index. [Evidence](../../spec/evidence.md) and [storage](../../spec/storage.md) are the canonical contracts.
 
+These marks describe the formal passages and the cells. A [behavior claim's standing](../../spec/behaviors.md#claim-standing) combines their evidence with a current independent assessment. Reports keep a claim's scope, its freshness, its review and the owner's exact decision separate from these marks.
+
 Marks are computed from the current answers under each dossier's `evidence/`, one entry per question, as [Files](files.md#evidence) describes. Answers are ordered by the time they were established. One answer decides each side of a passage and each cell, by the rule [MARK-DECIDING](../../spec/evidence.md#the-marks) states:
 
 - **The chart side of a passage, and an external runner's word on it.** Each has one strength, so the latest answer that covers the passage decides.
@@ -15,12 +17,14 @@ An answer that has lapsed therefore decides nothing on the model side or on a ce
 `dossier verify` prints one line for the root, one per dossier, and the next step:
 
 ```
-verify: ok · 6 parts, 3 compositions · dossier 0.1.1 · 0 tripwires
+verify: ok · 6 parts, 3 compositions · dossier 0.2.0 · 0 tripwires
 Timelock: 26 passages · settled 16 · confirmed 15 · unsettled 10 · proved 1 · checked 19 · drawn 1 · backed 1 · assumed 1 · text 1 · given 2 · prose@70bff9
+  claims: 3 behaviors, 8 claims · supported 6 · hypothesis 2
 Control: 4 properties × 3 scenarios · 9 cells · proved 1 · checked 7 · violated 1 (accepted 1) · prose@6c8765
+  claims: 3 behaviors, 10 claims · supported 9 · contradicted 1
 ```
 
-A part line counts passages by the owner's column and by mark. A composition line counts cells by mark. A line prints only the counts above zero, so a count it leaves out is zero. Each line ends with the hash of the dossier's prose, which a review names as the prose it read. The machine form, `dossier verify --json`, keeps every count. `verify: FAIL` replaces `ok` when any tripwire holds, and the line then ends with each tripwire as `<name> (<dossier>: <where>)`. A root with one dossier prints that dossier's title in place of the counts.
+A part line counts passages by the owner's column and by mark. A composition line counts cells by mark. The `claims:` line under a dossier's line counts its behaviors and their claims by [standing](#claim-standing), once the dossier has a behavior. A line prints only the counts above zero, so a count it leaves out is zero. Each line ends with the hash of the dossier's prose. A scoped review records all the exact inputs it examined, not just that abbreviated hash. The machine form, `dossier verify --json`, keeps every count. `verify: FAIL` replaces `ok` when any tripwire holds, and the line then ends with each tripwire as `<name> (<dossier>: <where>)`. A root with one dossier prints that dossier's title in place of the counts.
 
 ## The owner's column
 
@@ -86,7 +90,7 @@ The generated module is hashed into each answer's snapshot, so a change in the m
 
 ## Walks in a composition
 
-A composition's ledger lists its walks after the cells' lines, in a table with the columns walk, scenario, mark and trial. A walk is tried by a witness, a TLC trial whose configuration claims the walk never reaches its end, so that the counterexample TLC finds is the walk itself. The witness runs under the scenario the walk names, or under `all-honest` when it names none. The witness counts the walk's steps only from its `from` state and checks that each refused step is refused there, so it matches the walk's own path and no other. The latest witness answer under that scenario decides the walk's mark, and the trial column links to its entry.
+A composition's ledger lists its walks after the cells' lines, in a table with the columns walk, scenario, mark and trial. A walk is tried by a witness, a TLC trial whose configuration asserts that the walk never reaches its end, so that the counterexample TLC finds is the walk itself. The witness runs under the scenario the walk names, or under `all-honest` when it names none. The witness counts the walk's steps only from its `from` state and checks that each refused step is refused there, so it matches the walk's own path and no other. The latest witness answer under that scenario decides the walk's mark, and the trial column links to its entry.
 
 | Mark | Means |
 | --- | --- |
@@ -94,6 +98,42 @@ A composition's ledger lists its walks after the cells' lines, in a table with t
 | `checked` | The latest witness answer matched the walk's trace. |
 | `miscalled` | The latest witness answer missed its expectation. |
 | `lapsed` | Something the latest witness answer rested on moved since it was established. |
+
+## Claim standing
+
+A behavior's claim carries one standing, which verify derives from its mappings, their current answers and the current independent assessments. [Behavior collections](../../spec/behaviors.md#claim-standing) defines them. The report gives the claim's scope, its freshness and the owner's decisions beside it.
+
+| Standing | Means |
+| --- | --- |
+| `hypothesis` | The claim has no adequate support yet: no mapping, no current evidence, or an assessment that grants none. |
+| `evidence available; mapping unreviewed` | A current answer supports the claim, and no independent review has assessed the mapping. |
+| `supported within the stated scope` | A current mapping supports the claim, and a current independent review assessed it `supported`. A source or a deployment claim also needs a knowledge backing among its evidence. |
+| `contradicted within the stated scope` | A current review assessed a mapping `contradicted`, or confirmed a challenge whose evidence is current. |
+| `contested` | Current assessments of one mapping disagree, or current answers conflict on its target. |
+
+## Claim freshness
+
+| Freshness | Means |
+| --- | --- |
+| `current` | Every pin and every mapping resolves to current answers and records. |
+| `stale` | An answer the claim rests on has lapsed, or a pinned record changed. |
+| `missing` | A target or a pinned record does not resolve. |
+| `invalid` | A file the claim depends on does not read: its collection, the dossier's manifest or an answer. |
+
+## Kinds of evidence
+
+Each answer or record behind a mapping has a kind. Neither a mapping nor a review can make it stronger.
+
+| Kind | Means |
+| --- | --- |
+| `path-witness` | One recorded path through the model, not every execution. |
+| `finite-chart` | A check over the finite chart. |
+| `bounded-model` | A model check within its stated reach. |
+| `inductive-model` | A proof by induction, with no bound on steps, within the model's ranges and assumptions. |
+| `model-observation` | A state, an event or a move seen to occur in a model check. It does not establish every execution of the passage. |
+| `external-cases` | The cases an external runner executed, against the source, a simulator or a stand-in. The kind alone establishes no correspondence to the source. |
+| `sensitivity` | A blunder's answer. It tests whether a fault is caught and adds no positive evidence. |
+| `knowledge-backing` | A record or a rule that resolves in the knowledge base. Whether its text supports the claim is for review. |
 
 ## Flags
 
@@ -119,11 +159,12 @@ Flags are printed and never block work.
 | `pin unresolved` | A pin does not resolve in the knowledge base, such as `timelock#actor:governance does not resolve in the knowledge base`. A part raises it for its own pins, and a composition for its members' and its actors' pins. |
 | `closure open` | A module the closure requires is not a member. |
 | `left free` | A member sends an event that no wiring reaches and `free:` does not list, such as `vault.move, vault.release from adapter; wire them or list them under free:`. |
+| `plugin updated` | `dossier.json` names an earlier plugin version than the one reading it, in the same formats. Run `dossier setup` to bring the root up to date. |
 | `actor shadows part` | `actors.md` lists an actor whose id is a part's id, such as `actor adapter is shadowed by part adapter; remove it from actors.md`. |
-| `plugin updated` | `dossier.json` was set up with another version of the plugin. |
-| `question gone` | An entry's question no longer exists, because its property, a passage it expects an outcome for, its walk, its scenario or an authored file it executes is gone. It covers nothing, and the next publication in its dossier that is not refused removes it. |
-| `answer superseded` | The answers that decide stand in for an entry: they cover everything it answered for, and verify concludes the same without it. The next publication in its dossier that is not refused removes it. One that holds a counterexample stays until the owner forgets it, and the flag names the `forget` to record. |
-| `review owed` | The dossier has marks a reviewer judges, a passage `checked`, `proved` or `backed` or a cell `checked`, `proved`, `violated` or `implied`, and no review under `reviews/` names its current prose hash on its first line. The flag names the latest review and the prose hash it read, or says there is none. Once nothing else is owed, the next step is `Review`. [Get a second read](../how-to/get-a-second-read.md) says how. |
+| `question gone` | An entry's question no longer exists, because its property, a passage it expects an outcome for, its walk, its scenario or an authored file it executes is gone. It covers nothing, and the next publication in its dossier that is not refused removes it, when the [behavior retention guard](../../spec/behaviors.md#change-and-deletion) permits it. |
+| `answer superseded` | The answers that decide stand in for an entry: they cover everything it answered for, and verify concludes the same without it. The next publication in its dossier that is not refused removes it, when the behavior retention guard permits it. One that holds a counterexample stays until the owner forgets it, and the flag names the `forget` to record. |
+| `review owed` | The [review contract](../../spec/review.md) requires a current review of the relevant scope, at its exact inputs. A focused review of one behavior does not cover the whole dossier. Verify raises the flag when the dossier holds formal work a reviewer judges, and no current review of the whole dossier covers every item with assessments that are conclusive and uncontested. [Get a second read](../how-to/get-a-second-read.md) describes the assessment. |
+| `review stale` | A scoped review's set of required files, its declared digests or its dependencies no longer match the current inputs. Its assessments then give no current support. |
 
 ## Tripwires
 
@@ -131,6 +172,8 @@ A tripwire makes verify print `FAIL` and replaces the next step with `fix:`. It 
 
 | Tripwire | Means | Fix |
 | --- | --- | --- |
+| `invalid behavior collection` | A collection, behavior or claim record breaks the behavior contract. | Correct the authored record at the path verify reports. |
+| `invalid review` | A review's format, its coverage, its list of mapping assessments or a replacement it names is invalid. | Correct the file, or remove it, since version control keeps it. A new review cannot replace an invalid one. |
 | `answer edited` | An entry's bytes no longer match the digest `integrity.json` binds. | Restore the entry from version control, and say it happened. A changed answer is never repaired by changing the manifest. |
 | `answer removed` | `integrity.json` binds an entry whose file is gone, for a question that still exists. The manifest keeps that entry's identity across verification and rendering. | Restore the entry from version control, or record the owner's explicit `forget` decision. A forgotten answer covers nothing. |
 | `decisions chain broken` | A line of `decisions.log` was rewritten or removed. | Restore it from version control. |
@@ -162,5 +205,7 @@ Each dossier gets a next step, and so does the root.
 - **A part:** `Fix` on any tripwire. `Write` when the prose is empty, a passage is rejected, or pairs are unsaid, said twice or gapped. `Report` while a current answer is a miscall classified `prose at fault` and the prose has not changed since that answer was established. `Refresh` when a mark lapsed. `Encode` when calls are pending. `Draw` when no chart answer covers the current words of a passage the chart checks, or while a chart answer is a miscall classified `chart differs from prose`. The chart checks no Always that cites a Given and no structural Always. `Encode` when a modeled part has no model, a passage the model does not cite, a held or hollow property, a reworded property, a passage no model answer covers, a miscall classified `model misread prose, action` or `model misread prose, property`, or a model file that changed since the latest completed answer's trial executed it. Only that answer's files in `model/` and `model/blunders/` are compared. In a charted part, `Encode` when an Always is `held` and owes a chart blunder. `Review` when the dossier owes a second read, as the `review owed` flag says, and [Get a second read](../how-to/get-a-second-read.md) shows how to ask for one. `Report` otherwise.
 - **A composition:** `Fix`, then `Compose` when there are no members or the closure is open, `Report` on prose at fault, `Refresh` on a lapsed cell or walk, `Encode` on pending calls, `Try` when there are no properties, or on pending cells, pending walks, owed blunders or a violated cell without an acceptance that holds, naming a lapsed acceptance and what moved under it, `Review` when the composition owes a second read, and `Report` otherwise.
 - **The root:** `Fix`, then `Refresh`, `Encode`, `Compose` and `Try`, then the first part owing `Write` or `Draw`, then `Review`, then `Report`. When a composition waits on `Compose` because it has no members, a part owing `Write` or `Draw` comes before it.
+
+A next step of `Report` says that no step is owed. It does not say that every claim is supported, since a hypothesis or a contradicted requirement can remain. The dossier's `claims:` line counts them.
 
 A next step gives its reasons, which name the passages, cells and entries they rest on, such as `no chart answer covers: S2 E1` or `chart answer miscalled: evidence/<name>.json`.

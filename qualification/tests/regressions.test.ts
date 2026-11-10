@@ -2,6 +2,7 @@
 // release sprint, each kept as the behavior the code must hold. Every mutation happens in a temporary
 // directory. Those marked todo are known defects left for the next release: they run and report, and
 // they fail nothing until they are fixed.
+import { emptyCollection } from './collection-fixture.ts';
 import { test } from 'node:test';
 import type { TestContext } from 'node:test';
 import assert from 'node:assert/strict';
@@ -58,7 +59,7 @@ function write(path: string, value: string) {
 }
 function rootAt(work: string): string {
   const root = join(work, 'dossiers');
-  write(join(root, 'dossier.json'), '{"storage":"integrity-v1","plugin":"0.1.0"}\n');
+  write(join(root, 'dossier.json'), '{"storage":"integrity-v1","plugin":"0.2.0"}\n');
   return root;
 }
 function command(root: string, ...args: string[]) {
@@ -98,6 +99,7 @@ test('begin refuses a dossier folder that is a symbolic link, and writes nothing
 
 test('render rewrites a ledger whose JSON block has the wrong shape', t => {
   const work = workspace(t), root = rootAt(work), dir = join(root, 'parts/gate');
+  emptyCollection(dir);
   write(join(dir, 'prose.md'), prose);
   write(join(dir, 'integrity.json'), EMPTY_INTEGRITY);
   write(join(dir, 'ledger.md'), '\n```json\n{"marks":{},"trials":{}}\n```\n');
@@ -110,6 +112,7 @@ test('render rewrites a ledger whose JSON block has the wrong shape', t => {
 
 test('render replaces a ledger that links to a record, and never writes through the link', t => {
   const work = workspace(t), root = rootAt(work), dir = join(root, 'parts/gate');
+  emptyCollection(dir);
   write(join(dir, 'prose.md'), prose);
   const begun = command(root, 'decide', 'gate', 'begin', '--', 'Start the reviewed gate.');
   assert.equal(begun.status, 0, begun.stdout + begun.stderr);
@@ -127,6 +130,7 @@ test('render replaces a ledger that links to a record, and never writes through 
 
 test('the scaffold of a piece whose every event is refused has a Next that parses', t => {
   const work = workspace(t), root = rootAt(work), dir = join(root, 'parts/gate');
+  emptyCollection(dir);
   write(join(dir, 'prose.md'), refusalOnly);
   write(join(dir, 'integrity.json'), EMPTY_INTEGRITY);
   assert.equal(command(root, 'draw', 'gate').status, 0);
@@ -137,6 +141,7 @@ test('the scaffold of a piece whose every event is refused has a Next that parse
 
 test('TLC runs the scaffold of a piece whose every event is refused', { skip: !(process.env.TLA_TOOLS && process.env.JAVA) && 'needs TLA_TOOLS and JAVA' }, t => {
   const work = workspace(t), root = rootAt(work), dir = join(root, 'parts/gate');
+  emptyCollection(dir);
   write(join(dir, 'prose.md'), refusalOnly);
   write(join(dir, 'integrity.json'), EMPTY_INTEGRITY);
   assert.equal(command(root, 'scaffold', 'gate').status, 0);
@@ -149,11 +154,13 @@ test('a refusal-only event lapses when the refused walk it relied on is removed'
   const work = workspace(t), root = rootAt(work), dir = join(root, 'parts/gate');
   const input = prose.replace('## Moves', '[E2] forbidden, from the public: an unauthorized operation. Refusal only.\n## Moves')
     .replace('## Words only', '[R1] In Live, forbidden is refused.\n## Walks\n[W1] Walk Denied: from Live, forbidden refused; ends Live.\n## Words only');
+  emptyCollection(dir);
   write(join(dir, 'prose.md'), input);
   write(join(dir, 'integrity.json'), EMPTY_INTEGRITY);
   write(join(dir, 'calls/chart.md'), 'kind: chart\nexecutes:\n  - prose.md\nreach: one state\nexpect:\n  checks: pass\nbecause: The denied input is always refused and has a witness.\n');
   assert.equal(command(root, 'trial', 'gate', 'chart.md').status, 0);
   assert.equal(command(root, 'decide', 'gate', 'accept', 'E2', '--', 'This operation must never succeed.').status, 0);
+  emptyCollection(dir);
   write(join(dir, 'prose.md'), input.replace('[W1] Walk Denied: from Live, forbidden refused; ends Live.\n', ''));
   const report = JSON.parse(command(root, 'verify', '--json').stdout);
   assert.equal(report.parts[0].marks.E2.mark, 'lapsed');
@@ -226,6 +233,7 @@ test('render writes no ledger through a dossier folder that links outside the ro
 
 test('render replaces a ledger that links to a folder instead of reading it', t => {
   const work = workspace(t), root = rootAt(work), dir = join(root, 'parts/gate'), outside = join(work, 'outside');
+  emptyCollection(dir);
   write(join(dir, 'prose.md'), prose);
   write(join(dir, 'integrity.json'), EMPTY_INTEGRITY);
   mkdirSync(outside);
@@ -240,7 +248,8 @@ test('render replaces a ledger that links to a folder instead of reading it', t 
 test('an actors.md whose actors are not a list is a tripwire that holds back owner readings, not a crash', t => {
   for (const value of ['false', '{}']) {
     const work = workspace(t), root = rootAt(work), dir = join(root, 'parts/gate');
-    write(join(dir, 'prose.md'), prose);
+    emptyCollection(dir);
+  write(join(dir, 'prose.md'), prose);
     write(join(dir, 'integrity.json'), EMPTY_INTEGRITY);
     write(join(root, 'actors/actors.md'), `\`\`\`yaml\nactors: ${value}\n\`\`\`\n`);
     const verified = command(root, 'verify');

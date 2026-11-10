@@ -28,7 +28,7 @@ function dossier(args: string[], { cwd = pluginRoot, env = baseEnv }: RunOptions
 }
 
 // The command names of a usage block: the first word of each indented line.
-const usageCommands = (text: string) => [...new Set(text.split('\n').map(l => (l.match(/^  ([a-z]+)\b/) || [])[1]).filter(Boolean))];
+const usageCommands = (text: string) => [...new Set(text.split('\n').map(l => (l.match(/^  ([a-z]+(?:-[a-z]+)*)\b/) || [])[1]).filter(Boolean))];
 
 function withTempDir(fn: (dir: string) => void) {
   const dir = mkdtempSync(join(tmpdir(), 'dossier-cli-'));
@@ -71,11 +71,11 @@ test('every command in the usage block is dispatched to a real module under src/
   const source = readFileSync(join(pluginRoot, 'src', 'cli.ts'), 'utf8');
   const fromSource = usageCommands(source.match(/const usage = `([\s\S]*?)`;/)![1]);
   assert.deepEqual(printed, fromSource, 'help prints the usage block of src/cli.ts');
-  const expected = ['verify', 'render', 'recover', 'draw', 'scaffold', 'call', 'blunder', 'show', 'trial', 'recheck', 'decide', 'where', 'import', 'explore', 'doctor', 'setup', 'version'];
+  const expected = ['verify', 'render', 'recover', 'draw', 'scaffold', 'call', 'blunder', 'show', 'trial', 'recheck', 'decide', 'review-basis', 'where', 'import', 'explore', 'doctor', 'setup', 'version'];
   assert.deepEqual([...printed].sort(), [...expected].sort());
 
   const table = source.match(/const modules = \{([^}]*)\}/)![1];
-  const dispatched = [...table.matchAll(/(\w+):\s*'(\w+)'/g)].map(m => ({ command: m[1], file: m[2] }));
+  const dispatched = [...table.matchAll(/(?:'([a-z-]+)'|([a-z]+)):\s*'([a-z-]+)'/g)].map(m => ({ command: m[1] || m[2], file: m[3] }));
   assert.ok(dispatched.length >= 9, 'the dispatch table is readable');
   for (const name of printed.filter(n => n !== 'version')) {
     const entry = dispatched.find(d => d.command === name);
@@ -89,7 +89,7 @@ test('every command in the usage block is dispatched to a real module under src/
 });
 
 test('commands that need a dossiers root exit 2 without one', () => withTempDir(dir => {
-  for (const command of ['verify', 'render', 'recover', 'draw', 'scaffold', 'trial', 'recheck', 'decide', 'where', 'import']) {
+  for (const command of ['verify', 'render', 'recover', 'draw', 'scaffold', 'trial', 'recheck', 'decide', 'review-basis', 'where', 'import']) {
     const r = dossier([command, 'x', 'y'], { cwd: dir });
     assert.equal(r.status, 2, `${command}: ${r.stderr}`);
     assert.match(r.stderr, /no dossiers root here/, command);
@@ -126,6 +126,7 @@ test('the root is found above the working directory, below it, by --root and by 
     ['from a folder inside the root', ['verify'], { cwd: join(dossiers, '_scratch', 'deep') }],
     ['from the repository above dossiers/', ['verify'], { cwd: join(dir, 'project') }],
     ['by --root', ['verify', '--root', dossiers], { cwd: dir }],
+    ['by --root before the command', ['--root', dossiers, 'verify'], { cwd: dir }],
     ['by DOSSIER_ROOT', ['verify'], { cwd: dir, env: { ...baseEnv, DOSSIER_ROOT: dossiers } }],
   ];
   for (const [how, args, opts] of cases) {

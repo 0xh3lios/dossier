@@ -1,1 +1,1 @@
-blunder: ticks no longer wait for a due post; two ticks in Stale take the counter past 1 and N1 fails.
+blunder: ticks no longer wait for a due post; the first tick enters Stale and the next raises its counter to 2, so N1 fails.

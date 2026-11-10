@@ -29,7 +29,7 @@ TLC, Apalache and Alloy are free and have been capable for years. Models stayed 
 
 An agent takes on that work. It drafts the sentences and the models, configures and runs the checkers, reads the traces, keeps the record, and reruns whatever a change touched.
 
-An agent drafts wrong things as fluently as right ones, so its work needs a judge that does not take its word. Tests an agent writes for its own code share the gaps in its understanding. A model checker is a judge of another kind. It tries the stated property against every behavior within its bounds and returns either a trace or nothing, whatever the agent expected. The agent proposes, the checker answers, and the answer decides what the agent does next.
+An agent drafts wrong things as fluently as right ones, so its work needs a judge that does not take its word. Tests an agent writes for its own code share the gaps in its understanding. A model checker is a judge of another kind. It tries the stated property against every execution within its bounds and returns either a trace or nothing, whatever the agent expected. The agent proposes, the checker answers, and the answer decides what the agent does next.
 
 Two judgments stay with people: what to model, and whether the model represents the system. No checker makes either. The owners' work moves from writing TLA+ to reviewing statements about their own system, settling what those statements mean and deciding what a counterexample shows.
 
@@ -42,7 +42,7 @@ With an agent doing the work, the risk is no longer that no model exists. Four r
 - **Forgotten results.** A surprising result can be rerun until it stops surprising, and once it does, nothing shows that it ever surprised.
 - **Stale conclusions.** Once a parameter changes, an earlier result goes on reading as checked unless something marks it stale. An agent starting a later session has no way to know what moved since.
 
-The record guards against each of them, and [How a claim earns its mark](evidence.md) describes how.
+The record guards against each of them, and [How a mark is earned](evidence.md) describes how.
 
 | Risk | What guards against it |
 | --- | --- |
@@ -53,13 +53,15 @@ The record guards against each of them, and [How a claim earns its mark](evidenc
 
 ## What stays with you
 
-The agent carries on without you except where meaning is at stake. It stops and asks when a sentence needs settling, a doubt needs your choice, a counterexample needs a decision, or the sentences contradict each other. A decision on a counterexample can accept it as a risk, or let it go with `forget`. [What Dossier keeps](what-dossier-keeps.md#where-you-come-in) lists those decisions. Once a dossier owes nothing else, the agent asks you for a second read by the review skill. The sentences are a controlled English, so owners who do not read TLA+, such as a risk team, can review them. A counterexample comes back retold step by step.
+Only the owner can settle a disputed meaning, answer a doubt that matters or accept a risk. The agent uses the authority you have already given, and asks you when it needs a further decision. It can go on investigating while a counterexample stays visible and unaccepted. The owner's decision can accept the risk, or let the answer go with `forget`. [What Dossier keeps](what-dossier-keeps.md#where-you-come-in) lists those decisions.
+
+An independent review assesses the explanation and its evidence, and makes none of those decisions. The [behaviors](behaviors.md) give readers an account of the mechanisms, in claims that each carry their own scope and their own standing. A person reads the system from them, and so does the agent at the start of each session. The formal sentences beneath them use a controlled English, so owners who do not read TLA+ can review them. A counterexample comes back retold step by step.
 
 You also judge whether the model represents the system, with backings and replays as evidence. Thorough checking cannot rescue a model of the wrong thing. [The limits of a mark](limits.md) lists what a result does not establish.
 
 ## The specification it leaves
 
-The work leaves a specification of the whole system, which usually did not exist before. The owners can read it, the checkers keep checking it, and someone new to the system can learn it there. Lapse keeps it current as the system changes. Its properties are exact enough to drive a fuzzer or to monitor the deployed contracts. Either use would need a mapping from the deployed state to the model's variables, and Dossier does not provide one.
+The work leaves a specification of the whole system, which usually did not exist before. The owners can read it, the checkers keep checking it, and someone new to the system can learn it there. Lapse keeps it current as the system changes. Its properties are exact enough to drive a fuzzer or to monitor the deployed contracts. Either use would need a translation from the deployed state to the model's variables, and Dossier does not provide one.
 
 ## Where it fits
 

@@ -34,3 +34,5 @@ Tie a part's guarantee to the evidence that backs it. A guarantee is a K passage
 ## What backed means
 
 `backed` says a rule with that name exists at that commit. Whether the rule proves the guarantee as the passage words it is a judgment the agent writes in the margin or a reading, and a reviewer checks. When the passage names a new commit, the marks that rested on the old one lapse until rerun.
+
+A [claim](../explanation/behaviors.md) about the source or about a deployment needs a backing among its evidence before it can read supported. A mapping to a backed guarantee supplies one, and so does a mapping straight to the record. The reviewer then judges whether the rule or the record says what the claim says.

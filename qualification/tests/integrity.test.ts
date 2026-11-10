@@ -1,3 +1,4 @@
+import { emptyCollection } from './collection-fixture.ts';
 import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
@@ -40,8 +41,9 @@ function temp(t: TestContext) {
 function bare(t: TestContext) {
   const root = join(temp(t), 'dossiers'), dir = join(root, 'parts/adapter');
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1' }));
+  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.2.0', storage: 'integrity-v1' }));
   writeIntegrity(dir, empty());
+  emptyCollection(dir);
   return { root, dir };
 }
 function stopAt(name: string): PublicationOptions { return { boundary: (stage: string) => { if (stage === name) throw new Error(`interrupted at ${stage}`); } }; }
@@ -55,7 +57,7 @@ const dossierAt = (root: string, env: NodeJS.ProcessEnv = {}) => (...args: strin
 // A new dossiers root at `root`: the marker, with `marker` added to it, and one public actor.
 function newRoot(root: string, marker: object = {}) {
   mkdirSync(join(root, 'actors'), { recursive: true });
-  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.1.0', storage: 'integrity-v1', ...marker }));
+  writeFileSync(join(root, 'dossier.json'), JSON.stringify({ plugin: '0.2.0', storage: 'integrity-v1', ...marker }));
   writeFileSync(join(root, 'actors/actors.md'), '# Actors\n\n```yaml\nactors:\n  - id: public\n    kind: public\n    modes: [honest, malicious]\n```\n');
   writeFileSync(join(root, 'actors/scenarios.md'), '# Scenarios\n\n```yaml\nscenarios:\n  - id: all-honest\n    modes: {}\n```\n');
 }
@@ -117,7 +119,7 @@ function dossier(t: TestContext, { prose = 'first', records = 'none', waiting = 
     work, root, dir,
     staging: (id: string) => join(dir, '.running', id),
     context: () => answerContext(locate(root, 'gate')!, loadPart(root, 'gate'), dir),
-    gate: () => verifyAll({ root, version: '0.1.0' }).parts.find(c => c.id === 'gate')!,
+    gate: () => verifyAll({ root, version: '0.2.0' }).parts.find(c => c.id === 'gate')!,
   };
 }
 // The record's files with their bytes, modes and mtimes: what a publication that writes nothing must leave as it was.
@@ -165,7 +167,7 @@ function inductiveWaiting(t: TestContext) {
   return {
     root, dir, id: I.trial, staging: join(dir, '.running', I.trial),
     context: () => answerContext(locate(root, 'gate')!, loadPart(root, 'gate'), dir),
-    gate: () => verifyAll({ root, version: '0.1.0' }).parts.find(c => c.id === 'gate')!,
+    gate: () => verifyAll({ root, version: '0.2.0' }).parts.find(c => c.id === 'gate')!,
   };
 }
 // A bundle's result.json edited, and its receipt sealed again over the edit, as a runner that wrote
@@ -327,7 +329,7 @@ test('an answer is published in the contract\'s order, and a confirming publicat
     }
   } });
   assert.deepEqual(seen, ORDER);
-  assert.deepEqual(publication, { action: 'published', name: chart, replaced: true, gone: [external], superseded: [] });
+  assert.deepEqual(publication, { action: 'published', name: chart, replaced: true, gone: [external], superseded: [], retained: [] });
   assert.ok(existsSync(join(d.dir, 'trials', T.replacing)) && !existsSync(d.staging(T.replacing)), 'step 4 moves the bundle to the local trials/');
   const entry = JSON.parse(readFileSync(evidence(`${chart}.json`), 'utf8')) as Entry;
   assert.equal(entry.established.trial, T.replacing);
@@ -469,6 +471,47 @@ test('a recovery deletes what the interrupted publication had dropped, as it rec
   assert.equal(existsSync(join(d.dir, '.running', `${T.chart}.dropped.json`)), false, 'and the record goes with the bundle');
   const a = d.gate();
   assert.deepEqual([a.answerRows.map(x => x.entry), a.tripwires], [[chart], []], 'nothing is left unbound');
+});
+
+// STORE-RECOVER: a publication interrupted before its manifest lost a line had dropped nothing, so its
+// list binds no recovery: the bundle's answer goes through publication again as if its trial had just
+// ended. Found 2026-11-09, by the tests written for untested rules: the retry deleted answers the
+// manifest still bound, and nothing reported their loss.
+test('a recovery after an interruption before the manifest step drops only what the rules drop now', t => {
+  const T = template(), { chart, external } = T.names;
+  for (const stop of ['manifest:temporary-written', 'manifest:temporary-flushed']) {
+    const d = dossier(t, { records: 'first', waiting: [T.chart] });
+    const evidence = (file: string) => join(d.dir, 'evidence', file);
+    assert.throws(() => publishAnswer(d.dir, T.chart, { ...d.context(), superseded: () => [external] }, stopAt(stop)), /interrupted/);
+    assert.deepEqual(Object.keys(readIntegrity(d.dir).manifest!.evidence).sort(), [chart, external].sort(), `${stop}: the manifest still binds the answer the publication meant to drop`);
+    // By the time the owner recovers, verify no longer calls it superseded.
+    const r = recoverAnswer(d.dir, T.chart, { ...d.context(), superseded: () => [] });
+    assert.deepEqual([r.action, r.superseded], ['kept', []], `${stop}: the recovery drops what the rules drop now`);
+    assert.ok(existsSync(evidence(`${external}.json`)) && existsSync(evidence(`${external}.md`)), `${stop}: the answer and its reading stay`);
+    assert.equal(existsSync(join(d.dir, '.running', `${T.chart}.dropped.json`)), false, `${stop}: the list goes with the bundle`);
+    const a = d.gate();
+    assert.deepEqual([a.answerRows.map(x => x.entry).sort(), a.tripwires], [[chart, external].sort(), []], `${stop}: both answers stand`);
+  }
+  // The same for a gone question: the publication that replaces the chart answer on the prose without A1
+  // means to drop the external answer, and stops at its candidate. A1 comes back before the recovery.
+  const g = dossier(t, { prose: 'second', records: 'first', waiting: [T.replacing] });
+  assert.throws(() => publishAnswer(g.dir, T.replacing, g.context(), stopAt('answer:candidate')), /interrupted/);
+  assert.deepEqual(JSON.parse(readFileSync(join(g.dir, '.running', `${T.replacing}.dropped.json`), 'utf8')).gone, [external], 'the publication listed the gone question\'s answer');
+  writeFileSync(join(g.dir, 'prose.md'), T.prose.first);
+  const r = recoverAnswer(g.dir, T.replacing, g.context());
+  assert.deepEqual(r.gone, [], 'the question is back, so the recovery drops nothing as gone');
+  assert.ok(Object.hasOwn(readIntegrity(g.dir).manifest!.evidence, external) && existsSync(join(g.dir, 'evidence', `${external}.json`)), 'the external answer stays bound and in place');
+});
+
+// A refusal before the manifest is replaced leaves no temporary file beside it. An interruption may
+// leave one, which carries no authority.
+test('a publication refused just before the manifest is replaced leaves no temporary file', t => {
+  const T = template(), { external } = T.names;
+  const d = dossier(t, { records: 'first', waiting: [T.chart] });
+  const before = readFileSync(join(d.dir, 'integrity.json'), 'utf8');
+  assert.throws(() => publishAnswer(d.dir, T.chart, { ...d.context(), superseded: () => [external] }, { beforeReplace: () => { throw new Error('refused before the replace'); } }), /refused before the replace/);
+  assert.equal(readFileSync(join(d.dir, 'integrity.json'), 'utf8'), before, 'the manifest is unchanged');
+  assert.deepEqual(readdirSync(d.dir).filter(name => name.endsWith('.tmp')), [], 'no temporary file is left');
 });
 
 // spec/evidence.md, tripwires: answer publication incomplete is "a candidate in .running/ that the
@@ -655,4 +698,13 @@ test('an abort may lack runner or mode metadata, but conflicting metadata is nev
     assert.throws(() => recoverAnswer(c.dir, c.id, c.context()), /disagree/);
     assert.deepEqual(recordFiles(c.dir), records, 'nothing is published');
   }
+});
+
+test('a behavior dependency changed after retention inspection refuses before the manifest commit and recovers against current inputs',t=>{
+ const T=template(),w=dossier(t,{waiting:[T.chart]});
+ const before=recordFiles(w.dir);
+ assert.throws(()=>publishAnswer(w.dir,T.chart,w.context(),{boundary(name){if(name==='answer:candidate')writeFileSync(join(w.dir,'README.md'),readFileSync(join(w.dir,'README.md'),'utf8')+'\nThe account changed during publication.\n');}}),/behavior dependencies changed/);
+ assert.deepEqual(recordFiles(w.dir),before,'uncommitted inspection does not change published authority');
+ assert.equal(recoverAnswer(w.dir,T.chart,w.context()).action,'published');
+ assert.equal(w.gate().tripwires.length,0);
 });

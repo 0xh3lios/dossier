@@ -10,6 +10,7 @@ export const api = {
   trace: (id, entry) => `/api/part/${id}/trace/${entry}`,
   composition: id => `/api/composition/${id}`,
   compositionTrace: (id, property, scenario) => `/api/composition/${id}/trace/${property}/${scenario}`,
+  compositionWalk: (id, walk, scenario) => `/api/composition/${id}/walk/${walk}/${scenario}`,
 };
 
 const cache = new Map();
@@ -89,6 +90,7 @@ export const useApp = () => useContext(AppContext);
 
 // ---------- Status families: a status colour never travels without its icon and word ----------
 const FAMILY = {
+  supported: 'good', 'evidence-available': 'warning', hypothesis: 'warning', contradicted: 'critical', contested: 'serious', current: 'good', stale: 'serious', missing: 'warning', invalid: 'critical',
   proved: 'good', checked: 'good', implied: 'good', backed: 'good', grounded: 'good', 'as-called': 'good', pass: 'good', holds: 'good',
   drawn: 'warning', pending: 'warning', untried: 'warning', owed: 'warning', assumed: 'warning', open: 'warning', aborted: 'warning',
   held: 'serious', unresolved: 'serious', 'violated, accepted': 'serious', unsettled: 'warning',

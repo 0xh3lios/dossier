@@ -366,21 +366,16 @@ export function openKnowledge(root: string): Knowledge {
     return result;
   }
 
-  // The first item with the id in any of the collections, in any file of the module.
-  function findRecord(module: string, collections: string[], id: string, accept: (item: YamlMap) => boolean = () => true): { rel: string; collection: string; record: YamlMap } | null {
+  // An identity resolves only when exactly one current record declares it.
+  function findRecords(module: string, collections: string[], id: string, accept: (item: YamlMap) => boolean = () => true): { rel: string; collection: string; record: YamlMap }[] {
+    const found: { rel: string; collection: string; record: YamlMap }[] = [];
     const { files } = moduleRecords(module);
-    for (const [rel, recs] of Object.entries(files)) {
-      for (const collection of collections) {
-        const items = recs ? recs[collection] : undefined;
-        if (!Array.isArray(items)) continue;
-        for (const item of items) {
-          if (item && typeof item === 'object' && !Array.isArray(item) && String(item.id) === id && accept(item)) {
-            return { rel, collection, record: item };
-          }
-        }
-      }
+    for (const [rel,recs] of Object.entries(files)) for (const collection of collections) {
+      const items=recs?.[collection];
+      if (!Array.isArray(items)) continue;
+      for (const item of items) if (item && typeof item==='object' && !Array.isArray(item) && String(item.id)===id && accept(item)) found.push({rel,collection,record:item});
     }
-    return null;
+    return found;
   }
 
   function contractFiles(module: string): string[] {
@@ -390,43 +385,34 @@ export function openKnowledge(root: string): Knowledge {
   }
 
   function resolveContract(module: string, id: string, ref: string): Resolved | null {
-    const base = { ref, module, type: 'contract', id };
-    const found = findRecord(module, ['contracts'], id);
-    if (found) {
-      const text = stableJson(found.record);
-      return { ...base, path: modulePath(module, found.rel), collection: 'contracts', record: found.record, text, ...digest(text) };
+    const base={ref,module,type:'contract',id};
+    const explicit: { rel: string; collection: string; record: YamlMap; line?: number }[] = findRecords(module,['contracts'],id);
+    for (const rel of markdownFiles(module)) for (const block of fileBlocks(module,rel)) {
+      const record=(block?.value as YamlMap | undefined)?.contract;
+      if (record && typeof record==='object' && !Array.isArray(record) && String(record.id)===id) explicit.push({rel,collection:'contract',record,line:block.line});
     }
-    for (const rel of contractFiles(module)) {
-      const section = sections(fileText(module, rel)).find((s) => namesContract(s.heading, id));
-      if (section) {
-        return { ...base, path: modulePath(module, rel), heading: section.heading, line: section.line, text: section.text, ...digest(section.text) };
-      }
+    const headings=contractFiles(module).flatMap(rel=>sections(fileText(module,rel)).filter(section=>namesContract(section.heading,id)).map(section=>({rel,section})));
+    if (explicit.length>1 || headings.length>1) return null;
+    // A singular record inside its named section is one declaration. Preserve the
+    // section's deployment/source context; reject competing declarations elsewhere.
+    if (headings.length===1) {
+      const {rel,section}=headings[0];
+      const last = section.line + section.text.split('\n').length - 1;
+      if (explicit.length && (explicit[0].rel!==rel || explicit[0].collection==='contracts' || explicit[0].line === undefined || explicit[0].line < section.line || explicit[0].line > last)) return null;
+      return {...base,path:modulePath(module,rel),heading:section.heading,line:section.line,text:section.text,...digest(section.text)};
     }
-    for (const rel of markdownFiles(module)) {
-      for (const block of fileBlocks(module, rel)) {
-        // The contract record of a block, when its value holds one.
-        const record = (block && block.value ? (block.value as YamlMap).contract : undefined) as YamlMap | undefined;
-        if (record && typeof record === 'object' && String(record.id) === id) {
-          const text = stableJson(record);
-          return { ...base, path: modulePath(module, rel), collection: 'contract', record, text, ...digest(text) };
-        }
-      }
-    }
-    return null;
+    if (explicit.length!==1) return null;
+    const found=explicit[0],text=stableJson(found.record);
+    return {...base,path:modulePath(module,found.rel),collection:found.collection,record:found.record,text,...digest(text)};
   }
 
   /** `{ path, text, hash, sha256 }` of `observations/<name>.json` or `.md`, or null. */
   function observation(module: string, name: string): Observation | null {
     if (!hasModule(module) || typeof name !== 'string' || !LOCAL_ONLY.test(name)) return null;
-    for (const extension of ['.json', '.md']) {
-      const rel = `observations/${name}${extension}`;
-      const full = join(modulesDir, module, rel);
-      if (isFile(full)) {
-        const text = readText(full);
-        return { module, name, path: modulePath(module, rel), text, ...digest(text) };
-      }
-    }
-    return null;
+    const candidates=['.json','.md'].map(extension=>`observations/${name}${extension}`).filter(rel=>isFile(join(modulesDir,module,rel)));
+    if (candidates.length!==1) return null;
+    const rel=candidates[0],text=readText(join(modulesDir,module,rel));
+    return {module,name,path:modulePath(module,rel),text,...digest(text)};
   }
 
   /**
@@ -448,9 +434,10 @@ export function openKnowledge(root: string): Knowledge {
     if (type === 'contract') return resolveContract(module, id, canonical);
     const collections = COLLECTIONS[type];
     if (!collections) return null;
-    let found = findRecord(module, collections, id);
-    if (!found && type === 'role') found = findRecord(module, ['actors'], id, (item) => item.role !== undefined);
-    if (!found) return null;
+    let matches = findRecords(module, collections, id);
+    if (matches.length === 0 && type === 'role') matches = findRecords(module, ['actors'], id, item => item.role !== undefined);
+    if (matches.length !== 1) return null;
+    const found = matches[0];
     const text = stableJson(found.record);
     return { ref: canonical, module, type, id, path: modulePath(module, found.rel), collection: found.collection, record: found.record, text, ...digest(text) };
   }

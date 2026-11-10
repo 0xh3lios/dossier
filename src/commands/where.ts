@@ -1,6 +1,9 @@
 // dossier where <ref>: what a part, composition, property, scenario, actor or
 // knowledge record touches, read from the dossiers as they stand. A retired
 // dossier touches nothing: where says a retired part or composition is retired.
+import { verifyAll } from './verify.ts';
+import { requireCurrent } from '../dossiers/integrity.ts';
+import type { CommandContext } from '../cli.ts';
 import { join } from 'node:path';
 import { findRoot, stripRootArgs, listParts, listCompositions } from '../dossiers/root.ts';
 import { loadPart, loadActors, loadComposition } from '../dossiers/load.ts';
@@ -9,12 +12,42 @@ import { actorId } from '../dossiers/actors.ts';
 import { parseRef } from '../knowledge.ts';
 import type { CompositionLoad } from '../dossiers/load.ts';
 import type { CellCfg } from '../models/compose.ts';
+import type { BehaviorView } from '../behaviors/report.ts';
+import type { MappingTarget } from '../behaviors/types.ts';
 
-export async function main(command: string, args: string[]): Promise<number> {
+// A behavior as where prints it: its title, then each claim with its standing, its scope and its
+// freshness, and under each claim its mappings. The pages quote these lines, and
+// qualification/tests/quotes.test.ts holds each quoted line to what Harbor prints.
+export function behaviorLines(dossier: string, behavior: BehaviorView, claim?: string, mapping?: string): string[] {
+  // A target in its ids: the dossier only when it is another one, such as a member.
+  const label = (t: MappingTarget) => t.kind === 'knowledge' ? t.ref
+    : `${t.dossier === dossier ? '' : `${t.dossier} `}${t.kind === 'cell' ? t.property : t.kind === 'answer' ? t.check : t.id}${t.kind === 'cell' || t.kind === 'walk' ? (t.scenario ? ` × ${t.scenario}` : '') : t.kind === 'answer' && t.question.scenario ? ` × ${t.question.scenario}` : ''}`;
+  const lines = [`${dossier}#${behavior.id}: ${behavior.title}`];
+  for (const c of behavior.claims.filter(c => !claim || c.id === claim)) {
+    lines.push(`  ${c.id}: ${c.statement} — ${c.label}; ${c.scope.level}; ${c.freshness}`);
+    for (const m of c.mappings.filter(m => !mapping || m.id === mapping)) lines.push(`    ${m.id} ${m.relation} ${m.target.kind} ${label(m.target)}; ${m.assessment.state}; ${m.evidence.freshness}`);
+  }
+  return lines;
+}
+
+export async function main(command: string, args: string[], { version }: CommandContext): Promise<number> {
   const root = findRoot(args);
   if (!root) { console.error('dossier where: no dossiers root here. Run dossier setup.'); return 2; }
+  requireCurrent(root);
   const given = stripRootArgs(args).filter(a => !a.startsWith('--'))[0];
   if (!given) { console.error('usage: dossier where <part|composition|property|scenario|actor|module#type:id>'); return 2; }
+  const behaviorRef = given.match(/^((?:parts|compositions)\/[a-z][a-z0-9-]*)#([a-z][a-z0-9-]*)(?:\/(C[1-9]\d*)(?:\/(M[1-9]\d*))?)?$/);
+  if (behaviorRef) {
+    const verified = verifyAll({ root, version, wanted: [behaviorRef[1]] });
+    const a = verified.selected[0], b = a?.behaviors?.behaviors.find(b => b.id === behaviorRef[2]);
+    if (!b) { console.log(`no behavior ${given}`); return 1; }
+    const claims = b.claims.filter(c => !behaviorRef[3] || c.id === behaviorRef[3]);
+    if (!claims.length) { console.log(`no claim ${given}`); return 1; }
+    const mappingsOf = (c: (typeof claims)[number]) => c.mappings.filter(m => !behaviorRef[4] || m.id === behaviorRef[4]);
+    if (behaviorRef[4] && !mappingsOf(claims[0]).length) { console.log(`no mapping ${given}`); return 1; }
+    for (const line of behaviorLines(a.ref, b, behaviorRef[3], behaviorRef[4])) console.log(line);
+    return 0;
+  }
   // A dossier may be named by its path under the root, `parts/<id>` or `compositions/<id>`, as the other
   // commands print it; then only that kind of dossier answers.
   const path = given.match(/^(parts|compositions)\/([^/#]+)$/);

@@ -1,13 +1,14 @@
 # Dossier
 
-Dossier is a toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the sentences and the models, runs the checks, and reruns a check when anything it rested on changes. The checkers, not the agent, decide whether each property holds. You review the sentences, which are the specification, and you decide what a counterexample means: a mistake in the specification, a flaw in the design, or a risk you accept.
+Dossier is a toolkit for building a model of a system, checking it with formal methods and keeping it current as the system changes. An agent drafts the sentences and the models, runs the checks, and reruns a check when anything it rested on changes. The checkers, not the agent, decide whether each property holds. You read the result from the agent's account of what the system does, written as behaviors, where each claim is tied to the evidence for and against it. You review the sentences the models are built from, which are the specification, and you decide what a counterexample means: a mistake in the specification, a flaw in the design, or a risk you accept.
 
-- **Parts and compositions** say what the code does. A part is a contract or a procedure, written as sentences about its states, events and moves, which become models in TLA+, or in Alloy for structure. A composition wires parts together around one concern, such as governance control.
+- **Behaviors and claims** explain the system to a reader. A behavior explains one mechanism through its actors, conditions and outcomes, and each claim it makes stands or falls on its own. Each claim maps to the properties and example runs that test it, and an independent reviewer, a person or an agent in a fresh context, judges whether they support it. You start reading from the behaviors, and so does the agent at the start of each session.
+- **Parts and compositions** model what the code does. A part is a contract or a procedure, written as sentences about its states, events and moves, which become models in TLA+, or in Alloy for structure. A composition wires parts together around one concern, such as governance control.
 - **Properties** say what must hold. An Always says a bad state is never reached, a Once that an outcome eventually follows, and a Within that it follows within so many blocks. TLC, Apalache and Alloy check them within stated bounds, and Apalache can also prove an Always or a Within by induction, with no bound on steps.
-- **Actors, Givens and scenarios** describe the surroundings. Actors send events from outside the model: a governance key, a keeper, the public, the chain. A Given is a written assumption about how an honest actor behaves, such as a keeper acting within a block. A scenario makes chosen actors malicious or offline, which drops their Givens, and a property is checked under each scenario it claims.
+- **Actors, Givens and scenarios** describe the surroundings. Actors send events from outside the model: a governance key, a keeper, the public, the chain. A Given is a written assumption about how an honest actor behaves, such as a keeper acting within a block. A scenario makes chosen actors malicious or offline, which drops their Givens, and a property is checked under each scenario it names.
 - **Guarantees, walks and words-only sentences** tie the model to the code. A guarantee is a fact about the deployed code that the model relies on, backed by a Certora rule or a record, or listed as assumed. A walk is an example run that a checker confirms the model can take, and that can be replayed against a deployment. A words-only sentence says what no tool here can check, and why.
 
-[Parts, compositions and scenarios](docs/explanation/parts-compositions-scenarios.md) explains each of them.
+[Behaviors and claims](docs/explanation/behaviors.md) explains the first of these and what rests on it. [Parts, compositions and scenarios](docs/explanation/parts-compositions-scenarios.md) explains the others.
 
 ## Install
 
@@ -47,9 +48,11 @@ You need Node 24.3 or later, or 22.18 or later on the 22 line. Dossier draws eac
 
 ## Use
 
-In your repository, ask the agent to set it up for dossiers, which runs the setup skill. A dossier is the folder that holds one part or one composition: its specification, its models, the answers behind its results and a ledger of those results. Setup looks for a [knowledge base](docs/how-to/set-up-a-repository.md), a folder of records about the system's modules, and works without one. With one, the agent can draft a part from its records. Without one, it drafts from your code and what you tell it. Setup also offers to let the agent run the `dossier` command without asking each time. Then ask for what you want:
+In your repository, ask the agent to set it up for dossiers, which runs the setup skill. A dossier is the folder that holds one part or one composition: its behavior collection, formal specification, models, answers and derived reports. Setup looks for a [knowledge base](docs/how-to/set-up-a-repository.md), a folder of records about the system's modules, and works without one. With one, the agent can draft a part from its records. Without one, it drafts from your code and what you tell it. Setup also offers to let the agent run the `dossier` command without asking each time. Then ask for what you want:
 
 - "start a dossier for the timelock module"
+- "what does the timelock do about cancelling a plan, and how sure are we?"
+- "add a claim that a cancelled plan can be replaced"
 - "check that nothing executes before the delay"
 - "what if governance turns malicious?"
 - "what if the delay were one block?"
@@ -57,33 +60,33 @@ In your repository, ask the agent to set it up for dossiers, which runs the setu
 - "where are we?"
 - "open the explorer"
 
-The agent turns each request into sentences, models and checks. It reports the result with its bounds, the assumptions it rests on, the trace when there is one, and any decision that needs you.
+The agent turns each request into scoped claims, sentences, models and checks. It reports what each claim now establishes, with its bounds, the assumptions it rests on, the trace when there is one, and any decision that needs you.
 
 Dossier is packaged as a plugin with five skills and the `dossier` command. The skills are how an agent uses the toolkit: `keep` writes specifications and models and runs checks, `setup` prepares a repository, `review` reads a dossier independently in a fresh context, `decide` records your decisions in your own words, and `explore` opens a page in your browser that shows the dossiers and never changes them. [Commands and skills](docs/reference/commands.md) lists all of them.
 
 ## Documentation
 
-[The documentation](docs/README.md) has explanation pages on how Dossier works, how-to guides for common tasks, and reference pages. The [glossary](docs/reference/glossary.md) explains each term the pages use. Start with [Why model the system](docs/explanation/why-model-the-system.md), then [What Dossier keeps](docs/explanation/what-dossier-keeps.md) and [How a claim earns its mark](docs/explanation/evidence.md).
+[The documentation](docs/README.md) has explanation pages on how Dossier works, how-to guides for common tasks, and reference pages. The [glossary](docs/reference/glossary.md) explains each term the pages use. Start with Behaviors and claims, linked above, then [Read a dossier](docs/how-to/read-a-dossier.md), which follows one claim down to its evidence. Then read [Why model the system](docs/explanation/why-model-the-system.md) and [How a mark is earned](docs/explanation/evidence.md) for the checks beneath it.
 
 ## Repository
 
 - `spec/`: the language, process, artifact and evidence contracts shared by humans, agents and tools
 - `skills/`: the five skills, which ChatGPT and Claude Code both load, and which route to the specification
-- `bin/` and `src/`: the `dossier` command and its TypeScript source, which Node runs without a build step, with one file per command under `src/commands/` and one folder per stage: prose, chart, models, trials, verify and dossiers
+- `bin/` and `src/`: the `dossier` command and its TypeScript source, which Node runs without a build step, with one file per command under `src/commands/` and one folder per stage, including behaviors, prose, chart, models, trials, verify and dossiers
 - `plugin.json` and `.agents/plugins/marketplace.json`: the plugin's manifest and marketplace for ChatGPT and Codex, and `.claude-plugin/` the same for Claude Code. Both manifests carry the version in `package.json`
 - `apps/explorer/`: the explorer's page, which `dossier explore --install` builds on your machine from the packages it pins
 - `qualification/`: the test suites, the Harbor fixture, and the script that rebuilds Harbor with the real solvers
 
-`npm test` runs the suites against recorded checker output, so no solver is needed. Tests marked todo record known defects. Node lists them at the end of the run as failing tests, and the run still passes. `npm run typecheck` checks the source and the suites with the TypeScript compiler.
+`npm test` runs checks against recorded checker output without a solver, and includes live solver checks when their toolchain is configured. The summary names the skipped checks. A run without those tools does not establish live execution. Tests marked todo record known defects. Node lists them at the end of the run as failing tests, and the run still passes. `npm run typecheck` checks the source and the suites with the TypeScript compiler.
 
 ## What it is for
 
 - **The whole composition.** Whether a change can reach a vault before a timelock's delay has passed depends on the timelock, the vault, the emergency module that bypasses the delay, and who holds which keys. The model holds all of them, and the checkers try every order of events the bounds allow, including orders no test was written for. Alloy checks the structure as well, such as which signers sit on which multisig.
 - **Procedures and actors.** A multisig's procedure or a governance process is described in the same sentences as a contract and joins the same checks. Keepers, signers, markets, the chain and the public are actors, each a source of events that fails as a unit. Every assumption about an actor, such as a keeper acting within a block, is written down as a sentence.
-- **Scenarios.** Under a scenario each actor is honest, malicious or offline, for the whole run or for a window of blocks. A property is checked under each scenario it claims.
+- **Scenarios.** Under a scenario each actor is honest, malicious or offline, for the whole run or for a window of blocks. A property is checked under each scenario it names.
 - **Counterexamples.** A failed check comes with the trace that reaches the bad state, retold as who acted, in which block, and what changed. The retelling shows which actor a fix has to address.
 - **Designs and changes.** A design can be checked before its code exists. A proposed change, such as a shorter delay or a new emergency path, can be checked under the same scenarios before it is made.
-- **A record that stands without trusting the agent.** Whether a property holds comes only from a checker's output, and every result is computed, never written by hand. A property weakened until it passes, or a surprise rerun until it agrees, shows in the record. Anyone with a clone of the repository can confirm the results with `dossier recheck`, which the agent can run where the solvers are installed. [How a claim earns its mark](docs/explanation/evidence.md) describes how.
+- **A record that can be checked independently.** Marks come from the checkers' recorded answers, not from an agent. The model, its properties and the interpretation still need an independent review. A property weakened until it passes, or a surprise rerun until it agrees, shows in the record. Anyone with a clone of the repository can confirm the results with `dossier recheck`, which the agent can run where the solvers are installed. [How a mark is earned](docs/explanation/evidence.md) describes how.
 - **Results that stay current.** Each check records what its result rested on: the sentences, the model, the records the dossier relies on and what backs each assumption. A change to any of them lapses exactly the results that rested on it, and the record says what to rerun.
 
 ## Limitations
@@ -113,7 +116,7 @@ An excerpt of the Timelock's specification:
 [R3] In Scheduled, execute is refused when remaining is above 0.
 ```
 
-The questions about the system are written as properties of the composition and checked under three scenarios. In `all-honest` every actor is honest, in `governance-captured` Governance is malicious, and in `executor-offline` nobody executes plans.
+Read [Control's behavior collection](qualification/fixture/dossiers/compositions/control/README.md#control) for its mechanisms and the scope of each claim. The questions about the system are written as properties of the composition and checked under three scenarios. In `all-honest` every actor follows its declared Givens, and other choices stay nondeterministic. In `governance-captured` Governance is malicious, and in `executor-offline` nobody executes plans.
 
 | Property | owner | `all-honest` | `governance-captured` | `executor-offline` |
 | --- | --- | --- | --- | --- |
@@ -126,7 +129,7 @@ The questions about the system are written as properties of the composition and 
 - `proved`: Apalache proved the property by induction, for every reachable state of the model, with no bound on steps.
 - `checked`: TLC found no violation within the configured bounds.
 - `violated, accepted`: TLC found a trace, a plan scheduled and then four blocks in which nobody executes it, and the owner accepted the risk, since the property assumes an executor and the scenario removes one.
-- blank: the property is not claimed under that scenario.
+- blank: the property does not name that scenario.
 
 The property column puts each property in plain words. The ledger prints the sentence itself, such as `Always, {not timelock.early}` for A1.
 
@@ -134,7 +137,7 @@ A row shows which of these scenarios a property survives. A column shows everyth
 
 In the ledger, each result links to the file that keeps its answer: the outcome expected before the check ran, the outcome the checker returned, the hashes of the model and configuration it ran on, and the trace.
 
-A property also has to fail on a copy of the model with a deliberate bug before its result counts, which catches a property that holds vacuously. Until then its row shows `held`. Each part and each composition in Harbor has a dossier. [Harbor](docs/reference/harbor.md) describes the rest of the fixture.
+A property also has to fail on a copy of the model with a deliberate bug before its result counts. Until then its row shows `held`. A failure on that copy shows that the property catches that particular wrong. It does not establish that the property is non-vacuous in general, or that coverage is complete. Each part and each composition in Harbor has a dossier. [Harbor](docs/reference/harbor.md) describes the rest of the fixture.
 
 ## License
 
