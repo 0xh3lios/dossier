@@ -18,7 +18,7 @@ Prepare a repository for dossiers: the `dossiers/` folder, its marker, the actor
 
    If you keep a knowledge base, add `--knowledge path/to/records`. Without one, references resolve to nothing, and the marks say so. A knowledge base outside the repository is kept as an absolute path, as [Commands and skills](../reference/commands.md#the-command) explains. To prepare another folder as the dossiers root, run `dossier setup --root <path>`. Setup names that root in a `.dossier-root` file in the project folder, where the `dossier` command finds it. Commit that file.
 
-   Setup creates `dossiers/` with `dossier.json`, `README.md`, `package.json`, `.gitignore`, `actors/actors.md`, `actors/scenarios.md`, `parts/` and `compositions/`. A new root declares `storage: integrity-v1`. Each dossier gets a folder under `parts/` or `compositions/`, named by its id in the form [Files](../reference/files.md#layout) gives. Setup then runs the doctor, reads the plugin's fixture as a smoke test, and verifies the root without writing reports.
+   Setup creates `dossiers/` with `dossier.json`, `README.md`, `package.json`, `.gitignore`, `actors/actors.md`, `actors/scenarios.md`, `parts/` and `compositions/`. A new root declares `storage: integrity-v1`. The `README.md` begins with an empty map, the block that groups the dossiers into the system's areas and components, and setup keeps a README that is already there. [Arrange the map](arrange-the-map.md) shows how to fill it in. Each dossier gets a folder under `parts/` or `compositions/`, named by its id in the form [Files](../reference/files.md#layout) gives. Setup then runs the doctor, reads the plugin's fixture as a smoke test, and verifies the root without writing reports.
 
 2. **Know what to commit.** The `.gitignore` that setup writes keeps these paths out of git:
 
@@ -34,7 +34,7 @@ Prepare a repository for dossiers: the `dossiers/` folder, its marker, the actor
 
    `dossier render` rebuilds `index.md`, an overview of every dossier, so a committed copy would change, and conflict, whenever any dossier did. `_scratch/` is a local workspace, and `node_modules/` holds the chart's libraries. A trial runs a checker on a call through `dossier trial`. It works in its dossier's `.running/<id>/`, then leaves its bundle in `trials/<id>/`: the call as captured, the checker's output, `result.json` and a receipt of their hashes. If the root already has a `.gitignore`, setup leaves it as it is, so add any of these lines it lacks.
 
-   Commit the authored inputs, which include each dossier's `README.md`, its `behaviors/` and its `reviews/`. Commit the record too, which is each dossier's `evidence/`, its `decisions.log` and its `integrity.json`. `evidence/` holds an entry with the answer to each question the dossier's calls ask, and the agent's reading beside each entry. [How a mark is earned](../explanation/evidence.md#one-answer-per-question) explains why the record holds the answers and not the bundles. Ledgers and generated views can be regenerated. Publication locks, candidate entries and temporary files are transient. Do not move one into place or take one over by hand. [Storage](../../spec/storage.md) explains interrupted work.
+   Commit the authored inputs, which include the root's `README.md` with its map, and each dossier's `README.md`, its `behaviors/` and its `reviews/`. Commit the record too, which is each dossier's `evidence/`, its `decisions.log` and its `integrity.json`. `evidence/` holds an entry with the answer to each question the dossier's calls ask, and the agent's reading beside each entry. [How a mark is earned](../explanation/evidence.md#one-answer-per-question) explains why the record holds the answers and not the bundles. Ledgers and generated views can be regenerated. Publication locks, candidate entries and temporary files are transient. Do not move one into place or take one over by hand. [Storage](../../spec/storage.md) explains interrupted work.
 
 3. **Install the chart's libraries.** Run `dossier setup --install`. It runs `npm install` in `dossiers/`, which installs `xstate` and `@xstate/graph`, the libraries the chart runs on. Until then the chart uses the plugin's own copies, when the plugin's folder has them installed.
 
@@ -60,12 +60,12 @@ dossier doctor
 dossier verify
 ```
 
-The doctor says what is present and missing, with a fix for each, and exits 1 when something is missing. Verify prints `verify: ok · no dossiers · dossier 0.2.0 · 0 tripwires` on a fresh setup.
+The doctor says what is present and missing, with a fix for each, and exits 1 when something is missing. Verify prints `verify: ok · no dossiers · dossier 0.3.0 · 0 tripwires` on a fresh setup.
 
-Setup accepts only `plugin: 0.2.0`. It refuses another plugin version, or a marker that names none, and does not convert the root. Running setup again keeps existing files and updates `dossier.json` under the root publication lock, preserving configured runners. It refuses a malformed marker instead of replacing it, and a marker that names another storage is malformed. A marker with no `storage` field gets `storage: integrity-v1` while no dossier exists under the root. Once dossiers exist, setup refuses it. A missing marker beside existing dossier directories must be restored from version control, and setup refuses until it is.
+Setup accepts a root set up by 0.2.0 or later, up to this plugin. It refuses an earlier or a later plugin version, or a marker that names none, and does not convert the root. Running setup again keeps existing files and updates `dossier.json` under the root publication lock, preserving configured runners. It refuses a malformed marker instead of replacing it, and a marker that names another storage is malformed. A marker with no `storage` field gets `storage: integrity-v1` while no dossier exists under the root. Once dossiers exist, setup refuses it. A missing marker beside existing dossier directories must be restored from version control, and setup refuses until it is.
 
 Run `dossier render` when you want ledger and index files written from the current analysis.
 
 ## Next
 
-[Install the solvers](install-the-solvers.md) for model trials, then [start a part](start-a-part.md).
+[Install the solvers](install-the-solvers.md) for model trials, then [start a part](start-a-part.md) and place it in [the map](arrange-the-map.md).

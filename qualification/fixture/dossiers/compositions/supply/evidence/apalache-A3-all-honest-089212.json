@@ -121,14 +121,14 @@
     }
   },
   "established": {
-    "trial": "2026-11-09-2230-apalache-a07e5a",
-    "at": "2026-11-09T22:30:00.984Z",
+    "trial": "2026-11-24-1432-apalache-a07e5a",
+    "at": "2026-11-24T14:32:12.836Z",
     "versions": {
-      "dossier": "0.2.0",
-      "node": "26.4.0",
+      "dossier": "0.3.0",
+      "node": "26.13.1",
       "apalache": "0.62.4"
     },
-    "bundle": "6758f9adae3db552a8e2da9da94f74e3e6af4b56305cd8428301a03ae160301a"
+    "bundle": "80eef273ca737b29a0348c1f2de19d217a0048f7609799034cb273f3bf618b4d"
   },
   "previous": null,
   "narrowed": null,

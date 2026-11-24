@@ -11,6 +11,7 @@ import { readMarker } from '../dossiers/root.ts';
 import { readMeanings } from './meanings.ts';
 import { addresses, partModel, partTrace, rootModel, compositionModel, compositionTrace, compositionWalk } from './model.ts';
 import { chartRun, explainAt, LIMIT } from './run.ts';
+import { dossierPage, nodePage, ROOT, UNPLACED } from './pages.ts';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { FSWatcher } from 'node:fs';
 import type { Verified } from '../commands/verify.ts';
@@ -93,7 +94,11 @@ export async function startExplorer({ root, pluginRoot, version, port = DEFAULT_
     }
     if (path === '/api/root') return json(res, rootModel(verified(), root, version, meanings));
     if (path === '/api/addresses') return json(res, addresses(verified()));
+    if (path === '/api/node') return json(res, nodePage(verified(), ROOT));
+    if (path === '/api/unplaced') return json(res, nodePage(verified(), UNPLACED));
     let m: RegExpMatchArray | null;
+    if ((m = path.match(/^\/api\/node\/([\w-]+)$/))) return json(res, nodePage(verified(), m[1]));
+    if ((m = path.match(/^\/api\/read\/(part|composition)\/([\w-]+)$/))) return json(res, dossierPage(verified(), `${m[1]}s/${m[2]}`));
     if ((m = path.match(/^\/api\/part\/([\w-]+)$/))) { const a = part(m[1]); return json(res, a && partModel(verified(), a, meanings)); }
     if ((m = path.match(/^\/api\/part\/([\w-]+)\/run$/))) { const run = await runOf(m[1]); return json(res, run?.view); }
     if ((m = path.match(/^\/api\/part\/([\w-]+)\/explain$/))) { const run = await runOf(m[1]); return json(res, run && explainAt(run, Number(url.searchParams.get('at') || 0))); }

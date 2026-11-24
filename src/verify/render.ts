@@ -16,6 +16,8 @@ import type { BackingState, Mark } from './marks.ts';
 import type { Route } from './route.ts';
 import type { Note } from './tripwires.ts';
 import type { BehaviorReport } from '../behaviors/report.ts';
+import { MAP_NOTES } from './map.ts';
+import type { MapComponentNode, MapCounts, MapNode, MapView } from './map.ts';
 
 // The machine form a part's ledger ends with, as written.
 export interface PartLedgerForm {
@@ -171,6 +173,53 @@ export function rootLines(route: Route, pluginRoot: string): string[] {
   else lines.push(`next: ${route.pass}${route.target ? ` on ${route.target}` : ''} — ${route.why.slice(0, 3).join('; ')}${route.why.length > 3 ? `; and ${route.why.length - 3} more` : ''}`);
   lines.push(`read: ${pluginRoot}/${route.read}`);
   return lines;
+}
+
+// The map's notes: nothing when there are none, else one line counting them by name, and with `full`
+// one line for each. A note never fails verify.
+export function mapLines(view: MapView, full: boolean): string[] {
+  if (!view.notes.length) return [];
+  const lines = [[`map: ${counted(view.notes.length, 'note', 'notes')}`, ...above(MAP_NOTES.map(name => [name, view.notes.filter(n => n.name === name).length]))].join(' · ')];
+  if (full) for (const n of view.notes) lines.push(`map note: ${n.name}: ${n.where}`);
+  return lines;
+}
+
+// A node's counts as the index prints them: the dossiers and the claims it reaches, the claims by
+// standing above zero, and what needs a person.
+export function mapCountsText(c: MapCounts): string {
+  const needs = above([['claims', c.needs.claims], ['reviews', c.needs.reviews], ['doubts', c.needs.doubts], ['decisions', c.needs.decisions], ['notes', c.needs.notes], ['reviews owed', c.needs.reviewsOwed], ['tripwires', c.needs.tripwires]]);
+  return [`${counted(c.dossiers, 'dossier', 'dossiers')}, ${counted(c.claims, 'claim', 'claims')}`,
+    ...above([['supported', c.standing.supported], ['contradicted', c.standing.contradicted], ['contested', c.standing.contested], ['evidence unreviewed', c.standing['evidence-available']], ['hypothesis', c.standing.hypothesis], ['stale', c.stale]]),
+    ...(needs.length ? [`needs: ${needs.join(', ')}`] : [])].join(' · ');
+}
+
+// The map as the index shows it: the root's counts, then each group and component a line, nested as the
+// map nests them, with what each holds, its flows and the compositions that sit there; then the dossiers
+// no component places, and the notes.
+export function mapSection(view: MapView): string[] {
+  const out = ['## Map', ''];
+  if (!view.tree) return [...out, 'The map in README.md does not read, so nothing is placed: see the malformed map tripwire above.'];
+  const reading = (indent: string, r: { dossier: string; behavior: string; lead: string }) => `${indent}- Featured: ${r.dossier}#${r.behavior} — ${r.lead}`;
+  const holds = (n: MapComponentNode) => `holds ${n.dossiers.map(d => d.select ? `${d.ref} (${d.select.join(', ') || 'nothing that resolves'})` : d.ref).join(', ') || 'nothing yet'}`;
+  const node = (n: MapNode, depth: number): string[] => {
+    const lines: string[] = [];
+    if (n.kind === 'root') lines.push(`${view.title ?? 'The root'}: ${mapCountsText(n.counts)}`, '');
+    else lines.push(`${'  '.repeat(depth)}- **${n.title}** \`${n.id}\` · ${n.lead} · ${[...(n.kind === 'component' ? [holds(n)] : []), mapCountsText(n.counts)].join(' · ')}`);
+    // The root's own lines stand at the top level, a node's one level in.
+    const childDepth = n.kind === 'root' ? 0 : depth + 1, indent = '  '.repeat(childDepth);
+    for (const r of n.featured) lines.push(reading(indent, r));
+    if (n.kind === 'component') { if (n.flows.length) lines.push(`${indent}- Flows: ${n.flows.join(', ')}`); }
+    else for (const child of [...n.groups, ...n.components]) lines.push(...node(child, childDepth));
+    if (n.sited.length) lines.push(`${indent}- Sited here: ${n.sited.join(', ')}`);
+    return lines;
+  };
+  out.push(...node(view.tree, 0));
+  if (view.unplaced && view.unplaced.dossiers.length) out.push('', `Not placed: ${view.unplaced.dossiers.join(', ')} · ${mapCountsText(view.unplaced.counts)}`);
+  if (view.notes.length) {
+    out.push('', [`Map notes: ${view.notes.length}`, ...above(MAP_NOTES.map(name => [name, view.notes.filter(x => x.name === name).length]))].join(' · '));
+    for (const x of view.notes) out.push(`- ${x.name}: ${x.where}`);
+  }
+  return out;
 }
 
 // The parts of a view that only say when it was written: the stamp in the header and in the
@@ -335,10 +384,10 @@ export function renderCompositionLedger(a: CompositionAnalysis, { version, now, 
   return finish(out, form, diffCells(a, parseMachineForm(previous)), previous);
 }
 
-export function renderIndex({ parts, compositions, version, now, route, previous = null, rootTrips = [] }: { parts: PartAnalysis[]; compositions: CompositionAnalysis[]; version: string; now: string; route: Route; previous?: string | null; rootTrips?: Note[] }): string {
+export function renderIndex({ parts, compositions, version, now, route, previous = null, rootTrips = [], map }: { parts: PartAnalysis[]; compositions: CompositionAnalysis[]; version: string; now: string; route: Route; previous?: string | null; rootTrips?: Note[]; map?: MapView }): string {
   const out: string[] = [];
   out.push(`# Dossiers   rebuilt ${now}   dossier ${version}`);
-  out.push('Written by dossier render: parts by compositions, and every composition at a glance.');
+  out.push('Written by dossier render: parts by compositions, every composition at a glance, and the map.');
   out.push(verifyLine([...parts, ...compositions], version, rootTrips));
   out.push('');
   const sysIds = compositions.map(s => s.id);
@@ -352,6 +401,8 @@ export function renderIndex({ parts, compositions, version, now, route, previous
   for (const a of [...parts, ...compositions]) out.push(`- ${summaryLine(a)}`);
   out.push('');
   out.push(route.pass === 'Fix' ? `Fix: ${route.why.join('; ')}` : `Next: ${route.pass}${route.target ? ` on ${route.target}` : ''} — ${route.why.join('; ')}`);
+  if (map) out.push('', ...mapSection(map));
+  // The map's tree stays in the Markdown above: verify --json carries it for tools.
   const form = { rebuilt: now, plugin: version, parts: parts.map(c => ({ id: c.id, module: c.ir.module, tier: c.tier, summary: c.summary, route: c.route, usedBy: c.usedBy })), compositions: compositions.map(s => ({ id: s.id, members: s.wiring.members.map(m => m.part), summary: s.summary, route: s.route })), route };
   const next = joined([...out, '', '```json', JSON.stringify(form, null, 2), '```']);
   return previous != null && core(next) === core(previous) ? previous : next;

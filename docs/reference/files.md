@@ -9,9 +9,9 @@ Collections, behaviors and reviews use the strict [record formats](../../spec/ar
 ```
 dossiers/
   dossier.json            setup: storage format, plugin version, knowledge, runners
-  README.md               what the area holds
+  README.md               the map of groups and components, then what the area holds
   .gitignore              setup: keeps index.md, each dossier's trials/ and .running/, _scratch/ and node_modules/ out of git
-  index.md                render: a view of parts by compositions, kept out of git
+  index.md                render: a view of parts by compositions and of the map, kept out of git
   package.json            the chart's libraries
   actors/
     actors.md             the actors and their modes
@@ -73,6 +73,59 @@ Transient paths may also appear. A trial runs in `.running/<id>/` within its dos
 `knowledge.root` and each runner's `cwd` are relative to the dossiers root, except a knowledge base outside the repository, which [setup](commands.md#the-command) stores as an absolute path. Setup updates the marker under the root publication lock, keeping its knowledge settings, runners and other metadata. It refuses a malformed marker.
 
 `plugin` must be `0.2.0`. Another version, or none, is refused and not converted. `storage` is independent of `plugin`, and its one value is `integrity-v1`. A marker that names no storage or another one grants no authority, and [Publication and integrity](../../spec/storage.md#format-and-authority) says how verify and each command treat it. Setup adds `storage: integrity-v1` to a marker that names none while no dossier exists under the root, and refuses it once dossiers exist.
+
+## The map
+
+The root's `README.md` begins with the map, a fenced `json` block of format `dossier-map@0.3.0`. Groups nest to any depth, components are the leaves, and each component names the parts and compositions it holds. The folders stay flat under `parts/` and `compositions/`, and the map is a view over them. Its heading and paragraphs are the root's title and explanation. A cut-down map:
+
+```json
+{
+  "format": "dossier-map@0.3.0",
+  "groups": [
+    {
+      "id": "credit",
+      "title": "Credit and HRD",
+      "lead": "The Vault's credit ledger, and the HRD tokens the Adapter issues against it.",
+      "featured": [
+        {
+          "dossier": "compositions/supply",
+          "behavior": "match-token-backing",
+          "lead": "Issued credit, the Adapter's holdings and the HRD supply stay equal as credit moves."
+        }
+      ],
+      "components": [
+        {
+          "id": "conversion",
+          "title": "Conversion",
+          "lead": "The Adapter exchanges credit for HRD, which the Token mints and burns.",
+          "record": "adapter#contract:adapter",
+          "dossiers": [
+            "parts/adapter",
+            {
+              "ref": "parts/token",
+              "select": [
+                "mint-and-burn"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+| In a node | Holds |
+| --- | --- |
+| `id` | Lower case letters, digits and single hyphens, unique across the map. A node's id is its address |
+| `title`, `lead` | Its name, and one line saying what it is |
+| `record` | Optional: the knowledge record it describes, `<module>#<type>:<id>`, checked only when a knowledge base is configured |
+| `featured` | Optional: readings worth starting from, each a dossier under the node, a behavior or `<behavior>/C<n>`, and a line saying why |
+| `groups`, `components` | In a group, and at the root: what it holds, in reading order |
+| `dossiers` | In a component: each dossier as its path, which holds it whole, or as `ref` and `select`, a cross-reference to some of its behaviors or claims |
+| `flows` | Optional, in a component: `false` stops it listing the compositions its whole dossiers take part in |
+
+A composition no component holds sits where the components that hold its members whole meet. A cross-reference places the dossier it names, but it makes no flow and sites no composition. Every live part should sit under at least one component, and verify notes one that does not. The notes never fail verify, but a block that does not read fails it with `malformed map`. Setup writes an empty map, and `dossier place` adds and removes dossiers and creates nodes. No other command writes the block, and an author may edit it by hand. No review or answer binds the root's README, so editing the map lapses nothing. [The map contract](../../spec/map.md) gives every rule, and Harbor's [root README](../../qualification/fixture/dossiers/README.md) is a whole map.
 
 ## Behavior collections and reviews
 

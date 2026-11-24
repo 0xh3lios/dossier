@@ -1,5 +1,10 @@
 // Navigation uses the report's identities. It does not infer evidence or standing.
 const DOSSIER = /^(parts|compositions)\/([a-z][a-z0-9]*(?:-[a-z0-9]+)*)$/;
+// A link's path with its escapes decoded. An authored link may hold a bare %, as in 50%-rule.md, which
+// decodes to nothing, so the path stays as written.
+function decodedPath(url) {
+  try { return decodeURIComponent(url.pathname); } catch { return url.pathname; }
+}
 export function dossierHref(dossier, params = {}) {
   const match = DOSSIER.exec(dossier || '');
   if (!match) return null;
@@ -7,6 +12,21 @@ export function dossierHref(dossier, params = {}) {
   return `#/${match[1] === 'parts' ? 'part' : 'composition'}/${match[2]}${query.size ? `?${query}` : ''}`;
 }
 export const behaviorHref = (dossier, behavior, claim) => dossierHref(dossier, { behavior, claim });
+// What an address selects among a reading page's holdings: a claim with its behavior, or a behavior
+// alone, as the palette, a featured reading or a link to its file names it. `dossier` narrows a page
+// that holds several. The holding, the behavior and the claim, which is null for a behavior alone.
+export function selectionOf(holdings, params) {
+  if (!params.behavior) return null;
+  for (const h of holdings) {
+    if (params.dossier && params.dossier !== h.ref) continue;
+    const b = h.behaviors.find(x => x.id === params.behavior);
+    if (!b) continue;
+    if (!params.claim) return { h, b, c: null };
+    const c = b.claims.find(x => x.id === params.claim);
+    if (c) return { h, b, c };
+  }
+  return null;
+}
 export const evidenceHref = evidence => dossierHref(evidence.dossier, { view: 'model', tab: 'evidence', entry: evidence.entry });
 export function targetHref(target) {
   if (!target || target.kind === 'knowledge') return null;
@@ -38,7 +58,7 @@ export function splitOrientation(text, dossier, order = []) {
   const behaviorOf = href => {
     let url;
     try { url = new URL(href, `https://dossier.invalid/${dossier}/README.md`); } catch { return null; }
-    const match = /^\/((?:parts|compositions)\/[^/]+)\/behaviors\/([^/]+)\.md$/.exec(decodeURIComponent(url.pathname));
+    const match = /^\/((?:parts|compositions)\/[^/]+)\/behaviors\/([^/]+)\.md$/.exec(decodedPath(url));
     return match && match[1] === dossier && order.includes(match[2]) ? match[2] : null;
   };
   for (let i = 0; i < lines.length; i++) {
@@ -62,7 +82,7 @@ export function documentHref(href, source) {
   if (/^[a-z]+:/i.test(href) || href.startsWith('//')) return null;
   let url;
   try { url = new URL(href, `https://dossier.invalid/${source}`); } catch { return null; }
-  const path = decodeURIComponent(url.pathname).slice(1);
+  const path = decodedPath(url).slice(1);
   const match = /^(parts|compositions)\/([^/]+)\/(.*)$/.exec(path);
   if (!match) return path === 'index.md' ? '#/' : null;
   const dossier = `${match[1]}/${match[2]}`, file = match[3];

@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "evidence": {
-    "apalache-A1-all-honest-b80ec4": "c702503e2a414a07e37e9a3be603e5f856da7157ee89a10f41f514925e4c8f91",
-    "apalache-A2-all-honest-829e26": "d63bcba03cdfcd6cfaf1770ed5e3fba1f0a027e2c415b409d2d1ed6f7e1f166b",
-    "apalache-A3-all-honest-089212": "1598f9187e0c8c704f144485ee7633f9b7d2df85db84718b83ca79e03b708926",
-    "tlc-A1-user-malicious-55c163": "4796d3c469b93badc68b8edf8304acfd9bca15e0d87f535ef52933cb8c7ccbc5",
-    "tlc-A2-user-malicious-3bd827": "19d1c82cb2da4aa3e87b36e9cde89a890766345e16e0ae91521a01e45383e789",
-    "tlc-A3-user-malicious-58334f": "4a789807e1374f286f0b3771026ba0111418a39c844fe578641399e7cfc3711d",
-    "blunder-A2-all-honest-345531": "35143a5f5a9ff7db115feae967c11e43b782bded523912b02d2446acb8eb92b5",
-    "blunder-A1-all-honest-4c6824": "8b54431acf0c9cba5e12bc9ccb6551273c16242c4e27fe81165b1b649399e26c",
-    "blunder-A3-all-honest-2de1da": "e303ef1825ba860e62a58baa540b7b62cf8bb18d8ae3b76f380fe13203b52dc9",
-    "tlc-W1-all-honest-2cdc8e": "5f9f6623809bebb28df5da35647f20c21e4613286ed70aed316519ceceef2921"
+    "apalache-A1-all-honest-b80ec4": "ef8e2cf0f206c29eb9e0c2f94a3c3658f4cd00ead968a425c5fa4a4c20fc4552",
+    "apalache-A2-all-honest-829e26": "054b3f7dcfa82998c4542ef557ffb00e412fc3f18441a1cd9f934916209a8d7e",
+    "apalache-A3-all-honest-089212": "0e175059eeef704ab982565436c51b720526422bac5c104b99df84a374b12ae5",
+    "tlc-A1-user-malicious-55c163": "fc9ab3d977530872f6122d003e6a725abea7c3007ab557eb2558f383a74bf3f8",
+    "tlc-A2-user-malicious-3bd827": "2f46f6343f6bacdaddbf256002b64c71c0cff014782d92d2f1cf4e929eab37eb",
+    "tlc-A3-user-malicious-58334f": "ef74ee0f7a32b4500e751748a3827bfeea4cdab09df8572573652a154e48d9ec",
+    "blunder-A2-all-honest-345531": "d1fd13066cc52275f7a85498e6c14fb19d7a7ee49640e58141aa77d87a1f998e",
+    "blunder-A1-all-honest-4c6824": "458a31b19cd3edcda1c9820f40c3cf10e67d446b88a9d0be045a1ee40ffd93ca",
+    "blunder-A3-all-honest-2de1da": "b2b55d1625bfd9b9c6cc229fe2a95ee5d670c3398351eea7abda9bdf6ee81447",
+    "tlc-W1-all-honest-2cdc8e": "e409f4f8f3251fe7e0d345dc0578eefd6e5bd19aa5437f48262765953a9e2cbb"
   },
   "decisionHead": {
     "algorithm": "sha256-prefix",
     "bytes": 122,
-    "digest": "af325916aff801d45ca1b00e4ba9d5e598cb315074cf16660b65f7a0597a6fa5"
+    "digest": "6c15a5e07431f99fb043197dedddfbc0dde805c7583f60e820503048b6d96b33"
   }
 }

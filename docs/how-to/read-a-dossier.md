@@ -12,7 +12,7 @@ Find out what a part or a composition does, and how far each statement about it 
 
    A `review owed` flag beside supported claims means that each behavior was reviewed and the dossier as a whole was not.
 
-2. **Read the orientation.** Open the dossier's `README.md`. It says what the part or the composition is for, who acts on it, the usual flow and what the model leaves out. It then lists the behaviors in the order to read them. [Control's orientation](../../qualification/fixture/dossiers/compositions/control/README.md#control) is an example.
+2. **Read the orientation.** To find a dossier, start from the [map](arrange-the-map.md) at the top of the root's `README.md`, which places each dossier under the components where it is read. Open the dossier's own `README.md`. It says what the part or the composition is for, who acts on it, the usual flow and what the model leaves out. It then lists the behaviors in the order to read them. [Control's orientation](../../qualification/fixture/dossiers/compositions/control/README.md#control) is an example.
 
 3. **Read a behavior.** Open `behaviors/<id>.md`. Its explanation follows the JSON block at the top of the file. To see its claims with their standing, say "what do we claim about resolving a plan?" The agent runs `dossier where` with the behavior's address:
 
@@ -32,9 +32,9 @@ Find out what a part or a composition does, and how far each statement about it 
 
    For the claim C1 of Resolve a scheduled plan, the target is the cell N1 × executor-offline. Its answer is the entry [tlc-N1-executor-offline-4dafb3](../../qualification/fixture/dossiers/compositions/control/evidence/tlc-N1-executor-offline-4dafb3.json). Its [reading](../../qualification/fixture/dossiers/compositions/control/evidence/tlc-N1-executor-offline-4dafb3.md) retells the path: Governance schedules a plan, the chain ticks four times, and nobody executes.
 
-5. **Read what no behavior covers.** The report lists the passages, cells, walks and scenarios that no behavior maps to. The explorer shows them under No behavior. The agent reads them from `dossier verify --json`, as `coverage.unassociated` in each dossier's `behaviors`. They are not unfinished for that reason. The list covers the model and says nothing about what the source does beyond it.
+5. **Read what no behavior covers.** The report lists the passages, cells, walks and scenarios that no behavior maps to. The explorer's Workbench shows them under No behavior. The agent reads them from `dossier verify --json`, as `coverage.unassociated` in each dossier's `behaviors`. They are not unfinished for that reason. The list covers the model and says nothing about what the source does beyond it.
 
-6. **Or read it in the explorer.** [Open the explorer](open-the-explorer.md) to see the same behaviors and claims as an outline, with each claim's evidence, review and decision beside it.
+6. **Or read it in the explorer.** [Open the explorer](open-the-explorer.md) to see the same behaviors and claims on the dossier's page, under the components that hold it. Select a claim to see why it holds: what it is about, what each run showed, the independent review and the owner's decision.
 
 ## Read a standing with its parts
 

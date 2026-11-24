@@ -43,7 +43,9 @@ The member parts, each with prose that compiles. See [Start a part](start-a-part
 
    A member's sends that no wiring reaches are free actions, and verify flags them `left free`. When this concern leaves them unwired on purpose, list them under `free:`. Control lists the Adapter's sends to the Vault, `vault.move` and `vault.release`, because the Supply composition wires them.
 
-3. **Add a closure when a property is about an asset.** Name the asset and the edge kinds that make a module a necessary member. Harbor's Supply closes over its stablecoin, HRD:
+3. **See where it sits in the map.** A composition needs no placement of its own once components hold its members whole. It sits where those components meet in the [map](arrange-the-map.md), and each of them lists it among its flows. Harbor's Control sits at the top, since its members are held under two groups, Governance and Credit and HRD. To read it somewhere else, or when no component holds one of its members whole, which leaves it unplaced, ask the agent to place it, or run `dossier place compositions/control <component>` yourself.
+
+4. **Add a closure when a property is about an asset.** Name the asset and the edge kinds that make a module a necessary member. Harbor's Supply closes over its stablecoin, HRD:
 
    ```yaml
    closure:
@@ -53,7 +55,7 @@ The member parts, each with prose that compiles. See [Start a part](start-a-part
 
    Verify then names every module that owns such an edge and is not a member, and keeps the cells open until it is added. A rule can also list `modules:`, which must be members whatever the knowledge base holds.
 
-4. **Declare the scenarios** in `actors/scenarios.md`. Give modes only to the actors that differ from honest:
+5. **Declare the scenarios** in `actors/scenarios.md`. Give modes only to the actors that differ from honest:
 
    ```yaml
    scenarios:
@@ -81,7 +83,7 @@ The member parts, each with prose that compiles. See [Start a part](start-a-part
        start: { oracle.state: Stale, oracle.stale: 3 }
    ```
 
-5. **State the properties** in the composition's `prose.md`. Name member data as `part.data` and member states as `part.State`, and say which scenarios each property claims:
+6. **State the properties** in the composition's `prose.md`. Name member data as `part.data` and member states as `part.State`, and say which scenarios each property claims:
 
    ```
    [A1] Always, {not timelock.early}. Scenarios: all-honest, governance-captured, executor-offline.
@@ -96,7 +98,7 @@ The member parts, each with prose that compiles. See [Start a part](start-a-part
    [W1] Walk Capture under governance-captured: from timelock.Idle, timelock.schedule, timelock.execute refused, timelock.tick, timelock.tick, timelock.execute; ends timelock.Idle.
    ```
 
-6. **Compose the module.** Run `dossier scaffold control`. It writes `model/generated/Control.tla`, one configuration per cell and one per walk. Verify derives their identities in memory, and trials prepare private generated inputs without rewriting these views. Put helper definitions and strengthened invariants in `model/extras.tla`, which is appended to the module. The generated files are never edited by hand.
+7. **Compose the module.** Run `dossier scaffold control`. It writes `model/generated/Control.tla`, one configuration per cell and one per walk. Verify derives their identities in memory, and trials prepare private generated inputs without rewriting these views. Put helper definitions and strengthened invariants in `model/extras.tla`, which is appended to the module. The generated files are never edited by hand.
 
 ## Check
 

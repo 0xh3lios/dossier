@@ -137,14 +137,14 @@
     }
   },
   "established": {
-    "trial": "2026-11-09-2228-apalache-6ed955",
-    "at": "2026-11-09T22:28:53.254Z",
+    "trial": "2026-11-24-1431-apalache-6ed955",
+    "at": "2026-11-24T14:31:10.473Z",
     "versions": {
-      "dossier": "0.2.0",
-      "node": "26.4.0",
+      "dossier": "0.3.0",
+      "node": "26.13.1",
       "apalache": "0.62.4"
     },
-    "bundle": "fd4dc650f768799ca01b29ab4a77a1cc8f95dc0ede0a107c99ea3caf2676ec3c"
+    "bundle": "d51b19e3806d29b29f691f31a3622ed0011c2b7536e5f54987f69fe633f70ec4"
   },
   "previous": {
     "answer": {
@@ -332,20 +332,20 @@
       }
     },
     "established": {
-      "trial": "2026-11-09-2228-apalache-b9e763",
-      "at": "2026-11-09T22:28:39.774Z",
+      "trial": "2026-11-24-1430-apalache-b9e763",
+      "at": "2026-11-24T14:30:57.914Z",
       "versions": {
-        "dossier": "0.2.0",
-        "node": "26.4.0",
+        "dossier": "0.3.0",
+        "node": "26.13.1",
         "apalache": "0.62.4"
       },
-      "bundle": "2598f1570b4065c2c8b08365adf64638f3216380eae0877f2db1b8085e656d59"
+      "bundle": "dd2c6cc49d42dafe663ce72d0c94979a75b6ca5d4c61ea4dc696be74c3ef9c2a"
     },
     "classification": "call was wrong"
   },
   "narrowed": null,
   "replaced": {
-    "trial": "2026-11-09-2228-apalache-b9e763",
+    "trial": "2026-11-24-1430-apalache-b9e763",
     "moved": [
       "executed model/Vault.tla"
     ]

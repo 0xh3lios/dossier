@@ -30,13 +30,13 @@ The rest of a dossier depends on its behaviors and claims in these ways.
 
 | What | How it depends on them |
 | --- | --- |
-| Reading | The orientation gives the reading order. `dossier verify` counts each dossier's claims by standing. Each ledger, the rendered table of a dossier's results, and the [explorer](../how-to/open-the-explorer.md) open with the behaviors and their claims. All three read one derived report. |
+| Reading | The orientation gives the reading order. `dossier verify` counts each dossier's claims by standing. Each ledger, the rendered table of a dossier's results, and the [explorer](../how-to/open-the-explorer.md)'s page for a dossier open with the behaviors and their claims. All three read one derived report. |
 | Work | The agent turns a request into a claim with a stated scope before anything runs. A request that names no claim gets a proposed scope first. |
 | Standing | Verify derives one standing for each claim from its mappings, the current answers and the current reviews. No file holds a `verified` flag. |
 | Review | An independent review takes one behavior or the whole dossier as its subject. It assesses every mapping and binds each claim by its digest. |
 | Change | A reworded claim loses its own assessments, and the other claims keep theirs. A lapsed answer makes the claims mapped to it stale. |
 | The record | Publication, the step that writes a check's answer into the record, keeps an answer while a current mapping still needs it. |
-| Gaps | The report lists the passages, cells, walks and scenarios that no behavior maps to. The explorer shows them under No behavior. |
+| Gaps | The report lists the passages, cells, walks and scenarios that no behavior maps to. The explorer's Workbench shows them under No behavior. |
 
 Some things do not depend on them. A [mark](../reference/marks.md), the result on one passage, is computed from the recorded answers whether or not a claim maps to that passage. An owner's decision applies to the passage or the cell it names, never to a claim. Removing a behavior removes no evidence by itself, though publication may then let go of an answer that only one of its mappings kept.
 

@@ -1,14 +1,23 @@
-// One part: its prose beside its statechart, the grid, the walks as lanes, and the players.
+// A part's chart, in the Workbench: its prose beside its statechart, the grid, the walks as lanes, and the
+// players.
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Button, Cell, Column, Header, Input, Label, ListBox, ListBoxItem, ListBoxSection, Popover, Row, Select, SelectValue, Switch, Tab, Table,
+  Button, Cell, Column, Header, Input, Label, ListBox, ListBoxItem, ListBoxSection, Popover, Row, SearchField, Select, SelectValue, Switch, Tab, Table,
   TableBody, TableHeader, TabList, TabPanel, Tabs, TextField, ToggleButton, ToggleButtonGroup,
 } from 'react-aria-components';
-import { api, argsText, dataOf, eventText, familyOf, isOpenMark, KIND, MAX_NODES, sentOf, setParams, shortTime, stripHash, titleBeyondId, useApp, useData, useNarrow } from './lib.js';
+import { api, argsText, dataOf, eventText, familyOf, hrefFor, isOpenMark, KIND, MAX_NODES, parseHash, plural, sentOf, setParams, shortTime, STANDING_WORD, stripHash, titleBeyondId, useApp, useData, useNarrow } from './lib.js';
 import { layoutChart } from './layout.js';
 import { arrowHead, Graph } from './Graph.jsx';
-import { Badge, DecideLine, Failed, KV, LinkButton, Loading, MarkBadge, MarkExplain, None, Owner, Sec } from './bits.jsx';
+import { Badge, DecideLine, Failed, FlagsSection, KV, LinkButton, Loading, MarkBadge, MarkExplain, None, Owner, Sec } from './bits.jsx';
 import { doubtTrack, lightsOf, pathTrack, traceTrack, walkTrack } from './tracks.js';
+import { DocumentText } from './markdown.jsx';
+
+// An address in the view the reader is in, with some of its parameters changed.
+export const here = patch => { const r = parseHash(); return hrefFor({ ...r, params: { ...r.params, view: 'model', ...patch } }); };
+// A record as the server sent it, for a reader who wants every field.
+export const Raw = ({ value, label = 'Record' }) => <details className="raw"><summary>{label}</summary><pre>{JSON.stringify(value, null, 2)}</pre></details>;
+// A day and a time in a dense column: 11-09 17:28.
+const stamp = iso => { if (!iso) return ''; const d = new Date(iso); const p = n => String(n).padStart(2, '0'); return Number.isNaN(d.getTime()) ? String(iso) : `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
 
 const fmt = v => (v === undefined ? '' : typeof v === 'string' ? v : JSON.stringify(v));
 const CENTERS = ['chart', 'grid', 'walks'];
@@ -137,7 +146,7 @@ export function PartView({ id, params }) {
         <Tabs selectedKey={center} onSelectionChange={k => setParams({ center: k })} className="tabs is-center">
           <div className="center-bar">
             <TabList aria-label="View" className="tablist">
-              <Tab id="chart">Chart</Tab><Tab id="grid">Grid</Tab><Tab id="walks">Walks</Tab>
+              <Tab id="chart">Statechart</Tab><Tab id="grid">Grid</Tab><Tab id="walks">Walks</Tab>
             </TabList>
             <span className="top-gap" />
             {run && <span className="muted">chart {run.error ? <Badge word="fail" label={run.checks.length ? `${run.passed}/${run.checks.length}` : 'did not run'} small /> : <Badge word={run.outcome === 'pass' ? 'checked' : 'violated'} label={`${run.passed}/${run.checks.length}`} small />} · {run.explored} states</span>}
@@ -156,8 +165,8 @@ export function PartView({ id, params }) {
           <TabList aria-label="Panels" className="tablist">
             {narrow && <Tab id="prose">Prose</Tab>}
             <Tab id="detail">Detail</Tab><Tab id="play">Play</Tab>
-            <Tab id="evidence">Evidence <span className="muted">{c.evidence.length}</span></Tab>
-            <Tab id="backing">Backing</Tab><Tab id="log">Log</Tab>
+            <Tab id="evidence">Runs <span className="muted">{c.evidence.length}</span></Tab>
+            <Tab id="backing">Backing</Tab><Tab id="log">Decisions <span className="muted">{c.decisions.length}</span></Tab>
           </TabList>
           {narrow && <TabPanel id="prose" className="panel is-flex"><ProsePane c={c} sel={sel} linked={hover} onSelect={pid => { setParams({ sel: pid, tab: 'prose' }); }} onHover={setHover} /></TabPanel>}
           <TabPanel id="detail" className="panel is-scroll">{sel ? <PassageDetail c={c} run={run} pid={sel} /> : <Summary c={c} run={run} />}</TabPanel>
@@ -368,7 +377,7 @@ function Summary({ c, run }) {
     <div className="detail">
       <div className="d-head"><b>{c.id}</b> <span className="muted">{c.tier}{titleBeyondId(c.title, c.id) ? <> · {c.title}</> : null}</span><LinkButton /></div>
       {c.route && <Sec title="Next" aside={c.route.pass}>{(c.route.why || []).map((w, i) => <div key={i} className="why">{w}</div>)}</Sec>}
-      {(c.tripwires.length > 0 || c.flags.length > 0) && <Sec title="Flags">{c.tripwires.map((t, i) => <div key={`t${i}`}><Badge word="violated" label={t.name} small /> <span className="muted">{t.where}</span></div>)}{c.flags.map((f, i) => <div key={i}><span className="chip">{f.name}</span> <span className="muted">{f.where}</span></div>)}</Sec>}
+      <FlagsSection tripwires={c.tripwires} flags={c.flags} />
       <Sec title="Standing">
         <KV rows={[['passages', `${s.passages} · settled ${s.settled} · confirmed ${s.confirmed} · unsettled ${s.unsettled}`], ['marks', ['proved', 'checked', 'drawn', 'pending', 'held', 'hollow', 'lapsed', 'miscalled'].filter(k => s[k]).map(k => <Badge key={k} word={k} label={`${s[k]} ${k}`} small />)], ['backing', `backed ${s.backed || 0} · assumed ${s.assumed || 0} · unresolved ${s.unresolved || 0}`], ['doubts open', s.doubtsOpen || 0]]} />
       </Sec>
@@ -398,13 +407,16 @@ function PassageDetail({ c, run, pid }) {
   const walk = ch.walks.find(x => x.id === pid);
   const backing = c.backing.find(x => x.id === pid);
   const doubts = c.doubts.filter(d => d.on.includes(pid));
+  // The claims whose mappings name this passage, each a way back to the page that reads it.
+  const claims = c.behaviors.behaviors.flatMap(b => b.claims.flatMap(cl => cl.mappings.filter(mp => mp.target.kind === 'passage' && mp.target.dossier === `parts/${c.id}` && mp.target.id === pid).map(mp => ({ b, cl, mp }))));
   return (
     <div className="detail">
       <div className="d-head"><b className="mono">{pid}</b> <span className="muted">{KIND[p.kind]}</span> <Owner owner={p.owner} /> {m && <MarkBadge m={m} />}<span className="top-gap" /><LinkButton /></div>
       <p className="ptext-full">{p.text}</p>
       {m && <Sec title="Mark" aside={m.mark}><MarkExplain m={m} />
-        {m.trials?.length ? <div className="trials">{m.trials.map(t => <a key={t} className="chip mono" href={`#/part/${c.id}?tab=evidence&entry=${trialEntry[t] || ''}`}>{trialEntry[t] || t}</a>)}</div> : null}
+        {m.trials?.length ? <div className="trials">{m.trials.map(t => <a key={t} className="chip mono" href={here({ tab: 'evidence', entry: trialEntry[t] || null })}>{trialEntry[t] || t}</a>)}</div> : null}
       </Sec>}
+      {claims.length > 0 && <Sec title="Claims" aside={claims.length}>{claims.map(({ b, cl, mp }) => <div key={`${b.id}/${cl.id}/${mp.id}`} className="small"><Badge word={cl.standing} label={STANDING_WORD[cl.standing]} small /><a href={hrefFor({ view: 'part', id: c.id, params: { behavior: b.id, claim: cl.id } })}><span className="mono">{cl.id}</span> {cl.statement}</a> <span className="muted">{mp.relation}</span></div>)}</Sec>}
       {move && <Sec title="Move"><KV rows={[['from → to', `${move.from} → ${move.to}${move.stays ? ' (stays)' : ''}`], ['event', `${move.event} · ${ch.events.find(e => e.name === move.event)?.sender || ''}`], ['guard', <span className="mono">{move.guard || 'none'}</span>], ['changes', <span className="mono">{move.changes.join(', ') || 'none'}</span>], ['sends', move.effects.join(', ') || 'nothing']]} /></Sec>}
       {refusal && <Sec title="Refusal"><KV rows={[['in', refusal.states.join(', ')], ['refuses', refusal.events.join(', ')], ['when', <span className="mono">{refusal.cond || 'always'}</span>], ['sends', refusal.effects.join(', ') || 'nothing']]} /></Sec>}
       {state && <Sec title="Every event here"><table className="dt"><tbody>{ch.table.filter(x => x.state === state.key).map(x => <tr key={x.event}><td className="mono">{x.event}</td><td>{[...x.moves, ...x.refusals].join(' ') || <Badge word="unsaid" small />}</td></tr>)}</tbody></table></Sec>}
@@ -421,6 +433,7 @@ function PassageDetail({ c, run, pid }) {
         </Sec>
       ))}
       {p.owner !== 'settled' && <Sec title="Owner decides"><DecideLine dossier={c.id} verb="accept" args={[pid]} /><DecideLine dossier={c.id} verb="reject" args={[pid]} /></Sec>}
+      <Raw value={{ passage: p, mark: m || null, move: move || null, refusal: refusal || null, event: event || null, walk: walk || null, backing: backing || null, doubts }} />
     </div>
   );
 }
@@ -504,7 +517,7 @@ function Player({ c, track, step, setStep }) {
       {track.ends && <div className="small muted">ends {track.ends}</div>}
       {track.problems?.length ? <div className="small t-crit">{track.problems.join('; ')}</div> : null}
       {meta?.because && <Sec title="Call"><p className="small">{meta.because}</p></Sec>}
-      {meta?.reading && <Sec title="Reading"><pre className="reading">{meta.reading}</pre></Sec>}
+      {meta?.reading && <Sec title="Reading"><div className="reading"><DocumentText text={meta.reading} source={`parts/${c.id}/evidence/${meta.entry}.md`} /></div></Sec>}
     </div>
   );
 }
@@ -597,21 +610,28 @@ function PathFinder({ c, run, from }) {
   );
 }
 
-// ---------- Evidence, backing and the decision log ----------
+// ---------- Runs (each answer in evidence/), backing and the decision log ----------
 export function EvidencePanel({ dossier, evidence, entry, composition }) {
+  const [filter, setFilter] = useState('');
   const chosen = evidence.find(e => e.entry === entry);
   const asks = e => [...(e.question?.expects || []), e.question?.property, e.question?.scenario, e.question?.walk].filter(Boolean).join(' ');
+  const rows = evidence.filter(e => !filter || `${e.entry} ${asks(e)} ${e.kind || ''} ${e.checker || ''} ${e.trial || ''}`.toLowerCase().includes(filter.toLowerCase()));
+  // The run chosen comes first, so an address that names one shows it without a scroll.
   return (
     <div className="evidence">
-      <Table aria-label="Evidence" className="table is-dense" selectionMode="single" selectedKeys={entry ? [entry] : []} onSelectionChange={keys => setParams({ entry: [...keys][0] || null })}>
+      {chosen && <RunDetail chosen={chosen} dossier={dossier} composition={composition} />}
+      <div className="toolbar is-tight">
+        <SearchField className="search is-inline" aria-label="Filter runs" value={filter} onChange={setFilter}><Input placeholder="Filter runs" /></SearchField>
+        <span className="muted">{rows.length === evidence.length ? plural(evidence.length, 'run') : `${rows.length} of ${evidence.length}`}</span>
+      </div>
+      <Table aria-label="Runs" className="table is-dense" selectionMode="single" selectedKeys={entry ? [entry] : []} onSelectionChange={keys => { setParams({ entry: [...keys][0] || null }); document.querySelector('.evidence')?.closest('.panel')?.scrollTo({ top: 0 }); }}>
         <TableHeader>
-          <Column isRowHeader>entry</Column><Column>when</Column><Column>asks</Column><Column>answer</Column><Column>result</Column>
+          <Column isRowHeader>entry</Column><Column>asks</Column><Column>answer</Column><Column>result</Column>
         </TableHeader>
-        <TableBody items={evidence.map(e => ({ ...e, id: e.entry }))}>
+        <TableBody items={rows.map(e => ({ ...e, id: e.entry }))} renderEmptyState={() => <div className="pad muted">No run matches.</div>}>
           {e => (
             <Row id={e.entry}>
-              <Cell><span className="mono">{e.entry}</span>{e.superseded && <span className="chip" title={e.superseded}>superseded</span>}{e.forgotten && <span className="chip">forgotten</span>}{e.gone && <span className="chip" title={e.gone}>question gone</span>}</Cell>
-              <Cell>{shortTime(e.at)}</Cell>
+              <Cell><span className="mono" title={shortTime(e.at)}>{e.entry}</span>{e.superseded && <span className="chip" title={e.superseded}>superseded</span>}{e.forgotten && <span className="chip">forgotten</span>}{e.gone && <span className="chip" title={e.gone}>question gone</span>}</Cell>
               <Cell className="mono">{asks(e)}</Cell>
               <Cell>{Object.entries(e.answer?.outcomes || {}).map(([k, v]) => <Badge key={k} word={v} label={`${k} ${v}`} small />)}</Cell>
               <Cell><Badge word={e.answer?.result} small />{e.previous && <span className="chip" title="the previous different answer">prev</span>}</Cell>
@@ -619,8 +639,13 @@ export function EvidencePanel({ dossier, evidence, entry, composition }) {
           )}
         </TableBody>
       </Table>
-      {chosen && (
-        <div className="detail">
+    </div>
+  );
+}
+
+function RunDetail({ chosen, dossier, composition }) {
+  return (
+        <div className="detail is-run">
           <div className="d-head"><b className="mono">{chosen.entry}</b> <span className="muted">{chosen.kind} · {chosen.checker}</span><span className="top-gap" /><LinkButton />
             {chosen.answer?.steps > 0 && !composition && <Button className="btn is-tiny" onPress={() => setParams({ tab: 'play', play: `trace:${chosen.entry}:0` })}>Play trace</Button>}
             {chosen.answer?.steps > 0 && composition && chosen.question?.property && chosen.question?.scenario && <Button className="btn is-tiny" onPress={() => setParams({ tab: 'cells', cell: `${chosen.question.property}:${chosen.question.scenario}`, play: 'cell:0' })}>Play trace</Button>}
@@ -636,11 +661,11 @@ export function EvidencePanel({ dossier, evidence, entry, composition }) {
             chosen.superseded && ['superseded', chosen.superseded], chosen.forgotten && ['forgotten', chosen.forgotten.words], chosen.gone && ['question gone', chosen.gone],
             chosen.problems?.length ? ['problems', <span className="t-crit">{chosen.problems.join('; ')}</span>] : null,
           ]} />
+          {chosen.reading && <Sec title="Reading"><div className="reading"><DocumentText text={chosen.reading} source={`${composition ? 'compositions' : 'parts'}/${dossier}/evidence/${chosen.entry}.md`} /></div></Sec>}
           {chosen.call?.because && <Sec title="Because"><p className="small">{chosen.call.because}</p></Sec>}
-          {chosen.reading && <Sec title="Reading"><pre className="reading">{chosen.reading}</pre></Sec>}
+          <Raw value={chosen} />
+          <div className="sec"><Button className="btn is-tiny" onPress={() => setParams({ entry: null })}>Close</Button></div>
         </div>
-      )}
-    </div>
   );
 }
 
@@ -650,7 +675,7 @@ function BackingPanel({ c }) {
       <Sec title="Guarantees" aside={c.backing.length}>
         {c.backing.length ? (
           <table className="dt"><tbody>{c.backing.map(b => (
-            <tr key={b.id}><td><a className="mono" href={`#/part/${c.id}?sel=${b.id}`}>{b.id}</a></td><td>{b.claim}</td><td className="mono small">{b.kind}{b.ref ? ` ${b.ref}` : ''}</td><td><Badge word={b.status} small /></td></tr>
+            <tr key={b.id}><td><a className="mono" href={here({ sel: b.id, tab: 'detail' })}>{b.id}</a></td><td>{b.claim}</td><td className="mono small">{b.kind}{b.ref ? ` ${b.ref}` : ''}</td><td><Badge word={b.status} small /></td></tr>
           ))}</tbody></table>
         ) : <None />}
       </Sec>
@@ -668,7 +693,7 @@ export function LogPanel({ decisions }) {
       <tbody>
         {decisions.map(d => d.malformed
           ? <tr key={d.line}><td>{d.line}</td><td colSpan={3} className="t-crit mono">{d.raw}</td></tr>
-          : <tr key={d.line}><td className="muted">{d.line}</td><td>{shortTime(d.time)}</td><td><b>{d.verb}</b> <span className="mono small">{d.args.map(stripHash).join(' ')}</span></td><td className="words">{d.words}</td></tr>)}
+          : <tr key={d.line}><td className="muted">{d.line}</td><td className="mono nowrap" title={shortTime(d.time)}>{stamp(d.time)}</td><td><b>{d.verb}</b> <span className="mono small">{d.args.map(stripHash).join(' ')}</span></td><td className="words">{d.words}</td></tr>)}
       </tbody>
     </table>
   );

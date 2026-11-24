@@ -1,7 +1,9 @@
-// What the explorer's pages read, taken from verify's analysis of the root: the board, the addresses
-// the palette reaches, one part, one composition, each answer in evidence/ and the traces they hold.
-// It reshapes what verify concluded and computes no standing of its own.
+// What the explorer's pages read, taken from verify's analysis of the root: the root with the map verify
+// placed, the addresses the palette reaches, one part, one composition, each answer in evidence/ and the
+// traces they hold. It reshapes what verify concluded and computes no standing of its own.
 import { toLabel } from '../prose/expr.ts';
+import { titleAndLead } from '../dossiers/map.ts';
+import { acceptedByNode, acceptedIn, backingRef, placesOf, treeIndex } from './pages.ts';
 import { itfText } from '../commands/show.ts';
 import { cellWords } from '../verify/render.ts';
 import { cap, ident } from '../models/tla.ts';
@@ -9,7 +11,6 @@ import type { Verified } from '../commands/verify.ts';
 import type { PartAnalysis, CompositionAnalysis } from '../verify/analyze.ts';
 import type { Note } from '../verify/tripwires.ts';
 import type { Expr, Value } from '../prose/expr.ts';
-import type { Backing } from '../prose/prose.ts';
 import type { Answer } from '../trials/answers.ts';
 import type { Meanings } from './meanings.ts';
 import type { BehaviorReport } from '../behaviors/report.ts';
@@ -46,7 +47,6 @@ function senderOf(a: PartAnalysis, sender: string | null) {
   return { kind: 'unknown', id: sender };
 }
 const compositionsOf = (v: Verified, id: string) => v.compositions.filter(s => s.wiring.members.some(m => m.part === id)).map(s => s.id);
-const backingRef = (b: Backing | null) => (!b ? null : b.kind === 'record' ? b.ref : b.kind === 'external' ? b.runner : b.kind === 'none' ? null : `${b.path} ${b.rule}`);
 
 // ---------- Evidence ----------
 // A call's expectation for each name, as text: the outcome, and the failing ids or the trace it names.
@@ -78,11 +78,31 @@ export function evidenceOf(a: Analysis) {
 }
 
 // ---------- The root ----------
+// The first paragraph of an authored Markdown text after its title, or its first list item when it
+// opens with a list, by the reading the map's root lead takes. The words are the author's, unchanged.
+export const leadOf = (text: string | null | undefined): string => titleAndLead(String(text || '')).lead ?? '';
+// What the overview shows of a dossier's behaviors: each one's claims counted by the standing and the
+// freshness the report gives them, and the claims the report finds contradicted or contested, word for
+// word. Nothing here is computed beyond counting the report.
+function behaviorsAtAGlance(a: Analysis) {
+  const report = behaviorReportOf(a);
+  type Claims = BehaviorReport['behaviors'][number]['claims'];
+  const count = (claims: Claims, standing: string) => claims.filter(c => c.standing === standing).length;
+  return {
+    lead: leadOf(a.behaviorCollection?.collection?.body),
+    behaviors: report.behaviors.map(b => ({
+      id: b.id, title: b.title, claims: b.claims.length,
+      standing: { supported: count(b.claims, 'supported'), evidenceAvailable: count(b.claims, 'evidence-available'), hypotheses: count(b.claims, 'hypothesis'), contested: count(b.claims, 'contested'), contradicted: count(b.claims, 'contradicted') },
+      stale: b.claims.filter(c => c.freshness !== 'current').length,
+    })),
+    attention: report.behaviors.flatMap(b => b.claims.filter(c => c.standing === 'contradicted' || c.standing === 'contested').map(c => ({ behavior: b.id, claim: c.id, standing: c.standing, statement: c.statement }))),
+  };
+}
 export function rootModel(v: Verified, root: string, version: string, meanings: Meanings) {
   const compact = (a: PartAnalysis) => Object.fromEntries(Object.entries(a.marks).map(([k, m]) => [k, m.mark]));
   const dossiers = [
-    ...v.parts.map(a => ({ kind: 'part', id: a.id, title: a.title, tier: a.tier, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, behaviorSummary: behaviorReportOf(a).summary, behaviorTitles: behaviorReportOf(a).behaviors.map(b => b.title), inCompositions: compositionsOf(v, a.id), marks: compact(a) })),
-    ...v.compositions.map(a => ({ kind: 'composition', id: a.id, title: a.title, tier: 'composition', route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, behaviorSummary: behaviorReportOf(a).summary, behaviorTitles: behaviorReportOf(a).behaviors.map(b => b.title), members: a.wiring.members.map(m => m.part), marks: Object.fromEntries(a.cells.map(c => [`${c.property}/${c.scenario}`, cellWords(c)])) })),
+    ...v.parts.map(a => ({ kind: 'part', id: a.id, title: a.title, tier: a.tier, module: a.ir.module ?? null, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, behaviorSummary: behaviorReportOf(a).summary, accepted: acceptedIn(a), ...behaviorsAtAGlance(a), inCompositions: compositionsOf(v, a.id), marks: compact(a) })),
+    ...v.compositions.map(a => ({ kind: 'composition', id: a.id, title: a.title, tier: 'composition', module: null, route: a.route, summary: a.summary, flags: withMeans(a.flags, meanings), tripwires: a.tripwires, reviewOwed: a.reviewOwed, behaviorSummary: behaviorReportOf(a).summary, accepted: acceptedIn(a), ...behaviorsAtAGlance(a), members: a.wiring.members.map(m => m.part), marks: Object.fromEntries(a.cells.map(c => [`${c.property}/${c.scenario}`, cellWords(c)])) })),
   ];
   const parts = v.parts.map(a => ({
     id: a.id, title: a.title, tier: a.tier,
@@ -93,15 +113,20 @@ export function rootModel(v: Verified, root: string, version: string, meanings: 
   const compositions = v.compositions.map(a => ({ id: a.id, title: a.title, members: a.wiring.members.map(m => m.part), wiring: a.wiring.wiring, free: a.wiring.free }));
   const actors = v.actors.actors.map(x => ({ id: x.id, name: x.name || x.id, kind: x.kind, modes: x.modes, pins: x.pins, notes: x.notes }));
   const scenarios = v.actors.scenarios.map(s => ({ id: s.id, modes: s.modes, windows: s.windows, start: s.start, strongerThan: s.strongerThan, notes: s.notes }));
-  return { root, version, route: v.route, tripwires: v.tripwires, dossiers, parts, compositions, actors, scenarios, legend: meanings.legend };
+  // The root's title, its lead and the map are verify's, as verify --json gives them. Each placed dossier's
+  // places are its page's, in the same order, so the spine stands where the breadcrumbs lead.
+  const places = Object.fromEntries(placesOf(v.map.tree));
+  return { root, version, title: v.map.title, lead: v.map.lead, map: v.map, places, accepted: acceptedByNode(v), route: v.route, tripwires: v.tripwires, dossiers, parts, compositions, actors, scenarios, legend: meanings.legend };
 }
 
-// Every address the palette reaches, each by its id: dossiers, passages, doubts, walks, cells,
-// answers, behaviors and claims.
+// Every address the palette reaches, each by its id: the map's nodes, dossiers, passages, doubts, walks,
+// cells, answers, behaviors and claims.
 export function addresses(v: Verified) {
   const out: { group: string; label: string; sub: string; href: string }[] = [];
   const snip = (t: string) => String(t || '').replace(/\s+/g, ' ').slice(0, 90);
   const counted = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  if (v.map.tree) for (const [id, n] of treeIndex(v.map.tree).byId) if (id) out.push({ group: 'Map', label: id, sub: `${n.title} · ${n.kind}`, href: `#/node/${id}` });
+  if (v.map.unplaced?.dossiers.length || !v.map.tree) out.push({ group: 'Map', label: 'Not placed', sub: counted(v.map.unplaced?.dossiers.length ?? v.parts.length + v.compositions.length, 'dossier'), href: '#/unplaced' });
   for (const a of v.parts) {
     out.push({ group: 'Parts', label: a.id, sub: `${a.title} · ${a.tier}`, href: `#/part/${a.id}` });
     for (const p of a.prose.passages.filter(p => !p.retired)) out.push({ group: 'Passages', label: `${a.id} ${p.id}`, sub: snip(p.text), href: `#/part/${a.id}?view=model&sel=${p.id}` });

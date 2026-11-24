@@ -1,6 +1,6 @@
 ---
 name: keep
-description: Develop the dossier's account of a system through readable behaviors and precise claims. Form hypotheses, connect them to models and evidence, run checks, and report what the answers establish. Use to begin a part or a composition, check a claim, investigate an actor or an outage, widen a check, refresh after a change, or explain where the work stands. Not for preparing a repository or for an independent second read.
+description: Develop the dossier's account of a system through readable behaviors and precise claims. Form hypotheses, connect them to models and evidence, run checks, and report what the answers establish. Use to begin a part or a composition, place a dossier in the map, check a claim, investigate an actor or an outage, widen a check, refresh after a change, or explain where the work stands. Not for preparing a repository or for an independent second read.
 allowed-tools: Bash(dossier *)
 ---
 
@@ -12,7 +12,9 @@ Follow [one process](../../spec/process.md) to turn the user's request into scop
 
 Read each claim's current standing, scope, freshness, evidence and independent assessments from `dossier verify --json`. The ledger is a derived view and may be stale. Write the records in the formats the specification gives. Never write a status, and never take a valid record as support for what it says.
 
-Begin by running `dossier verify --brief`. Open the selected dossier's README and the relevant behaviors, then follow the claim's mappings into the formal inputs and the evidence. `dossier where parts/<id>#<behavior>` prints a behavior's claims with their standing, and `/C<n>` after it selects one claim. For a composition, use `compositions/<id>`. `dossier verify --brief <dossier>` keeps the output to one dossier. Follow the user's scope before the next action the router suggests. A new hypothesis, or a violation not yet accepted, does not block an authorized investigation of it.
+Begin by running `dossier verify --brief`. A `map:` line counts the notes on the map the root's README begins with, such as a part no component holds. Notes block nothing, while `malformed map` is a tripwire to fix in the block. Open the selected dossier's README and the relevant behaviors, then follow the claim's mappings into the formal inputs and the evidence. `dossier where parts/<id>#<behavior>` prints a behavior's claims with their standing, and `/C<n>` after it selects one claim. For a composition, use `compositions/<id>`. `dossier verify --brief <dossier>` keeps the output to one dossier. Follow the user's scope before the next action the router suggests. A new hypothesis, or a violation not yet accepted, does not block an authorized investigation of it.
+
+After `dossier decide <id> begin` or `dossier import`, place the new part with `dossier place` once its README says what it is, as [PROC-PLACE](../../spec/process.md#prepare) says.
 
 After every edit to a part's `prose.md`, run `dossier draw <id> --brief` and read its line before going on. Drawing is a diagnostic, and records no answer. Read the page named by `read:` when its operation is unfamiliar. Use `dossier render` for reports. For an interrupted publication, follow [publication and integrity](../../spec/storage.md).
 
@@ -25,6 +27,7 @@ After every edit to a part's `prose.md`, run `dossier draw <id> --brief` and rea
 | An answer, a tripwire or a status report | [Evidence](../../spec/evidence.md) and [artifact ownership](../../spec/artifacts.md) |
 | Asking a question again, or rechecking its answer | [Questions and answers](../../spec/evidence.md#questions-and-answers) |
 | Backing or knowledge references | [Knowledge](../../spec/knowledge.md) |
+| Placing a dossier, or a map note | [The map](../../spec/map.md) |
 | Owner decision | [Decision boundary](../../spec/process.md#decide-when-needed); invoke `dossier decide` with their words |
 | Independent review | The review skill, in its own context |
 

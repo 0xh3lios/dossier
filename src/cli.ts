@@ -13,7 +13,7 @@ export interface CommandContext { root: string; version: string }
 export type Command = (command: string, args: string[], context: CommandContext) => Promise<number>;
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const modules = { 'review-basis': 'review-basis', verify: 'verify', render: 'render', recover: 'recover', draw: 'draw', scaffold: 'scaffold', trial: 'trial', call: 'call', show: 'show', blunder: 'blunder', recheck: 'recheck', decide: 'decide', where: 'where', import: 'import', doctor: 'doctor', setup: 'setup', explore: 'explore' } as Record<string, string>;
+const modules = { 'review-basis': 'review-basis', verify: 'verify', render: 'render', recover: 'recover', draw: 'draw', scaffold: 'scaffold', trial: 'trial', call: 'call', show: 'show', blunder: 'blunder', recheck: 'recheck', decide: 'decide', place: 'place', where: 'where', import: 'import', doctor: 'doctor', setup: 'setup', explore: 'explore' } as Record<string, string>;
 // `--root <path>` may stand before the command as well as after it, as in `dossier --root x verify`.
 const argv = process.argv.slice(2), leading: string[] = [];
 while (argv[0] === '--root' && argv.length > 2) leading.push(...argv.splice(0, 2));
@@ -49,6 +49,10 @@ const usage = `usage: dossier <command> [args] [--root <path>]
   decide <dossier> <verb> ... -- "<words>"
       record a decision: begin [charted|modeled|composition] | accept <ids> | reject <id>
       | answer D<n> a|b | risk <property> <scenario> | forget <entry>@<digest> | retire
+  place <dossier> <component> [--select <behavior>[/C<n>]]... [--parent <group>] [--title <words> --lead <words>]
+  place <dossier> <component> --remove
+  place --group <id> [--parent <group>] --title <words> --lead <words>
+      place a dossier at a component of the map in README.md, or take it away; create a missing node
   review-basis <dossier> [--behavior <id>] [--json]
       print the required review fingerprints and coverage checklist; records no assessment
   where <ref>

@@ -187,7 +187,7 @@ test('two observation representations cannot choose one pinned identity by exten
   assert.equal(resolveKnowledgePin({ ref: 'demo#observation:checkpoint', revision: `sha256:${initial.sha256}` }, knowledge).freshness, 'missing');
 });
 
-for (const pluginVersion of ['0.1.1', '0.3.0', undefined]) test(`setup refuses ${pluginVersion ?? 'absent'} existing plugin version without rewriting its marker`, t => {
+for (const pluginVersion of ['0.1.1', '0.4.0', undefined]) test(`setup refuses ${pluginVersion ?? 'absent'} existing plugin version without rewriting its marker`, t => {
   const root = temporary(t), path = join(root, 'dossier.json');
   mkdirSync(join(root, 'parts/demo'), { recursive: true });
   const before = JSON.stringify({ plugin: pluginVersion, storage: 'integrity-v1' }) + '\n';
@@ -269,11 +269,11 @@ test('a later plugin reads a root set up by an earlier one in the same formats, 
 
 test('the plugin updated flag names a root set up by an earlier version of the same formats', t => {
   const { root } = harbor(t);
-  const v = verifyAll({ root, version: '0.2.1' });
+  const v = verifyAll({ root, version: '0.3.1' });
   const timelock = v.parts.find(p => p.id === 'timelock')!;
   assert.deepEqual(v.tripwires, []);
-  assert.ok(timelock.flags.some(f => f.name === 'plugin updated' && f.where === 'set up with dossier 0.2.0, this is 0.2.1: run dossier setup'));
-  assert.ok(!verifyAll({ root, version: '0.2.0' }).parts[0].flags.some(f => f.name === 'plugin updated'));
+  assert.ok(timelock.flags.some(f => f.name === 'plugin updated' && f.where === 'set up with dossier 0.3.0, this is 0.3.1: run dossier setup'));
+  assert.ok(!verifyAll({ root, version: '0.3.0' }).parts[0].flags.some(f => f.name === 'plugin updated'));
 });
 
 // A cell selects its deciding question; a direct answer mapping selects the exact

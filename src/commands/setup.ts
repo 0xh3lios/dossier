@@ -15,12 +15,14 @@ import { findModule } from '../chart/draw.ts';
 import { compareVersions, isVersion, STORAGE, versionProblem } from '../dossiers/integrity.ts';
 import { dossierPathExists } from '../dossiers/initialize.ts';
 import { durableWrite, withPublicationLock } from '../dossiers/publication.ts';
+import { canonicalMap, emptyMap } from '../dossiers/map.ts';
 import type { PublicationOptions } from '../dossiers/publication.ts';
 import type { CommandContext } from '../cli.ts';
 
 const ACTORS = '# Actors\n\nWho sends events, and the modes each may take under a scenario.\n\n```yaml\nactors:\n  - id: chain\n    name: the chain\n    kind: chain\n    modes: [honest, offline]\n  - id: public\n    name: the public\n    kind: public\n    modes: [honest, malicious, offline]\n```\n';
 const SCENARIOS = '# Scenarios\n\nA mode for every actor; all-honest always exists.\n\n```yaml\nscenarios:\n  - id: all-honest\n    modes: {}\n```\n';
-const README = '# Dossiers\n\nOne dossier per part and per composition: prose the owners settle, and the charts, models, answers and ledgers the tool writes. Start a part with `dossier decide <id> begin`, and a composition with `dossier decide <id> begin composition`. For where everything stands, run `dossier render` and read `index.md`. Git ignores the index, since render rebuilds it from the dossiers.\n';
+// The root's README begins with the map, empty until the first dossier is placed in it.
+const README = '```json\n' + canonicalMap(emptyMap()) + '\n```\n\n# Dossiers\n\nOne dossier per part and per composition: prose the owners settle, and the charts, models, answers and ledgers the tool writes. Start a part with `dossier decide <id> begin`, and a composition with `dossier decide <id> begin composition`.\n\nThe block above is the map: groups of components, each component holding the dossiers that explain it. Place a dossier with `dossier place <dossier> <component>`; verify notes each dossier no component holds. For where everything stands, run `dossier render` and read `index.md`. Git ignores the index, since render rebuilds it from the dossiers.\n';
 // The chart's libraries, which draw and chart trials load at run time.
 const PACKAGE = JSON.stringify({ name: 'dossiers', private: true, type: 'module', dependencies: { xstate: '^5.33.3', '@xstate/graph': '^3.0.4' } }, null, 2) + '\n';
 // Kept out of git: index.md, which dossier render rebuilds and which, as a view of every dossier,

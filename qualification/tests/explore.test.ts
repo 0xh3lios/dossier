@@ -283,6 +283,244 @@ describe('the explorer over a copy of Harbor', () => {
   });
 });
 
+// The root's title and lead, the map, the levels the spine leads to and what needs a person under each.
+// The map is verify's, sent as verify --json gives it; the pages are read off its tree, so each node's
+// lists hold exactly what its counts count. Expected values are worked out here from verify's output.
+describe('the explorer\'s map and pages over a copy of Harbor', () => {
+  let dir: string, root: string, ex: Explorer, json: VerifyJson;
+  before(async () => {
+    dir = harborCopy();
+    root = join(dir, 'dossiers');
+    ex = await startExplorer({ root, pluginRoot, version, port: 0, dist: null });
+    json = JSON.parse(spawnSync(bin, ['verify', '--json', '--root', root], { encoding: 'utf8', env, maxBuffer: 64 * 1024 * 1024 }).stdout) as VerifyJson;
+  });
+  after(async () => { await ex?.close(); rmSync(dir, { recursive: true, force: true }); });
+  type Node = { kind: string; id: string | null; groups?: Node[]; components?: Node[]; counts: { needs: Record<string, number>; claims: number } };
+  const nodes = (n: Node): Node[] => [n, ...[...(n.groups || []), ...(n.components || [])].flatMap(nodes)];
+  const lengths = (a: Record<string, unknown>) => ({ claims: ['contradicted', 'contested', 'accepted', 'unreviewed'].reduce((k, x) => k + (a[x] as unknown[]).length, 0), reviews: (a.reviews as unknown[]).length, doubts: (a.doubts as unknown[]).length, decisions: (a.decisions as unknown[]).length, notes: (a.notes as unknown[]).length, reviewsOwed: (a.reviewsOwed as unknown[]).length, tripwires: (a.tripwires as unknown[]).length });
+
+  it('sends the map verify --json gives, with the root\'s title and lead from it', async () => {
+    const page = await get(ex, '/api/root');
+    assert.deepEqual(page.map, json.map, 'one derivation: the map, its tree, counts, notes and unplaced dossiers are verify\'s');
+    assert.equal(page.title, json.map.title);
+    assert.equal(page.lead, json.map.lead);
+    const readme = readFileSync(join(root, 'README.md'), 'utf8').replace(/^```json\n[\s\S]*?\n```\n/, '');
+    assert.equal(page.title, /^# (.+)$/m.exec(readme)![1]);
+    assert.equal(page.lead, readme.split(/\n\s*\n/).map(p => p.trim()).find(p => p && !p.startsWith('#'))!.replace(/\s*\n\s*/g, ' '));
+  });
+
+  it('gives each dossier its module, its lead, its behaviors counted by standing and its contradicted or contested claims', async () => {
+    const page = await get(ex, '/api/root');
+    const v = verifyAll({ root, version, write: false });
+    assert.equal(page.dossiers.length, json.parts.length + json.compositions.length);
+    for (const d of page.dossiers) {
+      const report = [...json.parts, ...json.compositions].find(x => x.behaviors!.dossier === `${d.kind}s/${d.id}`)!.behaviors!;
+      if (d.kind === 'part') assert.equal(d.module, v.parts.find(a => a.id === d.id)!.ir.module, `${d.id}: the module its prose names`);
+      else assert.equal(d.module, null, `${d.id}: a composition has no module`);
+      const body = readFileSync(join(root, `${d.kind}s`, d.id, 'README.md'), 'utf8').replace(/^```json\n[\s\S]*?\n```\n/, '');
+      const lead = body.split(/\n\s*\n/).map(p => p.trim()).find(p => p && !p.startsWith('#'))!.replace(/\s*\n\s*/g, ' ');
+      assert.equal(d.lead, lead, `${d.id}: the first paragraph after the title`);
+      assert.deepEqual(d.behaviors.map((b: { id: string }) => b.id), report.behaviors.map(b => b.id), d.id);
+      for (const b of d.behaviors) {
+        const claims = report.behaviors.find(x => x.id === b.id)!.claims;
+        assert.equal(b.title, report.behaviors.find(x => x.id === b.id)!.title);
+        assert.equal(b.claims, claims.length, `${d.id} ${b.id}`);
+        const of = (s: string) => claims.filter(c => c.standing === s).length;
+        assert.deepEqual(b.standing, { supported: of('supported'), evidenceAvailable: of('evidence-available'), hypotheses: of('hypothesis'), contested: of('contested'), contradicted: of('contradicted') }, `${d.id} ${b.id}`);
+        assert.equal(b.stale, claims.filter(c => c.freshness !== 'current').length);
+      }
+      assert.deepEqual(d.attention.map((c: { behavior: string; claim: string; statement: string }) => `${c.behavior}/${c.claim} ${c.statement}`), report.behaviors.flatMap(b => b.claims.filter(c => c.standing === 'contradicted' || c.standing === 'contested').map(c => `${b.id}/${c.id} ${c.statement}`)), d.id);
+    }
+  });
+
+  it('lists under each node exactly what its counts say needs a person, and the root takes in the unplaced', async () => {
+    const tree = json.map.tree as unknown as Node;
+    for (const n of nodes(tree)) {
+      const page = await get(ex, n.id ? `/api/node/${n.id}` : '/api/node');
+      assert.deepEqual(page.counts, n.counts, `${n.id ?? 'root'}: the counts are the map's`);
+      const expected = { ...n.counts.needs };
+      if (!n.id) for (const k of Object.keys(expected)) if (k !== 'notes') expected[k] += (json.map.unplaced!.counts.needs as unknown as Record<string, number>)[k];
+      assert.deepEqual(lengths(page.attention), expected, `${n.id ?? 'root'}: one item for each thing counted`);
+    }
+    // Harbor's four contradictions are all violations the owner accepted, listed apart, with the owner's words.
+    const top = (await get(ex, '/api/node')).attention;
+    assert.equal(top.accepted.length, 4);
+    assert.deepEqual([top.contradicted.length, top.decisions.length], [0, 0]);
+    for (const c of top.accepted) assert.ok(c.accepted.length && c.accepted.every((x: { words: string }) => x.words.trim()), `${c.id} ${c.behavior}/${c.claim}`);
+    assert.equal(top.doubts[0].doubt, 'D1');
+    assert.deepEqual(top.doubts[0].decide.map((d: { verb: string; args: string[] }) => `${d.verb} ${d.args.join(' ')}`), ['answer D1 a', 'answer D1 b']);
+    assert.equal(top.reviewsOwed.length, 9);
+    assert.equal(top.total, 4 + 1 + 9);
+    // What lets the Read lens say accepted: the counts per node and per dossier, and each claim's acceptance.
+    const root = await get(ex, '/api/root');
+    assert.deepEqual(root.accepted, { '@root': 4, credit: 0, vault: 0, conversion: 0, token: 0, governance: 0, timelock: 0, breaker: 0, prices: 3, oracle: 3, '@unplaced': 0 });
+    assert.deepEqual(Object.fromEntries(root.dossiers.map((d: { id: string; accepted: number }) => [d.id, d.accepted])), { adapter: 0, breaker: 0, oracle: 0, timelock: 0, token: 0, vault: 0, control: 1, supply: 0, upkeep: 3 });
+    const control = await get(ex, '/api/read/composition/control');
+    const claims = control.holdings[0].behaviors.flatMap((b: { id: string; claims: { id: string; accepted: { words: string }[] | null }[] }) => b.claims.map(c => [`${b.id}/${c.id}`, c.accepted]));
+    assert.deepEqual(claims.filter(([, x]: [string, unknown]) => x).map(([k]: [string]) => k), ['resolve-plan/C1']);
+    assert.match(claims.find(([k]: [string]) => k === 'resolve-plan/C1')[1][0].words, /offline executor/);
+    assert.equal((await ask(ex.url + 'api/node/nowhere')).status, 404);
+  });
+
+  it('reads a component as the dossiers it holds, with their selections, what its parts rely on and its flows', async () => {
+    const conversion = await get(ex, '/api/node/conversion');
+    assert.deepEqual(conversion.path.map((n: { id: string }) => n.id), ['credit']);
+    assert.deepEqual(conversion.holdings.map((h: { ref: string; select: string[] | null }) => [h.ref, h.select]), [['parts/adapter', null], ['parts/token', ['mint-and-burn']]]);
+    const token = conversion.holdings[1];
+    assert.deepEqual(token.behaviors.map((b: { id: string }) => b.id), ['mint-and-burn'], 'a selection takes only what it names');
+    assert.equal(token.relies, null, 'a part held through a selection brings no reliance');
+    const claims = new Set(conversion.holdings.flatMap((h: { ref: string; behaviors: { id: string; claims: { id: string }[] }[] }) => h.behaviors.flatMap(b => b.claims.map(c => `${h.ref}#${b.id}/${c.id}`))));
+    assert.equal(claims.size, conversion.counts.claims, 'the page lists the claims the component counts');
+    assert.deepEqual(conversion.flows.map((f: { ref: string }) => f.ref), ['compositions/control', 'compositions/supply']);
+    // Relies on: the Guarantees with their backing and the Givens, by record kind.
+    const oracle = await get(ex, '/api/node/oracle');
+    const v = verifyAll({ root, version, write: false }), a = v.parts.find(x => x.id === 'oracle')!;
+    assert.deepEqual(oracle.holdings[0].relies.guarantees.map((k: { id: string; status: string }) => `${k.id} ${k.status}`), a.prose.guarantees.map(k => `${k.id} ${a.backing[k.id]?.status ?? 'assumed'}`));
+    assert.deepEqual(oracle.holdings[0].relies.givens.map((g: { id: string }) => g.id), a.prose.givens.map(g => g.id));
+    assert.deepEqual(oracle.sited.map((s: { ref: string }) => s.ref), ['compositions/upkeep']);
+    // Each claim keeps the report's facets, with the reading beside each answer behind it.
+    const claim = oracle.holdings[0].behaviors[0].claims[0];
+    const report = json.parts.find(p => p.id === 'oracle')!.behaviors!.behaviors[0].claims[0];
+    assert.equal(claim.statement, report.statement);
+    assert.equal(claim.standing, report.standing);
+    assert.ok(claim.mappings.every((m: { evidence: { evidence: { reading?: unknown }[] } }) => m.evidence.evidence.every(e => 'reading' in e)));
+  });
+
+  it('reads one dossier whole, with where the map places it', async () => {
+    const vault = await get(ex, '/api/read/part/vault');
+    assert.deepEqual(vault.places.map((p: { node: string; how: string }) => `${p.node} ${p.how}`), ['vault whole']);
+    assert.deepEqual(vault.compositions.map((c: { id: string }) => c.id), ['control', 'supply']);
+    assert.equal(vault.holdings[0].behaviors.reduce((n: number, b: { claims: unknown[] }) => n + b.claims.length, 0), json.parts.find(p => p.id === 'vault')!.behaviors!.summary.claims);
+    const control = await get(ex, '/api/read/composition/control');
+    assert.deepEqual(control.places.map((p: { node: string | null; how: string }) => `${p.node} ${p.how}`), ['null sited']);
+    assert.deepEqual(control.members.map((m: { id: string }) => m.id).sort(), ['adapter', 'breaker', 'timelock', 'vault']);
+    assert.equal((await ask(ex.url + 'api/read/part/nobody')).status, 404);
+  });
+
+  // A place's path leads from below the root to the node itself, since the page's own crumb is the dossier.
+  it('leads a dossier\'s breadcrumbs through the node that holds it', async () => {
+    const crumbs = (page: { places: { node: string | null; how: string; path: { title: string }[] }[] }) => page.places.map(p => `${p.node} ${p.how}: ${p.path.map(n => n.title).join(' › ')}`);
+    assert.deepEqual(crumbs(await get(ex, '/api/read/composition/upkeep')), ['oracle sited: Prices › Oracle']);
+    assert.deepEqual(crumbs(await get(ex, '/api/read/part/vault')), ['vault whole: Credit and HRD › Vault']);
+    assert.deepEqual(crumbs(await get(ex, '/api/read/composition/control')), ['null sited: '], 'a composition sited at the root has no node between');
+  });
+
+  it('puts a dossier where a component holds it whole, before a selection, in the spine and the breadcrumbs alike', async () => {
+    const token = await get(ex, '/api/read/part/token');
+    assert.deepEqual(token.places.map((p: { node: string; how: string }) => `${p.node} ${p.how}`), ['token whole', 'conversion selection'], 'Token holds it whole; Conversion takes only mint-and-burn');
+    // The spine reads the root's places: each dossier's are its page's, in the same order.
+    const root = await get(ex, '/api/root');
+    for (const d of root.dossiers) {
+      const page = await get(ex, `/api/read/${d.kind}/${d.id}`);
+      assert.deepEqual(root.places[`${d.kind}s/${d.id}`] ?? [], page.places.map(({ node, how }: { node: string | null; how: string }) => ({ node, how })), `${d.kind}s/${d.id}`);
+    }
+  });
+
+  it('selects a behavior an address names alone, as the palette, a featured reading and a link to its file do', async () => {
+    const navigation = await import(new URL('../../apps/explorer/src/behavior-navigation.js', import.meta.url).href);
+    const pages = new Map<string, { holdings: unknown[] }>();
+    const holdingsOf = async (kind: string, id: string) => { if (!pages.has(`${kind}/${id}`)) pages.set(`${kind}/${id}`, await get(ex, `/api/read/${kind}/${id}`)); return pages.get(`${kind}/${id}`)!.holdings; };
+    // What a dossier's address selects on its Read page, as the page works it out.
+    const selected = async (href: string) => {
+      const [, kind, id, query] = /^#\/(part|composition)\/([\w-]+)\?(.*)$/.exec(href)!;
+      return navigation.selectionOf(await holdingsOf(kind, id), Object.fromEntries(new URLSearchParams(query)));
+    };
+    const addresses = await get(ex, '/api/addresses');
+    const behaviors = addresses.filter((x: { group: string }) => x.group === 'Behaviors');
+    assert.equal(behaviors.length, [...json.parts, ...json.compositions].reduce((n, d) => n + d.behaviors!.behaviors.length, 0), 'one address for each behavior');
+    for (const x of behaviors) {
+      const s = await selected(x.href);
+      assert.ok(s && s.c === null && x.href.endsWith(`?behavior=${s.b.id}`), `${x.href} selects its behavior, and no claim`);
+    }
+    for (const x of addresses.filter((x: { group: string }) => x.group === 'Claims')) assert.ok((await selected(x.href))?.c, `${x.href} selects its claim`);
+    // Every featured reading the map's nodes give, the root's control#emergency-halt among them.
+    const featured: { ref: string; kind: string; id: string; behavior: string; claim: string | null }[] = [];
+    for (const n of nodes(json.map.tree as unknown as Node)) featured.push(...(await get(ex, n.id ? `/api/node/${n.id}` : '/api/node')).featured);
+    assert.ok(featured.some(f => f.id === 'control' && f.behavior === 'emergency-halt' && !f.claim));
+    for (const f of featured) {
+      const s = navigation.selectionOf(await holdingsOf(f.kind, f.id), { behavior: f.behavior, ...(f.claim ? { claim: f.claim } : {}) });
+      assert.ok(s && s.b.id === f.behavior && (s.c?.id ?? null) === f.claim, `${f.ref}#${f.behavior}`);
+    }
+    const link = navigation.documentHref('raise-ceiling.md', 'parts/vault/behaviors/borrow-and-repay.md');
+    assert.equal(link, '#/part/vault?behavior=raise-ceiling');
+    assert.equal((await selected(link))?.b.id, 'raise-ceiling', 'a link to a behavior\'s file selects it');
+  });
+
+  it('reaches every node of the map from the palette', async () => {
+    const addresses = await get(ex, '/api/addresses');
+    const ids = nodes(json.map.tree as unknown as Node).map(n => n.id).filter(Boolean);
+    assert.deepEqual(addresses.filter((x: { group: string }) => x.group === 'Map').map((x: { href: string }) => x.href), ids.map(id => `#/node/${id}`));
+  });
+
+  it('says once that a root without a map places nothing, and lists every live dossier as not placed', async () => {
+    const copy = harborCopy(), bare = join(copy, 'dossiers');
+    writeFileSync(join(bare, 'README.md'), readFileSync(join(bare, 'README.md'), 'utf8').replace(/^```json\n[\s\S]*?\n```\n\n/, ''));
+    const served = await startExplorer({ root: bare, pluginRoot, version, port: 0, dist: null });
+    try {
+      const top = await get(served, '/api/node');
+      assert.equal(top.attention.emptyMap, true);
+      assert.equal(top.attention.notes.length, 9);
+      assert.equal(top.attention.total, 4 + 1 + 9 + 1, 'the nine unplaced dossiers are one line');
+      assert.equal(top.unplaced.length, 9);
+      const unplaced = await get(served, '/api/unplaced');
+      assert.equal(unplaced.dossiers.length, 9);
+      assert.equal(unplaced.attention.total, 4 + 1 + 9 + 1);
+      assert.equal((await get(served, '/api/root')).title, 'Harbor dossiers', 'the title stays without the block');
+    } finally { await served.close(); rmSync(copy, { recursive: true, force: true }); }
+  });
+
+  it('says the unplaced dossiers once on a map that places nothing, and lists its other notes', async () => {
+    const copy = harborCopy(), empty = join(copy, 'dossiers'), readme = join(empty, 'README.md');
+    // A root that features a reading but has no group or component: nothing beneath it holds the reading.
+    // The format is the one Harbor's own map is written in.
+    const text = readFileSync(readme, 'utf8'), { format } = JSON.parse(/^```json\n([\s\S]*?)\n```\n/.exec(text)![1]) as { format: string };
+    const block = { format, featured: [{ dossier: 'compositions/control', behavior: 'emergency-halt', lead: 'A halt stops exits at once.' }] };
+    writeFileSync(readme, text.replace(/^```json\n[\s\S]*?\n```\n/, `\`\`\`json\n${JSON.stringify(block, null, 2)}\n\`\`\`\n`));
+    const served = await startExplorer({ root: empty, pluginRoot, version, port: 0, dist: null });
+    try {
+      const notes = (await get(served, '/api/root')).map.notes as { name: string }[];
+      assert.deepEqual(notes.filter(n => n.name !== 'dossier unplaced').map(n => n.name), ['reading outside its node'], 'verify notes the reading');
+      assert.equal(notes.filter(n => n.name === 'dossier unplaced').length, 9, 'and each unplaced dossier');
+      const top = (await get(served, '/api/node')).attention;
+      assert.equal(top.emptyMap, true);
+      assert.equal(top.notes.length, 10, 'every note, as the map counts them');
+      assert.deepEqual([top.unplaced, top.noteLines], [9, 2], 'the nine unplaced dossiers are one line, and the reading another');
+      // The total is the sum of what the Read page's Attention line counts.
+      const line = ['decisions', 'contradicted', 'contested', 'doubts', 'unreviewed', 'reviews', 'reviewsOwed', 'tripwires', 'root', 'accepted'].reduce((n, k) => n + top[k].length, 0) + top.noteLines;
+      assert.equal(top.total, line);
+      assert.equal(top.total, 4 + 1 + 9 + 2, 'the accepted claims, the doubt, the reviews owed and the two map lines');
+      const unplaced = (await get(served, '/api/unplaced')).attention;
+      assert.deepEqual([unplaced.unplaced, unplaced.noteLines, unplaced.total], [9, 1, 4 + 1 + 9 + 1], 'Not placed says its dossiers once');
+    } finally { await served.close(); rmSync(copy, { recursive: true, force: true }); }
+  });
+
+  it('names the root a dossier sits at as the top bar does when the README has no title', async () => {
+    const copy = harborCopy(), untitled = join(copy, 'dossiers'), readme = join(untitled, 'README.md');
+    writeFileSync(readme, readFileSync(readme, 'utf8').replace(/^# Harbor dossiers\n\n/m, ''));
+    const served = await startExplorer({ root: untitled, pluginRoot, version, port: 0, dist: null });
+    try {
+      assert.equal((await get(served, '/api/root')).title, null, 'verify finds no title');
+      const control = await get(served, '/api/read/composition/control');
+      assert.deepEqual(control.places.map((p: { node: string | null; how: string; title: string }) => `${p.node} ${p.how} ${p.title}`), ['null sited Dossiers']);
+    } finally { await served.close(); rmSync(copy, { recursive: true, force: true }); }
+  });
+
+  it('lists every live dossier as not placed while the map does not read, and its tripwire needs a person', async () => {
+    const copy = harborCopy(), broken = join(copy, 'dossiers');
+    writeFileSync(join(broken, 'README.md'), '```json\n{"format": "dossier-map@0.3.0", "groups": "none"}\n```\n\n# Harbor dossiers\n');
+    const served = await startExplorer({ root: broken, pluginRoot, version, port: 0, dist: null });
+    try {
+      const top = await get(served, '/api/node');
+      assert.equal(top.malformed, true);
+      assert.equal(top.unplaced.length, 9);
+      assert.deepEqual(top.attention.root.map((t: { name: string }) => t.name), ['malformed map']);
+      assert.equal(top.attention.total, 4 + 1 + 9 + 1, 'the claims, the doubt and the reviews owed of every dossier, and the tripwire');
+      assert.equal((await get(served, '/api/unplaced')).dossiers.length, 9);
+      assert.equal((await ask(served.url + 'api/node/credit')).status, 404, 'no node while the map does not read');
+    } finally { await served.close(); rmSync(copy, { recursive: true, force: true }); }
+  });
+});
+
 describe('the page\'s build', () => {
   it('is not ready until built from the current sources, and verify ignores its folder', () => {
     const dir = harborCopy(), root = join(dir, 'dossiers');
@@ -555,6 +793,17 @@ describe('behavior navigation', () => {
     assert.equal(navigation.targetHref({ kind: 'knowledge', ref: 'timelock#property:execute-after-eta' }), null, 'a knowledge identity is not a made-up model address');
     assert.equal(navigation.targetLabel({ kind: 'cell', dossier: 'compositions/control', property: 'N1', scenario: 'executor-offline' }, 'compositions/control'), 'N1 × executor-offline');
     assert.equal(navigation.targetLabel({ kind: 'passage', dossier: 'parts/timelock', id: 'A1', side: 'model' }, 'compositions/control'), 'timelock A1', 'a member is named, the dossier itself is not');
+  });
+
+  it('reads a link with a bare % as written, where decoding it would fail the page', async () => {
+    const navigation = await import(new URL('../../apps/explorer/src/behavior-navigation.js', import.meta.url).href);
+    // The review's example: an evidence reading's link, which the Workbench renders as Markdown.
+    assert.equal(navigation.documentHref('notes/50%-rule.md', 'parts/oracle/evidence/tlc-W1.md'), '#/part/oracle?view=model&tab=evidence&entry=notes%2F50%25-rule');
+    assert.equal(navigation.documentHref('../../../knowledge/50%-rule.md', 'parts/oracle/evidence/tlc-W1.md'), null, 'a file outside the dossiers stays a plain word');
+    assert.equal(navigation.documentHref('cancel%2Dplan.md', 'parts/timelock/behaviors/schedule-and-execute.md'), '#/part/timelock?behavior=cancel-plan', 'a real escape still decodes');
+    // An orientation's list: a link that is not one of the dossier's behaviors keeps the list.
+    const text = ['# Control', '', '- [The 50% rule](behaviors/50%-rule.md): a note.', '- [Halt exits](behaviors/emergency-halt.md)'].join('\n');
+    assert.equal(navigation.splitOrientation(text, 'compositions/control', ['emergency-halt']).text, text);
   });
 
   it('reads the report in the format the engine writes', async () => {

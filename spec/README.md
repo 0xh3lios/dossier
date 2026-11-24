@@ -7,6 +7,7 @@ The specification defines the artifacts Dossier accepts, the transformations its
 | What you need to know | Contract |
 | --- | --- |
 | What explains a dossier, and what supports each claim? | [Behavior collections](behaviors.md) |
+| Where does each part and composition sit in the system? | [The map](map.md) |
 | What does each term mean? | [Semantics](semantics.md) |
 | What does an agent do next, and when must an owner decide? | [One process](process.md) |
 | Which files are authored, evidence, decisions or generated? | [Artifacts](artifacts.md) |

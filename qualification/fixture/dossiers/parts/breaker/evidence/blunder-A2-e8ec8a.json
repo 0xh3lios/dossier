@@ -79,14 +79,14 @@
     }
   },
   "established": {
-    "trial": "2026-11-09-2229-blunder-13b1bb",
-    "at": "2026-11-09T22:29:34.074Z",
+    "trial": "2026-11-24-1431-blunder-13b1bb",
+    "at": "2026-11-24T14:31:48.400Z",
     "versions": {
-      "dossier": "0.2.0",
-      "node": "26.4.0",
+      "dossier": "0.3.0",
+      "node": "26.13.1",
       "alloy": "org.alloytools.alloy.dist-6.2.0.jar"
     },
-    "bundle": "8aee17a832c80d6919d8458d44a8fee147e5eb2398c54cd2df05093e21021404"
+    "bundle": "c0fb8db221ba3b6bff0cc68eb0f8aa079df4708542feb1cc7d9742fb0c453cbb"
   },
   "previous": null,
   "narrowed": null,

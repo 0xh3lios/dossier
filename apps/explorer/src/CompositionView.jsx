@@ -2,11 +2,11 @@
 // properties under each scenario, every cell's trace, closure, walks, evidence and the decision log.
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Label, Radio, RadioGroup, Tab, TabList, TabPanel, Tabs, ToggleButton } from 'react-aria-components';
-import { api, familyOf, MAX_NODES, setParams, shortTime, useApp, useData, useNarrow } from './lib.js';
+import { api, familyOf, hrefFor, MAX_NODES, setParams, shortTime, STANDING_WORD, useApp, useData, useNarrow } from './lib.js';
 import { boxSize, layoutComposition } from './layout.js';
 import { arrowHead, Graph } from './Graph.jsx';
-import { Badge, DecideLine, Failed, KV, LinkButton, Loading, None, Owner, Sec } from './bits.jsx';
-import { EvidencePanel, LogPanel } from './PartView.jsx';
+import { Badge, DecideLine, Failed, FlagsSection, KV, LinkButton, Loading, None, Owner, Sec } from './bits.jsx';
+import { EvidencePanel, LogPanel, Raw } from './PartView.jsx';
 
 const fmt = v => (v === undefined || v === null ? '' : typeof v === 'string' ? v : JSON.stringify(v));
 const ISSUES = ['lapsed', 'miscalled', 'hollow', 'held', 'pending', 'drawn', 'owed', 'unresolved'];
@@ -134,7 +134,7 @@ export function CompositionView({ id, params }) {
         <Sec title="Members" aside={s.members.length}>
           {s.members.map(m => {
             const d = root.dossiers.find(x => x.id === m.id), line = issueLine(d?.marks);
-            return <div key={m.id} className="member"><a href={`#/part/${m.id}?from=${s.id}`} className="t-strong">{m.id}</a> <span className="muted">{d?.tier}</span>{line && <div className="small t-warn">{line}</div>}</div>;
+            return <div key={m.id} className="member"><a href={`#/part/${m.id}?view=model&from=${s.id}`} className="t-strong">{m.id}</a> <span className="muted">{d?.tier}</span>{line && <div className="small t-warn">{line}</div>}</div>;
           })}
         </Sec>
         <Sec title="Scenario">
@@ -157,12 +157,12 @@ export function CompositionView({ id, params }) {
     <div className={`sv${narrow ? ' is-narrow' : ''}`}>
       {!narrow && <aside className="side-l">{setup}</aside>}
       <div className="center">
-        {g?.refused ? <div className="pad"><b>Too large to draw:</b> {g.refused} boxes, over the limit of {MAX_NODES}. Members: {s.members.map(m => <a key={m.id} className="chip" href={`#/part/${m.id}?from=${s.id}`}>{m.id}</a>)}</div>
+        {g?.refused ? <div className="pad"><b>Too large to draw:</b> {g.refused} boxes, over the limit of {MAX_NODES}. Members: {s.members.map(m => <a key={m.id} className="chip" href={`#/part/${m.id}?view=model&from=${s.id}`}>{m.id}</a>)}</div>
           : g?.error ? <Failed error={g.error} />
           : !elements ? <Loading what="the graph" />
           : <Graph graphKey={g.key} bounds={{ width: g.l.width, height: g.l.height }} nodes={elements.nodes} edges={elements.edges} colorMode={colorMode} label={`Composition ${s.id}`}
               onSelect={nid => setParams({ sel: nid })}
-              onActivate={nid => { const n = g.model.nodes.find(x => x.id === nid); if (n?.kind === 'member') location.hash = `/part/${nid}?from=${s.id}`; else if (n?.kind === 'outside') location.hash = `/part/${nid.slice(4)}`; else setParams({ sel: nid }); }} />}
+              onActivate={nid => { const n = g.model.nodes.find(x => x.id === nid); if (n?.kind === 'member') location.hash = `/part/${nid}?view=model&from=${s.id}`; else if (n?.kind === 'outside') location.hash = `/part/${nid.slice(4)}?view=model`; else setParams({ sel: nid }); }} />}
       </div>
       <div className="side-r">
         <CompositionHead s={s} />
@@ -171,7 +171,7 @@ export function CompositionView({ id, params }) {
           <TabList aria-label="Panels" className="tablist">
             {narrow && <Tab id="setup">Setup</Tab>}
             <Tab id="cells">Cells</Tab><Tab id="properties">Properties</Tab><Tab id="walks">Walks</Tab>
-            <Tab id="evidence">Evidence <span className="muted">{s.evidence.length}</span></Tab><Tab id="closure">Closure</Tab><Tab id="log">Log</Tab>
+            <Tab id="evidence">Runs <span className="muted">{s.evidence.length}</span></Tab><Tab id="closure">Closure</Tab><Tab id="log">Decisions <span className="muted">{s.decisions.length}</span></Tab>
           </TabList>
           {narrow && <TabPanel id="setup" className="panel is-scroll">{setup}</TabPanel>}
           <TabPanel id="cells" className="panel is-scroll">
@@ -198,7 +198,7 @@ function CompositionHead({ s }) {
     <div className="detail is-head">
       {s.route && <Sec title="Next" aside={s.route.pass}>{(s.route.why || []).map((w, i) => <div key={i} className="why">{w}</div>)}</Sec>}
       {s.errors?.length > 0 && <Sec title="Does not compose">{s.errors.map((e, i) => <div key={i} className="small t-crit">{e}</div>)}</Sec>}
-      {(s.tripwires.length > 0 || s.flags.length > 0) && <Sec title="Flags">{s.tripwires.map((t, i) => <div key={`t${i}`}><Badge word="violated" label={t.name} small /> <span className="muted">{t.where}</span></div>)}{s.flags.map((f, i) => <div key={i}><span className="chip" title={f.means || undefined}>{f.name}</span> <span className="muted">{f.where}</span></div>)}</Sec>}
+      <FlagsSection tripwires={s.tripwires} flags={s.flags} />
     </div>
   );
 }
@@ -226,7 +226,7 @@ function NodeCard({ n, s, root }) {
   return (
     <div className="ncard">
       <div className="d-head"><b>{n.name}</b> <span className="muted">{n.kind === 'actor' ? `actor · ${actor?.kind}` : n.kind === 'outside' ? 'outside this composition' : `member · ${comp?.tier}`}</span><span className="top-gap" />
-        {comp && <a className="btn is-tiny" href={`#/part/${comp.id}?from=${s.id}`}>Open</a>}
+        {comp && <a className="btn is-tiny" href={`#/part/${comp.id}?view=model&from=${s.id}`}>Chart</a>}{comp && <a className="btn is-tiny" href={`#/part/${comp.id}?lens=work&from=${s.id}`}>Claims</a>}
         <Button className="btn is-tiny" aria-label="Clear selection" onPress={() => setParams({ sel: null })}>✕</Button>
       </div>
       {actor && <div className="small">modes {actor.modes.join(', ')}{actor.pins?.length ? ` · pins ${actor.pins.join(', ')}` : ''}</div>}
@@ -276,6 +276,8 @@ function CellDetail({ s, prop, scen, trace, step, setStep }) {
   if (!c) return null;
   const passage = s.passages.find(p => p.id === prop);
   const word = c.words;
+  // The claims whose mappings name this cell, each a way back to the page that reads it.
+  const claims = s.behaviors.behaviors.flatMap(b => b.claims.flatMap(cl => cl.mappings.filter(mp => mp.target.kind === 'cell' && mp.target.dossier === `compositions/${s.id}` && mp.target.property === prop && mp.target.scenario === scen).map(mp => ({ b, cl, mp }))));
   return (
     <div className="detail">
       <div className="d-head"><b className="mono">{prop}</b> <span className="muted">under</span> <b className="mono">{scen}</b> <Badge word={word} small /><span className="top-gap" /><LinkButton />
@@ -283,15 +285,17 @@ function CellDetail({ s, prop, scen, trace, step, setStep }) {
       </div>
       {passage && <p className="ptext-full">{passage.text}</p>}
       <KV rows={[
-        ['means', c.means], ['reach', c.reach], ['trial', <span className="mono">{c.trial}</span>], ['blunder', c.held],
+        ['means', c.means], ['reach', c.reach], ['trial', <span className="mono">{c.trial}</span>], c.entry && ['run', <Button className="linkbtn mono" onPress={() => setParams({ tab: 'evidence', entry: c.entry })}>{c.entry}</Button>], ['blunder', c.held],
         c.impliedBy && ['implied by', c.impliedBy], c.open && ['open', 'closure or scenario'],
         c.lapsed?.length ? ['moved', <span className="t-crit">{c.lapsed.join('; ')}</span>] : null,
         c.accepted && ['accepted', <span>“{c.accepted.words}” <span className="muted">{shortTime(c.accepted.time)}</span></span>],
         c.acceptanceLapsed && ['acceptance lapsed', <span className="t-crit">{c.acceptanceLapsed.join('; ')}</span>],
         c.problem && ['problem', <span className="t-crit">{c.problem}</span>],
       ]} />
+      {claims.length > 0 && <Sec title="Claims" aside={claims.length}>{claims.map(({ b, cl, mp }) => <div key={`${b.id}/${cl.id}/${mp.id}`} className="small"><Badge word={cl.standing} label={STANDING_WORD[cl.standing]} small /><a href={hrefFor({ view: 'composition', id: s.id, params: { behavior: b.id, claim: cl.id } })}><span className="mono">{cl.id}</span> {cl.statement}</a> <span className="muted">{mp.relation}</span></div>)}</Sec>}
       {c.mark === 'violated' && !c.accepted && <Sec title="Owner decides"><DecideLine dossier={s.id} verb="risk" args={[prop, scen]} /></Sec>}
       {trace && <CompositionTrace trace={trace} step={step} setStep={setStep} />}
+      <Raw value={c} />
     </div>
   );
 }

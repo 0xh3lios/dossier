@@ -12,25 +12,29 @@ import { readIntegrity, storageProblem } from '../dossiers/integrity.ts';
 import { evidenceNotes, readEvidence } from '../trials/answers.ts';
 import { routeRoot } from '../verify/route.ts';
 import { canonical } from '../hash.ts';
-import { briefLines, renderPartLedger, renderIndex, renderCompositionLedger, rootLines, verifyLine } from '../verify/render.ts';
+import { readRootMap } from '../dossiers/map.ts';
+import { placeMap } from '../verify/map.ts';
+import { briefLines, mapLines, renderPartLedger, renderIndex, renderCompositionLedger, rootLines, verifyLine } from '../verify/render.ts';
 import type { CommandContext } from '../cli.ts';
 import type { ActorsModel } from '../dossiers/actors.ts';
 import type { PartLoad, LoadedKnowledge } from '../dossiers/load.ts';
 import type { Analysis, AnswerRow, PartAnalysis, CompositionAnalysis } from '../verify/analyze.ts';
+import type { MapView } from '../verify/map.ts';
 import type { Route } from '../verify/route.ts';
 import type { Note } from '../verify/tripwires.ts';
 
-// Every dossier under a root, analyzed; the root's next loop; the ones asked for; and the
-// tripwires of the root itself.
-export interface Verified { parts: PartAnalysis[]; compositions: CompositionAnalysis[]; route: Route; selected: Analysis[]; knowledge: LoadedKnowledge; actors: ActorsModel; tripwires: Note[] }
-// What `dossier verify --json` prints: the verify line, the root's next loop, the root's tripwires, and
-// each dossier's standing, with one row for each answer in its evidence/ that reads.
+// Every dossier under a root, analyzed; the root's next loop; the ones asked for; the tripwires of the
+// root itself; and the map placed over the dossiers.
+export interface Verified { parts: PartAnalysis[]; compositions: CompositionAnalysis[]; route: Route; selected: Analysis[]; knowledge: LoadedKnowledge; actors: ActorsModel; tripwires: Note[]; map: MapView }
+// What `dossier verify --json` prints: the verify line, the root's next loop, the root's tripwires, each
+// dossier's standing, with one row for each answer in its evidence/ that reads, and the map.
 export interface VerifyJson {
   verify: string;
   route: Route;
   tripwires: Note[];
   parts: (Pick<PartAnalysis, 'id' | 'title' | 'tier' | 'summary' | 'marks' | 'backing' | 'tripwires' | 'flags' | 'route' | 'behaviors'> & { answers: AnswerRow[] })[];
   compositions: (Pick<CompositionAnalysis, 'id' | 'title' | 'summary' | 'cells' | 'walks' | 'propertyHeld' | 'closureMissing' | 'tripwires' | 'flags' | 'route' | 'behaviors'> & { answers: AnswerRow[] })[];
+  map: MapView;
 }
 
 // The earlier view, read only from a regular file of its own: a link or anything else reads as none.
@@ -54,6 +58,10 @@ export function verifyAll({ root, version, wanted = [], write = false }: { root:
   const storage = storageProblem(root);
   if (marker.error) trip('malformed marker', marker.error);
   else if (storage) trip('integrity unavailable', storage);
+  // The map, the block the root's README begins with. One that does not read fails verify; a README
+  // without one reads as an empty map, which places nothing.
+  const readme = readRootMap(root);
+  if (readme.error) trip('malformed map', `README.md: ${readme.error}`);
   const indexPath = join(root, 'index.md');
   const knowledge = knowledgeOf(root);
   const actors = loadActors(root);
@@ -63,7 +71,9 @@ export function verifyAll({ root, version, wanted = [], write = false }: { root:
   const allParts = listParts(root);
   const retiredIds = allParts.filter(id => isRetired(join(root, 'parts', id)));
   const partIds = allParts.filter(id => !retiredIds.includes(id));
-  const compositionIds = listCompositions(root).filter(id => !isRetired(join(root, 'compositions', id)));
+  const allCompositions = listCompositions(root);
+  const retiredCompositions = allCompositions.filter(id => isRetired(join(root, 'compositions', id)));
+  const compositionIds = allCompositions.filter(id => !retiredCompositions.includes(id));
   // A missing authored file cannot make a record disappear from integrity checking. No root
   // inventory is persisted: visible dossier folders define this boundary, including retired
   // and otherwise un-loadable records.
@@ -97,16 +107,17 @@ export function verifyAll({ root, version, wanted = [], write = false }: { root:
   const compositions = compositionIds.map(id => analyzeComposition({ root, id, parts: loaded, knowledge, pluginVersion: version, marker: setUp, memberAnalyses }));
   heldByBehaviors([...parts, ...compositions]);
   const route = routeRoot(parts, compositions, tripwires);
+  const map = placeMap({ readme, analyses: [...parts, ...compositions], retired: [...retiredIds.map(id => `parts/${id}`), ...retiredCompositions.map(id => `compositions/${id}`)], knowledge });
   // render writes the views and nothing else: no evidence, no decision, no generated model.
   if (write) {
     // A dossier folder that is a link to one elsewhere gets no ledger: render writes only inside the root.
     const outside = (dir: string) => { const problem = dossierDirProblem(root, dir); if (problem) console.error(`dossier render: ${problem}; its ledger is not written`); return Boolean(problem); };
     for (const a of parts) { const path = join(a.dir, 'ledger.md'); if (!outside(a.dir)) keep(path, renderPartLedger(a, { version, now, previous: previous(path) })); }
     for (const a of compositions) { const path = join(a.dir, 'ledger.md'); if (!outside(a.dir)) keep(path, renderCompositionLedger(a, { version, now, previous: previous(path) })); }
-    keep(indexPath, renderIndex({ parts, compositions, version, now, route, previous: previous(indexPath), rootTrips: tripwires }));
+    keep(indexPath, renderIndex({ parts, compositions, version, now, route, previous: previous(indexPath), rootTrips: tripwires, map }));
   }
   const selected = [...parts, ...compositions].filter(a => wanted.length === 0 || wanted.includes(a.id) || wanted.includes(a.ref));
-  return { parts, compositions, route, selected, knowledge, actors, tripwires };
+  return { parts, compositions, route, selected, knowledge, actors, tripwires, map };
 }
 
 // An answer a behavior's exact-answer mapping names is evidence that behavior stands on. Publication
@@ -135,13 +146,16 @@ export async function main(command: string, args: string[], { root: pluginRoot, 
   const r = verifyAll({ root, version, wanted, write: command === 'render' });
   const all = [...r.parts, ...r.compositions];
   const failed = r.tripwires.length > 0 || all.some(a => a.tripwires.length);
-  if (json) { console.log(JSON.stringify({ verify: verifyLine(all, version, r.tripwires), route: r.route, tripwires: r.tripwires, parts: r.parts.map(a => ({ id: a.id, title: a.title, tier: a.tier, summary: a.summary, marks: a.marks, backing: a.backing, tripwires: a.tripwires, flags: a.flags, route: a.route, behaviors: a.behaviors, answers: a.answerRows })), compositions: r.compositions.map(a => ({ id: a.id, title: a.title, summary: a.summary, cells: a.cells, walks: a.walks, propertyHeld: a.propertyHeld, closureMissing: a.closureMissing, tripwires: a.tripwires, flags: a.flags, route: a.route, behaviors: a.behaviors, answers: a.answerRows })) } satisfies VerifyJson, null, 2)); return failed ? 1 : 0; }
+  if (json) { console.log(JSON.stringify({ verify: verifyLine(all, version, r.tripwires), route: r.route, tripwires: r.tripwires, parts: r.parts.map(a => ({ id: a.id, title: a.title, tier: a.tier, summary: a.summary, marks: a.marks, backing: a.backing, tripwires: a.tripwires, flags: a.flags, route: a.route, behaviors: a.behaviors, answers: a.answerRows })), compositions: r.compositions.map(a => ({ id: a.id, title: a.title, summary: a.summary, cells: a.cells, walks: a.walks, propertyHeld: a.propertyHeld, closureMissing: a.closureMissing, tripwires: a.tripwires, flags: a.flags, route: a.route, behaviors: a.behaviors, answers: a.answerRows })), map: r.map } satisfies VerifyJson, null, 2)); return failed ? 1 : 0; }
   console.log(verifyLine(all, version, r.tripwires));
-  if (all.length === 0 && !failed) return 0;
+  // The map's notes never fail verify: one line counts them, and the full form lists each.
+  const notes = mapLines(r.map, !brief);
+  if (all.length === 0 && !failed) { for (const line of notes) console.log(line); return 0; }
   // In a prompt, --brief names only the dossiers that owe something; a dossier asked for by name is always shown.
   const shown = brief && wanted.length === 0 ? r.selected.filter(a => a.route.pass !== 'Report') : r.selected;
   for (const a of shown) for (const line of briefLines(a)) console.log(line);
   for (const line of rootLines(r.route, pluginRoot)) console.log(line);
+  for (const line of notes) console.log(line);
   if (!brief) {
     console.log(`index: ${join(root, 'index.md')}`);
     for (const t of r.tripwires) console.log(`tripwire: ${t.name}: ${t.where}`);

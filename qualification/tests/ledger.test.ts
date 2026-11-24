@@ -2377,7 +2377,7 @@ describe('render and verify', () => {
     assert.ok(index.includes(`\n- ${summaryLine(r.parts.find(c => c.id === 'timelock')!)}\n`));
     assert.match(index, /\n- Supply: 2 properties × 3 scenarios · 4 cells · pending 4 · held 2 · prose@[0-9a-f]{6}\n/, 'a summary prints only the counts above zero, then the prose hash');
     assert.match(index, /\nNext: Encode on parts\/timelock — Timelock: /);
-    assert.equal(index.split('\n')[1], 'Written by dossier render: parts by compositions, and every composition at a glance.');
+    assert.equal(index.split('\n')[1], 'Written by dossier render: parts by compositions, every composition at a glance, and the map.');
     assert.ok(index.endsWith('\n```\n') && !index.includes('ledger-hash'));
     assert.deepEqual(r.route.target, 'parts/timelock');
     assert.equal(r.route.pass, 'Encode');

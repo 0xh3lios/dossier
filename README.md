@@ -44,11 +44,11 @@ To work from a checkout instead, load it with `claude --plugin-dir /path/to/doss
 
 ### What it needs
 
-You need Node 24.3 or later, or 22.18 or later on the 22 line. Dossier draws each part as an XState statechart, which needs the `xstate` and `@xstate/graph` packages, and the agent offers to install them when it sets up your repository. Solver checks also need a JDK 17 or later and the TLC, Apalache and Alloy distributions. [Install the solvers](docs/how-to/install-the-solvers.md) covers them, and `dossier doctor` reports what is missing. The explorer, a page that shows the dossiers in your browser, is optional. It is built once, from packages downloaded from the npm registry. The skills run the `dossier` command for you. To run it in your own terminal, put it on your PATH as [Commands and skills](docs/reference/commands.md#the-command) shows.
+You need Node 24.3 or later, or 22.18 or later on the 22 line. Dossier draws each part as an XState statechart, which needs the `xstate` and `@xstate/graph` packages, and the agent offers to install them when it sets up your repository. Solver checks also need a JDK 17 or later and the TLC, Apalache and Alloy distributions. [Install the solvers](docs/how-to/install-the-solvers.md) covers them, and `dossier doctor` reports what is missing. The explorer, a page in your browser that shows the agent's account and the evidence behind each claim, is optional. It is built once, from packages downloaded from the npm registry. The skills run the `dossier` command for you. To run it in your own terminal, put it on your PATH as [Commands and skills](docs/reference/commands.md#the-command) shows.
 
 ## Use
 
-In your repository, ask the agent to set it up for dossiers, which runs the setup skill. A dossier is the folder that holds one part or one composition: its behavior collection, formal specification, models, answers and derived reports. Setup looks for a [knowledge base](docs/how-to/set-up-a-repository.md), a folder of records about the system's modules, and works without one. With one, the agent can draft a part from its records. Without one, it drafts from your code and what you tell it. Setup also offers to let the agent run the `dossier` command without asking each time. Then ask for what you want:
+In your repository, ask the agent to set it up for dossiers, which runs the setup skill. A dossier is the folder that holds one part or one composition: its behavior collection, formal specification, models, answers and derived reports. Setup writes the dossiers' README, which begins with a [map](docs/how-to/arrange-the-map.md) that groups them by the system's areas and components, and the agent places each new dossier in it with `dossier place`. Setup looks for a [knowledge base](docs/how-to/set-up-a-repository.md), a folder of records about the system's modules, and works without one. With one, the agent can draft a part from its records. Without one, it drafts from your code and what you tell it. Setup also offers to let the agent run the `dossier` command without asking each time. Then ask for what you want:
 
 - "start a dossier for the timelock module"
 - "what does the timelock do about cancelling a plan, and how sure are we?"
@@ -62,7 +62,7 @@ In your repository, ask the agent to set it up for dossiers, which runs the setu
 
 The agent turns each request into scoped claims, sentences, models and checks. It reports what each claim now establishes, with its bounds, the assumptions it rests on, the trace when there is one, and any decision that needs you.
 
-Dossier is packaged as a plugin with five skills and the `dossier` command. The skills are how an agent uses the toolkit: `keep` writes specifications and models and runs checks, `setup` prepares a repository, `review` reads a dossier independently in a fresh context, `decide` records your decisions in your own words, and `explore` opens a page in your browser that shows the dossiers and never changes them. [Commands and skills](docs/reference/commands.md) lists all of them.
+Dossier is packaged as a plugin with five skills and the `dossier` command. The skills are how an agent uses the toolkit: `keep` writes specifications and models and runs checks, `setup` prepares a repository, `review` reads a dossier independently in a fresh context, `decide` records your decisions in your own words, and `explore` opens a page in your browser that reads the dossiers from the map and never changes them. [Commands and skills](docs/reference/commands.md) lists all of them.
 
 ## Documentation
 

@@ -167,15 +167,15 @@
     }
   },
   "established": {
-    "trial": "2026-11-09-2229-chart-5bf4a7",
-    "at": "2026-11-09T22:29:29.329Z",
+    "trial": "2026-11-24-1431-chart-5bf4a7",
+    "at": "2026-11-24T14:31:44.164Z",
     "versions": {
-      "dossier": "0.2.0",
-      "node": "26.4.0",
+      "dossier": "0.3.0",
+      "node": "26.13.1",
       "xstate": "5.33.3",
       "@xstate/graph": "3.0.4"
     },
-    "bundle": "514653a2e5a0c8198d289df1d3287710273f5170fde6de9e5eb2b905fb8243f8"
+    "bundle": "cd92097623b9fb32ef97c6632107cb2a5c65ed914e5579446bdd552620a31bf5"
   },
   "previous": null,
   "narrowed": null,

@@ -24,6 +24,7 @@ The agent runs the `dossier` command the pages show, and you can ask it to run a
 - [Choose what to model first](how-to/choose-what-to-model.md)
 - [Start a part](how-to/start-a-part.md)
 - [Start a composition](how-to/start-a-composition.md)
+- [Arrange the map](how-to/arrange-the-map.md)
 - [Write a behavior](how-to/write-a-behavior.md)
 - [Check a claim](how-to/check-a-claim.md)
 - [Explore a what-if](how-to/explore-a-what-if.md)
@@ -39,7 +40,7 @@ The agent runs the `dossier` command the pages show, and you can ask it to run a
 
 - [Marks](reference/marks.md): every mark, cell, flag, tripwire and next step
 - [Prose](reference/prose.md): the forms the compiler reads
-- [Files](reference/files.md): the layout of a dossiers root and every file format
+- [Files](reference/files.md): the layout of a dossiers root, its map and every file format
 - [Commands and skills](reference/commands.md): the `dossier` command and its exit codes, the skills and the environment
 - [Toolchain](reference/toolchain.md): what each trial needs, and the versions tested
 - [Harbor](reference/harbor.md): the fixture, piece by piece

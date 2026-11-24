@@ -5,6 +5,7 @@ An artifact's writer and authority determine whether it may be edited, regenerat
 | Artifact | Writer | Authority and consumer |
 | --- | --- | --- |
 | `README.md`, `behaviors/*.md` | Owner or authorized agent | Authored orientation, explanations, scoped claims and mappings under [the behavior contract](behaviors.md), never evidence or an owner's acceptance |
+| The root's `README.md` | Owner or authorized agent; setup writes it with an empty map; `dossier place` rewrites its map block alone | The authored map under [the map contract](map.md): groups and components over the flat dossiers, then the root's title and explanation. Nothing binds it, and it holds no status |
 | `prose.md` | Owner or authorized agent; import/begin may draft | Authored formal meaning, stable ids, ranges and tier; compiler and reviewer input |
 | `wiring.md`, `actors/*.md` | Owner or authorized agent | Authored membership, wiring, closure and environment assumptions |
 | Refined part model, Alloy module, `extras.tla` | Agent following prose | Authored encoding. The exact executed identities belong to each answer's basis |
@@ -34,13 +35,14 @@ An artifact's writer and authority determine whether it may be edited, regenerat
 
 ## Record formats
 
-A collection, a behavior and a review each name their serialization in a `format` field. Use the exact identifier below. Any other identifier is invalid, and so is an omitted field.
+A collection, a behavior, a review and the map each name their serialization in a `format` field. Use the exact identifier below. Any other identifier is invalid, and so is an omitted field.
 
 | Record | Format identifier | Fields and interpretation |
 | --- | --- | --- |
 | Collection | `dossier-collection@0.2.0` | [Behavior collections](behaviors.md#collection) |
 | Behavior | `dossier-behavior@0.2.0` | [Behaviors](behaviors.md#behavior) |
 | Review | `dossier-review@0.2.0` | [Review scope and binding](review.md#scope-and-binding) |
+| Map | `dossier-map@0.3.0` | [The block](map.md#the-block) |
 
 ## Reader reports
 
@@ -49,3 +51,5 @@ Verify derives one report per dossier, with `format: "dossier-behavior-report@0.
 The report carries the dossier's path, the order of the collection and each behavior's scoped claims, with the path of the file that holds its explanation. It copies no authored text: a reader takes the orientation, the explanations and a review's findings from their files. It names each fact once, so it grows with the dossier's claims and not with its reviews. Each claim comes with its standing, its freshness, the reasons, the limitations, its pins and its resolved mappings. Each mapping keeps its relation and its rationale as authored, beside the evidence, the formal standing of its target, the owner's exact decision and the independent assessments. Each review keeps whether it is valid and current, the claims and the explanations of its subject that changed since it was written, its subject, its coverage, what it replaces, the result of each assessment and the number of files its basis binds. The report also lists the passages, cells, walks and scenarios that no behavior is associated with, and says that the list does not establish that the source is explained in full.
 
 A report is a view and can be discarded. Rendering writes no evidence, no assessment and no decision. A reader of the report may select and arrange what it carries. It cannot derive stronger support, hide a current contradiction or turn an illustration into a general guarantee.
+
+Verify also places the dossiers in the map and counts each node's claims from these reports, as [the map's counts](map.md#counts) define. That tree is the `map` field of `dossier verify --json`, and `index.md` prints it. It is a view like the reports it counts, and a reader of it may arrange it the same way and no further.

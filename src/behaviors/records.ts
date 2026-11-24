@@ -97,13 +97,20 @@ export function parseUniqueJson(text: string): unknown {
 }
 
 const HEADER = /^```json\r?\n([\s\S]*?)\r?\n```(?:\r?\n|$)/;
-function document<T>(text: string, validate: (value: unknown) => T): ParsedRecord<T> {
+/** The fenced json block a record begins with at byte zero: the JSON text, the block with the line ending
+ * after its closing fence, and the Markdown after it; null when the text does not begin with one. A text
+ * whose line endings are neither LF nor CRLF is refused. The collection, the behavior, the review and the
+ * root's map all read their block this way. */
+export function leadingBlock(text: string): { json: string; block: string; body: string } | null {
   if (text.replace(/\r\n/g, '').includes('\r')) fail('record must use LF or CRLF line endings');
   const header = HEADER.exec(text);
-  if (!header) fail('record must begin at byte zero with a fenced json object');
-  const body = text.slice(header[0].length);
-  if (!body.trim()) fail('record must include a Markdown explanation after its JSON block');
-  return { record: validate(parseUniqueJson(header[1])), body, text, sha256: recordDigest(text) };
+  return header ? { json: header[1], block: header[0], body: text.slice(header[0].length) } : null;
+}
+function document<T>(text: string, validate: (value: unknown) => T): ParsedRecord<T> {
+  const lead = leadingBlock(text);
+  if (!lead) fail('record must begin at byte zero with a fenced json object');
+  if (!lead.body.trim()) fail('record must include a Markdown explanation after its JSON block');
+  return { record: validate(parseUniqueJson(lead.json)), body: lead.body, text, sha256: recordDigest(text) };
 }
 
 function pin(x: unknown, at: string): KnowledgePin {

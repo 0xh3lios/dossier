@@ -6,7 +6,7 @@ An agent develops a [behavior collection](behaviors.md), checks its claims and e
 
 **PROC-OBSERVE.** Begin with `dossier verify --brief` and read its findings. A tripwire blocks new evidence work on the affected record until addressed. Report the blockage and continue unrelated work where possible. An owner's request selects scope before the suggested `next:` route.
 
-Open the dossier's README for what it is for, its vocabulary, its actors, the usual flow, its boundaries and its behaviors in order. Read the behavior the request concerns, and each claim's standing, before following its mappings into the prose, a walk, a model or the source. Locate a behavior's claim, a part, a composition, a property, a scenario or a typed knowledge reference with `dossier where`.
+The root's README begins with [the map](map.md), which places each dossier under the system's groups and components. A `map:` line counts the map's notes, which block nothing. Open the dossier's README for what it is for, its vocabulary, its actors, the usual flow, its boundaries and its behaviors in order. Read the behavior the request concerns, and each claim's standing, before following its mappings into the prose, a walk, a model or the source. Locate a behavior's claim, a part, a composition, a property, a scenario or a typed knowledge reference with `dossier where`.
 
 Select a claim to challenge or refresh, or state a new one. A claim without enough support stays a hypothesis, and it does not block unrelated work. A walk or another passage that no behavior is associated with can still be found, and it is not for that reason unfinished.
 
@@ -23,6 +23,8 @@ Write the shared formal abstraction in `prose.md`. Connect a claim to an exact p
 Draw a changed part to check its sentences against the chart. Drawing creates a diagnostic view. A chart claim needs a chart answer. Scaffold a part before model refinement. Scaffold a composition to materialize its generated module and configurations. A composition's generated files remain tool-owned.
 
 Every guarantee names its backing or explicitly says `none`. A missing backing remains an assumption or unresolved reference. Closure remains open until all required members are present. Neither an agent's explanation nor a successful checker makes an open composition closed.
+
+**PROC-PLACE.** Place a new part in the map once its README says what it is: `dossier place <part> <component>` adds it to a component, which `--parent`, `--title` and `--lead` create when it is missing. A composition no component holds sits where the components holding its members whole meet, so it needs a placement only to sit elsewhere, or when no member is held whole. Select behaviors or claims when a component shows only part of a dossier. A selection is a cross-reference, so it makes no flow and sites no composition. A part no component holds is noted `dossier unplaced` until it is placed. The note blocks nothing, and a placement records no evidence and changes no claim's standing. [MAP-PLACEMENT](map.md#placement) owns the rules.
 
 ## Predict and execute
 

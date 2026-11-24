@@ -10,6 +10,7 @@ Conformance means that the accepted artifacts, tool transformations and agent cl
 | --- | --- |
 | `PROC-OBSERVE` | Agent starts from current findings and targets the requested scope |
 | `PROC-PREPARE` | Produced prose, wiring and models satisfy their parsers and preserve the requested meaning |
+| `PROC-PLACE` | A new part is placed through the map, and its placement changes no claim's standing |
 | `PROC-CALL` | Prediction exists before execution and names exactly the enabled property/scenario |
 | `PROC-EXECUTE` | Only a completed answer in an intact entry contributes its permitted evidence |
 | `PROC-INTERPRET` | A reading follows the entry's answer and classifies a miscall with one of the five classifications, without adding cover |
@@ -52,6 +53,18 @@ These obligations need tests of the readers and the writers themselves. The cont
 | `BEH-FRESHNESS` | A change to a claim, an explanation, a source pin, a scenario or a deciding answer takes the right assessments out of effect: a changed claim only its own, a changed explanation none. A solver's answer whose basis is unchanged stays current |
 | `BEH-RETENTION` | A composition that depends on an answer keeps the evidence it needs. Equivalent support lets an answer go. A dependency that changes during publication, and an interrupted publication, leave authority intact |
 | `BEH-COVERAGE` | Walks with no behavior and what is left unexplained are reported. Neither an empty collection nor a full list of the model establishes that the source is explained in full |
+
+## Map contract obligations
+
+The map's tests read and write the root's README through the command, on a root that nests at least four levels deep, holds a dossier under several components, selects behaviors and claims, features readings and turns a component's flows off.
+
+| Contract | What its tests accept and what they refuse |
+| --- | --- |
+| `MAP-FORMAT` | A complete map is accepted, and a root without a block reads as an empty map. An unknown or missing field, a wrong type, another format, a bad id, path or selection, a node id used twice, a duplicate entry and an empty selection are each `malformed map` |
+| `MAP-PLACEMENT` | Every live part is held, through any entry, or noted. A composition no component holds sits at the lowest node over the components that hold its members whole, or is unplaced when none does. A component lists the compositions its whole holdings take part in unless its flows are off. A selection places what it names and makes no flow and no site. Retired and unknown paths drop out of the tree |
+| `MAP-COUNTS` | Each node counts distinct claims with the selections applied, a claim reached twice once, and the standings sum to the claims |
+| `MAP-NOTES` | Each note is provoked and leaves verify passing. `malformed map` fails it, and the `map:` line, the listed notes and `map` in `--json` say the same |
+| `MAP-WRITE` | `place` rewrites the block alone, as canonical JSON, keeps the rest of the README byte for byte, writes nothing for an equal entry, and refuses an unknown dossier, a selection the dossier lacks and a malformed map. Setup writes an empty map |
 
 ## Examples and fixtures
 

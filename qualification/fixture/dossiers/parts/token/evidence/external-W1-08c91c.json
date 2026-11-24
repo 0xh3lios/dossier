@@ -93,13 +93,13 @@
     }
   },
   "established": {
-    "trial": "2026-11-09-2229-external-5cf0af",
-    "at": "2026-11-09T22:29:11.823Z",
+    "trial": "2026-11-24-1431-external-5cf0af",
+    "at": "2026-11-24T14:31:28.078Z",
     "versions": {
-      "dossier": "0.2.0",
-      "node": "26.4.0"
+      "dossier": "0.3.0",
+      "node": "26.13.1"
     },
-    "bundle": "05dfda2a666e07151525789c1013258ffb01b1211cb7f424dd67c3c7b8069dbc"
+    "bundle": "ead631326f1cb2621b2f7075ee067d810c288b88b8dbdf1e057ee385d6ed5511"
   },
   "previous": null,
   "narrowed": null,

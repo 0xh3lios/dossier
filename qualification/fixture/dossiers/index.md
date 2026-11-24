@@ -1,6 +1,6 @@
-# Dossiers   rebuilt 2026-11-09T22:32:13Z   dossier 0.2.0
-Written by dossier render: parts by compositions, and every composition at a glance.
-verify: ok · 6 parts, 3 compositions · dossier 0.2.0 · 0 tripwires
+# Dossiers   rebuilt 2026-11-24T15:10:26Z   dossier 0.3.0
+Written by dossier render: parts by compositions, every composition at a glance, and the map.
+verify: ok · 6 parts, 3 compositions · dossier 0.3.0 · 0 tripwires
 
 | part | module | tier | control | supply | upkeep |
 | --- | --- | --- | --- | --- | --- |
@@ -23,10 +23,35 @@ verify: ok · 6 parts, 3 compositions · dossier 0.2.0 · 0 tripwires
 
 Next: Encode on parts/oracle — Oracle: not tried on the model side: M2 M3; Timelock: not tried on the model side: M3; Token: not tried on the model side: W1
 
+## Map
+
+Harbor dossiers: 9 dossiers, 62 claims · supported 47 · contradicted 4 · hypothesis 11 · needs: claims 4, doubts 1, reviews owed 9
+
+- Featured: compositions/control#emergency-halt — A Breaker halt stops exits at once, while a Timelock plan still waits out its delay.
+- **Credit and HRD** `credit` · The Vault's credit ledger, and the HRD tokens the Adapter issues against it. · 4 dossiers, 26 claims · supported 19 · hypothesis 7 · needs: reviews owed 4
+  - Featured: compositions/supply#match-token-backing — Issued credit, the Adapter's holdings and the HRD supply stay equal as credit moves.
+  - **Vault** `vault` · Records debt, free and issued credit, and the ceiling on borrowing. · holds parts/vault · 1 dossier, 8 claims · supported 3 · hypothesis 5 · needs: reviews owed 1
+    - Flows: compositions/control, compositions/supply
+  - **Conversion** `conversion` · The Adapter exchanges credit for HRD, which the Token mints and burns. · holds parts/adapter, parts/token (mint-and-burn) · 2 dossiers, 10 claims · supported 9 · hypothesis 1 · needs: reviews owed 2
+    - Flows: compositions/control, compositions/supply
+  - **Token** `token` · Records the total HRD supply, which a transfer leaves unchanged. · holds parts/token · 1 dossier, 5 claims · supported 3 · hypothesis 2 · needs: reviews owed 1
+    - Flows: compositions/supply
+  - Sited here: compositions/supply
+- **Governance** `governance` · Plans that wait out the Timelock's delay, and the emergency halt that does not. · 2 dossiers, 11 claims · supported 8 · hypothesis 3 · needs: reviews owed 2
+  - **Timelock** `timelock` · Holds one plan while its delay runs down, then sends its change to the Vault. · holds parts/timelock · 1 dossier, 8 claims · supported 6 · hypothesis 2 · needs: reviews owed 1
+    - Flows: compositions/control
+  - **Breaker** `breaker` · Relays one emergency halt from Governance to the Adapter. · holds parts/breaker · 1 dossier, 3 claims · supported 2 · hypothesis 1 · needs: reviews owed 1
+    - Flows: compositions/control
+- **Prices** `prices` · The Oracle's price, and the two keeper lanes that keep it fresh. · 2 dossiers, 15 claims · supported 11 · contradicted 3 · hypothesis 1 · needs: claims 3, doubts 1, reviews owed 2
+  - **Oracle** `oracle` · Stores a price and its age; either keeper lane may post a replacement. · holds parts/oracle · 2 dossiers, 15 claims · supported 11 · contradicted 3 · hypothesis 1 · needs: claims 3, doubts 1, reviews owed 2
+    - Flows: compositions/upkeep
+    - Sited here: compositions/upkeep
+- Sited here: compositions/control
+
 ```json
 {
-  "rebuilt": "2026-11-09T22:32:13Z",
-  "plugin": "0.2.0",
+  "rebuilt": "2026-11-24T15:10:26Z",
+  "plugin": "0.3.0",
   "parts": [
     {
       "id": "adapter",

@@ -17,6 +17,7 @@ import { TRIAL_ID } from '../../src/trials/trials.ts';
 import { bundleDigest } from '../../src/trials/receipt.ts';
 import { answerOf, trialBundle } from '../conformance/evidence.ts';
 import { fingerprint } from '../conformance/files.ts';
+import { emptyMap, readRootMap } from '../../src/dossiers/map.ts';
 import type { BinaryLike } from 'node:crypto';
 import type { DrawResult } from '../../src/chart/draw.ts';
 import type { Marker } from '../../src/dossiers/root.ts';
@@ -236,6 +237,24 @@ describe('setup', () => {
     assert.ok(hereAt > smokeAt, 'this repository is verified after the smoke test');
     assert.match(out[hereAt + 1], /^verify: ok · no dossiers · dossier /);
     assert.equal(r.status, smoke.startsWith('verify: FAIL') ? 1 : 0, 'the exit code follows the smoke test');
+    // The README begins with an empty map, which places nothing and, with no dossier yet, notes nothing.
+    assert.ok(read(join(dossiers(), 'README.md')).startsWith('```json\n{\n  "format": "dossier-map@0.3.0",\n  "groups": []\n}\n```\n\n# Dossiers\n\n'));
+    const map = readRootMap(dossiers());
+    assert.deepEqual([map.error, map.block, map.map, map.title], [null, true, emptyMap(), 'Dossiers']);
+    assert.ok(!/^map/m.test(r.stdout), 'no map line');
+  });
+
+  it('writes an empty map that begin leaves the new part out of, which verify notes', () => {
+    assert.ok([0, 1].includes(setup([]).status!));
+    const begun = dossier(['decide', 'gate', 'begin'], { cwd: repo, bin: copyBin });
+    assert.equal(begun.status, 0, begun.out);
+    const brief = dossier(['verify', '--brief'], { cwd: repo, bin: copyBin });
+    assert.equal(brief.status, 0, brief.out);
+    assert.deepEqual(brief.stdout.split('\n').filter(l => l.startsWith('map')), ['map: 1 note · dossier unplaced 1']);
+    const placed = dossier(['place', 'gate', 'gate', '--title', 'Gate', '--lead', 'Opens and shuts.'], { cwd: repo, bin: copyBin });
+    assert.equal(placed.status, 0, placed.out);
+    assert.equal(placed.stdout, 'created component gate at the top\nplaced parts/gate in gate\n');
+    assert.ok(!/^map/m.test(dossier(['verify'], { cwd: repo, bin: copyBin }).stdout), 'once placed, nothing is noted');
   });
 
   it('is idempotent: the files are kept and only dossier.json is rewritten', () => {

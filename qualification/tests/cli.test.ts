@@ -71,7 +71,7 @@ test('every command in the usage block is dispatched to a real module under src/
   const source = readFileSync(join(pluginRoot, 'src', 'cli.ts'), 'utf8');
   const fromSource = usageCommands(source.match(/const usage = `([\s\S]*?)`;/)![1]);
   assert.deepEqual(printed, fromSource, 'help prints the usage block of src/cli.ts');
-  const expected = ['verify', 'render', 'recover', 'draw', 'scaffold', 'call', 'blunder', 'show', 'trial', 'recheck', 'decide', 'review-basis', 'where', 'import', 'explore', 'doctor', 'setup', 'version'];
+  const expected = ['verify', 'render', 'recover', 'draw', 'scaffold', 'call', 'blunder', 'show', 'trial', 'recheck', 'decide', 'place', 'review-basis', 'where', 'import', 'explore', 'doctor', 'setup', 'version'];
   assert.deepEqual([...printed].sort(), [...expected].sort());
 
   const table = source.match(/const modules = \{([^}]*)\}/)![1];

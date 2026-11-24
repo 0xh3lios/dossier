@@ -17,7 +17,7 @@ An answer that has lapsed therefore decides nothing on the model side or on a ce
 `dossier verify` prints one line for the root, one per dossier, and the next step:
 
 ```
-verify: ok · 6 parts, 3 compositions · dossier 0.2.0 · 0 tripwires
+verify: ok · 6 parts, 3 compositions · dossier 0.3.0 · 0 tripwires
 Timelock: 26 passages · settled 16 · confirmed 15 · unsettled 10 · proved 1 · checked 19 · drawn 1 · backed 1 · assumed 1 · text 1 · given 2 · prose@70bff9
   claims: 3 behaviors, 8 claims · supported 6 · hypothesis 2
 Control: 4 properties × 3 scenarios · 9 cells · proved 1 · checked 7 · violated 1 (accepted 1) · prose@6c8765
@@ -183,6 +183,7 @@ A tripwire makes verify print `FAIL` and replaces the next step with `fix:`. It 
 | `authored input missing` | A visible dossier has lost its required prose or wiring. | Restore that input. Integrity checks still apply to the folder. |
 | `stray files` | A file nobody expects in a dossier or in `evidence/`, such as a reading with no entry. A `.DS_Store` is ignored. | Move it to the margin, to `reviews/`, or out. |
 | `malformed marker` | `dossier.json` does not parse, names a storage other than `integrity-v1`, or holds a known field in the wrong shape. | Fix the file by hand. Setup refuses to rewrite it and names the error, and the agent leaves it to you. |
+| `malformed map` | The json block the root's `README.md` begins with does not parse or does not follow [the map's format](../../spec/map.md#the-block), or a `json` fence near its top is not at byte zero, or the README is a link or not UTF-8. Nothing is placed while it holds. | Fix the block, or restore it from version control. `dossier place` does not rewrite a malformed map. |
 | `malformed passage`, `malformed wiring`, `malformed actors` | A passage, the wiring or the actors files break their form, or name the same actor, scenario or member twice. | Fix the prose or the record. |
 | `misnamed` | A passage of a part or a composition names a state, an event, an effect, a datum or a passage that nothing declares, or a property in a model names a passage that does not exist. In a composition this includes a member's datum, state or event that the member does not have. | Fix the name in the prose or the model. |
 | `sender is not declared` | An event's sender or a Given's actor is neither an actor nor a part, or is a retired part, in a part's prose or a composition's. | Declare it in `actors/`, start the part, or begin the retired one again. |
