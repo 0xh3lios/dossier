@@ -1,6 +1,6 @@
-# Ledger: Timelock   rebuilt 2026-11-24T15:10:26Z   prose@70bff9   answers 9   decisions 1
+# Ledger: Timelock   rebuilt 2026-11-24T23:09:15Z   prose@70bff9   answers 9   decisions 1
 Written by dossier render from the records. The JSON block at the end says the same for tools.
-verify: ok · Timelock · dossier 0.3.0 · 0 tripwires
+verify: ok · Timelock · dossier 0.3.1 · 0 tripwires
 
 ## Behaviors
 
@@ -71,8 +71,8 @@ Since last rebuild: no mark moved
   "title": "Timelock",
   "tier": "modeled",
   "module": "timelock",
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "summary": {"passages":26,"settled":16,"confirmed":15,"unsettled":10,"rejected":0,"proved":1,"checked":19,"drawn":1,"pending":0,"lapsed":0,"miscalled":0,"hollow":0,"held":0,"owed":0,"backed":1,"assumed":1,"unresolved":0,"doubtsOpen":0,"text":1,"given":2},
   "marks": {
     "S1": {"mark":"checked","trials":["2026-11-24-1431-chart-ab1807","2026-11-24-1431-tlc-b67048"],"entries":["chart-64fcc7","tlc-W1-37d5b8"],"reach":"one plan; delay 2","doubt":[],"owner":"settled","grounded":false,"groundedBy":null,"chartCovered":true,"modelCovered":true,"confirmed":true},

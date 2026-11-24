@@ -1,6 +1,6 @@
-# Ledger: Control   rebuilt 2026-11-24T15:10:26Z   prose@6c8765   answers 14   decisions 2
+# Ledger: Control   rebuilt 2026-11-24T23:09:15Z   prose@6c8765   answers 14   decisions 2
 Written by dossier render from the records. The JSON block at the end says the same for tools.
-verify: ok · Control · dossier 0.3.0 · 0 tripwires
+verify: ok · Control · dossier 0.3.1 · 0 tripwires
 
 ## Behaviors
 
@@ -68,8 +68,8 @@ Since last rebuild: no mark moved
   "id": "control",
   "title": "Control",
   "concern": "control",
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "summary": {"properties":4,"scenarios":3,"cells":9,"proved":1,"checked":7,"implied":0,"violated":1,"accepted":1,"lapsed":0,"pending":0,"miscalled":0,"held":0,"hollow":0,"open":0,"doubtsOpen":0},
   "members": [{"part":"timelock","role":"member","pins":["timelock#observation:delay-check-2026-11-01"]},{"part":"vault","role":"member","pins":[]},{"part":"breaker","role":"member","pins":[]},{"part":"adapter","role":"member","pins":[]}],
   "wiring": [{"effect":{"part":"timelock","name":"change"},"event":{"part":"vault","name":"change"}},{"effect":{"part":"breaker","name":"halt"},"event":{"part":"adapter","name":"halt"}}],

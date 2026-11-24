@@ -1,6 +1,6 @@
-# Ledger: Vault   rebuilt 2026-11-24T15:10:26Z   prose@2fb3b4   answers 8   decisions 2
+# Ledger: Vault   rebuilt 2026-11-24T23:09:15Z   prose@2fb3b4   answers 8   decisions 2
 Written by dossier render from the records. The JSON block at the end says the same for tools.
-verify: ok · Vault · dossier 0.3.0 · 0 tripwires
+verify: ok · Vault · dossier 0.3.1 · 0 tripwires
 
 ## Behaviors
 
@@ -76,8 +76,8 @@ Since last rebuild: no mark moved
   "title": "Vault",
   "tier": "modeled",
   "module": "vault",
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "summary": {"passages":29,"settled":12,"confirmed":12,"unsettled":16,"rejected":1,"proved":2,"checked":19,"drawn":2,"pending":0,"lapsed":0,"miscalled":0,"hollow":0,"held":0,"owed":0,"backed":3,"assumed":1,"unresolved":0,"doubtsOpen":0,"text":2,"given":0},
   "marks": {
     "S1": {"mark":"checked","trials":["2026-11-24-1430-chart-a57cb9","2026-11-24-1431-tlc-80392a"],"entries":["chart-64fcc7","tlc-W1-a19770"],"reach":"amounts up to 2","doubt":[],"owner":"settled","grounded":false,"groundedBy":null,"chartCovered":true,"modelCovered":true,"confirmed":true},

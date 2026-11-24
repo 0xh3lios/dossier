@@ -55,7 +55,7 @@ function assessCurrent(review: EvaluatedReview, options: ReviewOptions): void {
     if (!bound?.claims || !bound.explanation || !behavior) continue;
     parted.add(key(bound));
     let now: BehaviorParts;
-    try { now = behaviorParts(behavior.text); } catch (error) { stale(`cannot read ${path}: ${errorText(error)}`); continue; }
+    try { now = behaviorParts(behavior.text); } catch (error) { stale(`cannot read ${path}: ${quietPath(errorText(error))}`); continue; }
     // As the review read it, the parts it bound are the file's.
     if (behavior.sha256 === bound.sha256 && (canonical(now.claims) !== canonical(bound.claims) || now.explanation !== bound.explanation)) invalid(`the claims and explanation bound for ${path} are not that file's`);
     const assessed = record.assessments.map(a => a.mapping).filter(m => m.startsWith(`${id}/`));
@@ -97,7 +97,7 @@ function assessCurrent(review: EvaluatedReview, options: ReviewOptions): void {
       const resolved = closure.files.find(b => key(b) === key(basis));
       if (resolved && resolved.sha256 !== basis.sha256) stale(`dependency digest differs for ${key(basis)}`);
     } catch (error) {
-      const message = errorText(error);
+      const message = quietPath(errorText(error));
       if (message.includes('escapes root')) invalid(`${key(basis)}: ${message}`);
       else stale(`cannot read ${key(basis)}: ${message}`);
     }
@@ -180,3 +180,6 @@ export function evaluateReviews(options: ReviewOptions): ReviewEvaluation {
   const dossierReviewed = !unresolved && reviews.some(r => r.status === 'current' && r.record?.subject.kind === 'dossier' && r.record.coverage.unexamined.length === 0 && !r.changed.claims.length && !r.changed.explanations.length);
   return { reviews, assessments, dossierReviewed };
 }
+
+// A file-system error names the file by its absolute path, which differs per machine; the key already names it.
+function quietPath(message: string): string { return message.replace(/, (?:lstat|stat|open|scandir|readlink|realpath) '[^']*'/g, ''); }

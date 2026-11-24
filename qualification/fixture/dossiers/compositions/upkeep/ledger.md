@@ -1,6 +1,6 @@
-# Ledger: Upkeep   rebuilt 2026-11-24T15:10:26Z   prose@7c3f26   answers 10   decisions 4
+# Ledger: Upkeep   rebuilt 2026-11-24T23:09:15Z   prose@7c3f26   answers 10   decisions 4
 Written by dossier render from the records. The JSON block at the end says the same for tools.
-verify: ok · Upkeep · dossier 0.3.0 · 0 tripwires
+verify: ok · Upkeep · dossier 0.3.1 · 0 tripwires
 
 ## Behaviors
 
@@ -53,8 +53,8 @@ Since last rebuild: no mark moved
   "id": "upkeep",
   "title": "Upkeep",
   "concern": "upkeep",
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "summary": {"properties":2,"scenarios":7,"cells":8,"proved":0,"checked":5,"implied":0,"violated":3,"accepted":3,"lapsed":0,"pending":0,"miscalled":0,"held":0,"hollow":0,"open":0,"doubtsOpen":0},
   "members": [{"part":"oracle","role":"member","pins":[]}],
   "wiring": [],

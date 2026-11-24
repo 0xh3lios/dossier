@@ -17,7 +17,7 @@ An answer that has lapsed therefore decides nothing on the model side or on a ce
 `dossier verify` prints one line for the root, one per dossier, and the next step:
 
 ```
-verify: ok · 6 parts, 3 compositions · dossier 0.3.0 · 0 tripwires
+verify: ok · 6 parts, 3 compositions · dossier 0.3.1 · 0 tripwires
 Timelock: 26 passages · settled 16 · confirmed 15 · unsettled 10 · proved 1 · checked 19 · drawn 1 · backed 1 · assumed 1 · text 1 · given 2 · prose@70bff9
   claims: 3 behaviors, 8 claims · supported 6 · hypothesis 2
 Control: 4 properties × 3 scenarios · 9 cells · proved 1 · checked 7 · violated 1 (accepted 1) · prose@6c8765

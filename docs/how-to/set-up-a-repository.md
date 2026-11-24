@@ -60,7 +60,7 @@ dossier doctor
 dossier verify
 ```
 
-The doctor says what is present and missing, with a fix for each, and exits 1 when something is missing. Verify prints `verify: ok · no dossiers · dossier 0.3.0 · 0 tripwires` on a fresh setup.
+The doctor says what is present and missing, with a fix for each, and exits 1 when something is missing. Verify prints `verify: ok · no dossiers · dossier 0.3.1 · 0 tripwires` on a fresh setup.
 
 Setup accepts a root set up by 0.2.0 or later, up to this plugin. It refuses an earlier or a later plugin version, or a marker that names none, and does not convert the root. Running setup again keeps existing files and updates `dossier.json` under the root publication lock, preserving configured runners. It refuses a malformed marker instead of replacing it, and a marker that names another storage is malformed. A marker with no `storage` field gets `storage: integrity-v1` while no dossier exists under the root. Once dossiers exist, setup refuses it. A missing marker beside existing dossier directories must be restored from version control, and setup refuses until it is.
 

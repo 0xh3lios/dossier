@@ -1,6 +1,6 @@
-# Ledger: Supply   rebuilt 2026-11-24T15:10:26Z   prose@720a6e   answers 10   decisions 1
+# Ledger: Supply   rebuilt 2026-11-24T23:09:15Z   prose@720a6e   answers 10   decisions 1
 Written by dossier render from the records. The JSON block at the end says the same for tools.
-verify: ok · Supply · dossier 0.3.0 · 0 tripwires
+verify: ok · Supply · dossier 0.3.1 · 0 tripwires
 
 ## Behaviors
 
@@ -60,8 +60,8 @@ Since last rebuild: no mark moved
   "id": "supply",
   "title": "Supply",
   "concern": "supply",
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "summary": {"properties":3,"scenarios":2,"cells":6,"proved":3,"checked":3,"implied":0,"violated":0,"accepted":0,"lapsed":0,"pending":0,"miscalled":0,"held":0,"hollow":0,"open":0,"doubtsOpen":0},
   "members": [{"part":"vault","role":"member","pins":["vault#observation:checkpoint-2026-11-01"]},{"part":"adapter","role":"member","pins":[]},{"part":"token","role":"member","pins":[]}],
   "wiring": [{"effect":{"part":"adapter","name":"move"},"event":{"part":"vault","name":"move"}},{"effect":{"part":"adapter","name":"release"},"event":{"part":"vault","name":"release"}},{"effect":{"part":"adapter","name":"mint"},"event":{"part":"token","name":"mint"}},{"effect":{"part":"adapter","name":"burn"},"event":{"part":"token","name":"burn"}}],

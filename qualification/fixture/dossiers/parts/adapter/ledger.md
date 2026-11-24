@@ -1,6 +1,6 @@
-# Ledger: Adapter   rebuilt 2026-11-24T15:10:26Z   prose@3ae029   answers 6   decisions 1
+# Ledger: Adapter   rebuilt 2026-11-24T23:09:15Z   prose@3ae029   answers 6   decisions 1
 Written by dossier render from the records. The JSON block at the end says the same for tools.
-verify: ok · Adapter · dossier 0.3.0 · 0 tripwires
+verify: ok · Adapter · dossier 0.3.1 · 0 tripwires
 
 ## Behaviors
 
@@ -59,8 +59,8 @@ Since last rebuild: no mark moved
   "title": "Adapter",
   "tier": "modeled",
   "module": "adapter",
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "summary": {"passages":20,"settled":11,"confirmed":11,"unsettled":9,"rejected":0,"proved":0,"checked":18,"drawn":0,"pending":0,"lapsed":0,"miscalled":0,"hollow":0,"held":0,"owed":0,"backed":1,"assumed":0,"unresolved":0,"doubtsOpen":0,"text":1,"given":0},
   "marks": {
     "S1": {"mark":"checked","trials":["2026-11-24-1431-chart-c026ab","2026-11-24-1431-tlc-5d358b"],"entries":["chart-64fcc7","tlc-W1-fb78f0"],"reach":"amounts up to 2","doubt":[],"owner":"settled","grounded":false,"groundedBy":null,"chartCovered":true,"modelCovered":true,"confirmed":true},

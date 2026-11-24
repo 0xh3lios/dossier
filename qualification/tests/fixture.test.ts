@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { listParts, listCompositions } from '../../src/dossiers/root.ts';
 import { completed, readEvidence, readingClassification } from '../../src/trials/answers.ts';
 import { forgottenAnswers, parseDecisions } from '../../src/dossiers/decisions.ts';
-import { readIntegrity } from '../../src/dossiers/integrity.ts';
+import { compareVersions, readIntegrity } from '../../src/dossiers/integrity.ts';
 import { fingerprints } from '../../src/commands/trial.ts';
 import { loadBehaviorCollection } from '../../src/behaviors/records.ts';
 import type { Entry } from '../../src/trials/answers.ts';
@@ -52,15 +52,18 @@ const entriesOf = (dir: string): [string, Entry][] => {
   return existsSync(folder) ? readdirSync(folder).filter(n => n.endsWith('.json')).sort().map(n => [n.slice(0, -5), JSON.parse(readFileSync(join(folder, n), 'utf8')) as Entry]) : [];
 };
 
-// A version change without a rebuild would leave Harbor naming a plugin that no longer exists.
-test('Harbor was set up and its answers established by the plugin version this checkout is', () => {
+// A version change without a rebuild would leave Harbor naming a plugin that no longer exists. A patch
+// release keeps the answers of the release it patches: setup moves the marker, and the answers stay.
+test('Harbor was set up by the plugin version this checkout is, and its answers established by that version or an earlier patch of its release', () => {
   const version = JSON.parse(readFileSync(join(pluginRoot, 'package.json'), 'utf8')).version;
+  const release = (v: string) => v.split('.').slice(0, 2).join('.');
+  const established = (by: string | undefined, what: string) => assert.ok(by !== undefined && release(by) === release(version) && compareVersions(by, version) <= 0, `${what}: established by dossier ${by}, not by ${version} or an earlier patch of its release`);
   assert.equal(JSON.parse(readFileSync(join(root, 'dossier.json'), 'utf8')).plugin, version, 'dossier.json');
   let count = 0;
   for (const { kind, id, dir } of dossierDirs()) for (const [name, entry] of entriesOf(dir)) {
     count += 1;
-    assert.equal(entry.established.versions.dossier, version, `${kind}/${id}/evidence/${name}.json`);
-    if (entry.previous) assert.equal(entry.previous.established.versions.dossier, version, `${kind}/${id}/evidence/${name}.json, its previous answer`);
+    established(entry.established.versions.dossier, `${kind}/${id}/evidence/${name}.json`);
+    if (entry.previous) established(entry.previous.established.versions.dossier, `${kind}/${id}/evidence/${name}.json, its previous answer`);
   }
   assert.ok(count > 0, 'the fixture holds answers');
 });

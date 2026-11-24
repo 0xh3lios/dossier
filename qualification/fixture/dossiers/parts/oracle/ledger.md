@@ -1,6 +1,6 @@
-# Ledger: Oracle   rebuilt 2026-11-24T15:10:26Z   prose@e20cbb   answers 7   decisions 0
+# Ledger: Oracle   rebuilt 2026-11-24T23:09:15Z   prose@e20cbb   answers 7   decisions 0
 Written by dossier render from the records. The JSON block at the end says the same for tools.
-verify: ok · Oracle · dossier 0.3.0 · 0 tripwires
+verify: ok · Oracle · dossier 0.3.1 · 0 tripwires
 
 ## Behaviors
 
@@ -65,8 +65,8 @@ Since last rebuild: no mark moved
   "title": "Oracle",
   "tier": "modeled",
   "module": "oracle",
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "summary": {"passages":22,"settled":0,"confirmed":0,"unsettled":22,"rejected":0,"proved":0,"checked":14,"drawn":2,"pending":0,"lapsed":0,"miscalled":0,"hollow":0,"held":0,"owed":0,"backed":1,"assumed":0,"unresolved":0,"doubtsOpen":1,"text":1,"given":4},
   "marks": {
     "S1": {"mark":"checked","trials":["2026-11-24-1431-chart-5c0890","2026-11-24-1431-tlc-f0ca57"],"entries":["chart-64fcc7","tlc-W1-285c2c"],"reach":"stale up to 3","doubt":[],"owner":"unsettled","grounded":false,"groundedBy":null,"chartCovered":true,"modelCovered":true,"confirmed":false},

@@ -1,6 +1,6 @@
-# Ledger: Breaker   rebuilt 2026-11-24T15:10:26Z   prose@02aa1d   answers 6   decisions 1
+# Ledger: Breaker   rebuilt 2026-11-24T23:09:15Z   prose@02aa1d   answers 6   decisions 1
 Written by dossier render from the records. The JSON block at the end says the same for tools.
-verify: ok · Breaker · dossier 0.3.0 · 0 tripwires
+verify: ok · Breaker · dossier 0.3.1 · 0 tripwires
 
 ## Behaviors
 
@@ -47,8 +47,8 @@ Since last rebuild: no mark moved
   "title": "Breaker",
   "tier": "modeled",
   "module": "breaker",
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "summary": {"passages":11,"settled":6,"confirmed":6,"unsettled":5,"rejected":0,"proved":0,"checked":9,"drawn":0,"pending":0,"lapsed":0,"miscalled":0,"hollow":0,"held":0,"owed":0,"backed":1,"assumed":0,"unresolved":0,"doubtsOpen":0,"text":1,"given":0},
   "marks": {
     "S1": {"mark":"checked","trials":["2026-11-24-1431-chart-5bf4a7","2026-11-24-1431-tlc-ad1aac"],"entries":["chart-64fcc7","tlc-W1-b9babb"],"reach":"one breaker","doubt":[],"owner":"settled","grounded":false,"groundedBy":null,"chartCovered":true,"modelCovered":true,"confirmed":true},

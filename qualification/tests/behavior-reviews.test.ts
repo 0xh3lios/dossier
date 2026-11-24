@@ -121,6 +121,27 @@ test('a file the tool required once and no longer requires still binds the revie
   assert.equal(f.evaluate().reviews[0].status, 'stale', 'and a file it read that has gone stales it');
 });
 
+// Found 2026-11-24 in a consuming repository's ledgers: a reason quoted the file-system error, which names
+// the file by the machine's absolute path, so each machine rendered the same review differently.
+test('a basis file that has gone stales the review under its key, and no reason names a machine path', t => {
+  const f = fixture(t);
+  mkdirSync(join(f.dir, 'evidence')); writeFileSync(join(f.dir, 'evidence/old.json'), '{}\n');
+  mkdirSync(join(f.knowledge, 'modules/vault'), { recursive: true }); writeFileSync(join(f.knowledge, 'modules/vault/edges.md'), '# Edges\n');
+  const review = f.makeReview();
+  review.basis.push(f.basis(`${f.dossier}/evidence/old.json`, 'dossiers', 'additional'), f.basis('modules/vault/edges.md', 'knowledge', 'additional'));
+  f.write('reviews/cancel.md', review);
+  assert.equal(f.evaluate().reviews[0].status, 'current');
+  // One file is gone itself; for the other a folder above it is, and the error names that folder.
+  rmSync(join(f.dir, 'evidence/old.json')); rmSync(join(f.knowledge, 'modules/vault'), { recursive: true });
+  const result = f.evaluate().reviews[0];
+  assert.equal(result.status, 'stale');
+  assert.deepEqual(result.reasons, [
+    'cannot read dossiers:parts/timelock/evidence/old.json: ENOENT: no such file or directory',
+    'cannot read knowledge:modules/vault/edges.md: ENOENT: no such file or directory',
+  ]);
+  assert.ok(result.reasons.every(reason => !reason.includes(f.work)), 'no reason names the machine path');
+});
+
 test('a ledger or the index in a basis binds nothing, since every render rewrites them', t => {
   const f = fixture(t); writeFileSync(join(f.dir, 'ledger.md'), '# Ledger\n'); writeFileSync(join(f.root, 'index.md'), '# Index\n');
   const review = f.makeReview(); review.basis.push(f.basis(`${f.dossier}/ledger.md`, 'dossiers', 'additional'), f.basis('index.md', 'dossiers', 'additional'));

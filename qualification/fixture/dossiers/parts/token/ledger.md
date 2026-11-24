@@ -1,6 +1,6 @@
-# Ledger: Token   rebuilt 2026-11-24T15:10:26Z   prose@825926   answers 4   decisions 1
+# Ledger: Token   rebuilt 2026-11-24T23:09:15Z   prose@825926   answers 4   decisions 1
 Written by dossier render from the records. The JSON block at the end says the same for tools.
-verify: ok · Token · dossier 0.3.0 · 0 tripwires
+verify: ok · Token · dossier 0.3.1 · 0 tripwires
 
 ## Behaviors
 
@@ -53,8 +53,8 @@ Since last rebuild: no mark moved
   "title": "Token",
   "tier": "modeled",
   "module": "token",
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "summary": {"passages":15,"settled":8,"confirmed":8,"unsettled":7,"rejected":0,"proved":0,"checked":11,"drawn":1,"pending":0,"lapsed":0,"miscalled":0,"hollow":0,"held":0,"owed":0,"backed":1,"assumed":0,"unresolved":0,"doubtsOpen":0,"text":2,"given":0},
   "marks": {
     "S1": {"mark":"checked","trials":["2026-11-24-1431-chart-e9477f","2026-11-24-1431-tlc-84d374"],"entries":["chart-64fcc7","tlc-A1-09afe0"],"reach":"amounts up to 2; supply up to 4","doubt":[],"owner":"settled","grounded":false,"groundedBy":null,"chartCovered":true,"modelCovered":true,"confirmed":true},

@@ -1,6 +1,6 @@
-# Dossiers   rebuilt 2026-11-24T15:10:26Z   dossier 0.3.0
+# Dossiers   rebuilt 2026-11-24T23:09:15Z   dossier 0.3.1
 Written by dossier render: parts by compositions, every composition at a glance, and the map.
-verify: ok · 6 parts, 3 compositions · dossier 0.3.0 · 0 tripwires
+verify: ok · 6 parts, 3 compositions · dossier 0.3.1 · 0 tripwires
 
 | part | module | tier | control | supply | upkeep |
 | --- | --- | --- | --- | --- | --- |
@@ -50,8 +50,8 @@ Harbor dossiers: 9 dossiers, 62 claims · supported 47 · contradicted 4 · hypo
 
 ```json
 {
-  "rebuilt": "2026-11-24T15:10:26Z",
-  "plugin": "0.3.0",
+  "rebuilt": "2026-11-24T23:09:15Z",
+  "plugin": "0.3.1",
   "parts": [
     {
       "id": "adapter",
